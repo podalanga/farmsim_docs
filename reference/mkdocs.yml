@@ -1,0 +1,110 @@
+site_name: FARMS Documentation
+site_description: Developer and API reference for the FARMS simulation framework (farms_core, farms_sim, farms_mujoco, farms_amphibious)
+site_author: FARMS Team
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.code.annotate
+    - navigation.indexes
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tasklist
+  - pymdownx.tilde
+  - pymdownx.highlight:
+      anchor_linenums: true
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+docs_dir: docs
+
+nav:
+  - Home: index.md
+
+  - Getting Started:
+    - Installation: installation.md
+    - SSH Key Setup: ssh_setup.md
+    - Walkthrough: walkthrough.md
+
+  - Module Guides:
+    - farms_core: farms_core.md
+    - farms_sim: farms_sim.md
+    - farms_mujoco: farms_mujoco.md
+    - farms_amphibious: farms_amphibious.md
+
+  - API Reference:
+    - farms_core:
+      - Controller & Extension Interfaces: api/farms_core_control.md
+      - Sensor Data Arrays: api/farms_core_sensors.md
+      - Options Hierarchy: api/farms_core_options.md
+      - I/O Utilities: api/farms_core_io.md
+    - farms_mujoco:
+      - Simulation & Visual Extensions: api/farms_mujoco_simulation.md
+      - Hydrodynamic Swimming Model: api/farms_mujoco_swimming.md
+    - farms_amphibious:
+      - Amphibious Controller: api/farms_amphibious_controller.md
+      - Network ODE Integrator: api/farms_amphibious_network.md
+      - Descending Drive: api/farms_amphibious_drive.md
+      - Data Classes: api/farms_amphibious_data.md
+      - Options: api/farms_amphibious_options.md
+      - CPG Oscillator Network: api/cpg_oscillators.md
+      - Ekeberg Muscle Model: api/ekeberg_muscle.md
+      - Joint Controllers: api/joint_controllers.md
+
+  - Architecture & Design:
+    - System Architecture: architecture.md
+    - Mathematical Models: mathematical_models.md
+    - Core Interfaces: core_interfaces.md
+
+  - Reference:
+    - Configuration Reference: configuration.md
+    - Glossary: glossary.md
+    - Contributing: contributing.md
+
+  - Zbot:
+    - Overview: zbot/index.md
+    - Zbot Model: zbot/model.md
+    - Swimming Experiment: zbot/experiment.md
+    - Custom CPG Controller: zbot/cpg_controller.md

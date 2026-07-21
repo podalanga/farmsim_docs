@@ -1,0 +1,2961 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Developer and API reference for the FARMS simulation framework (farms_core, farms_sim, farms_mujoco, farms_amphibious)">
+      
+      
+        <meta name="author" content="FARMS Team">
+      
+      
+      
+        <link rel="prev" href="../farms_amphibious_options/">
+      
+      
+        <link rel="next" href="../ekeberg_muscle/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>CPG Oscillator Network - FARMS Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cpg-oscillator-network" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="FARMS Documentation" class="md-header__button md-logo" aria-label="FARMS Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            FARMS Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CPG Oscillator Network
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../installation/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../farms_core/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Module Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../farms_core_control/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture & Design
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../configuration/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="FARMS Documentation" class="md-nav__button md-logo" aria-label="FARMS Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    FARMS Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ssh_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSH Key Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../walkthrough/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Walkthrough
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Module Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../farms_core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    farms_core
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../farms_sim/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    farms_sim
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../farms_mujoco/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    farms_mujoco
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../farms_amphibious/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    farms_amphibious
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_1" id="__nav_4_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    farms_core
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    farms_core
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_core_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Controller & Extension Interfaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_core_sensors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sensor Data Arrays
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_core_options/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Options Hierarchy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_core_io/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    I/O Utilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    farms_mujoco
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    farms_mujoco
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_mujoco_simulation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Simulation & Visual Extensions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_mujoco_swimming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hydrodynamic Swimming Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    farms_amphibious
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    farms_amphibious
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_amphibious_controller/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Amphibious Controller
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_amphibious_network/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Network ODE Integrator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_amphibious_drive/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Descending Drive
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_amphibious_data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Classes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../farms_amphibious_options/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Options
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CPG Oscillator Network
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CPG Oscillator Network
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#mathematical-foundation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mathematical Foundation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mathematical Foundation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#state-vector-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        State Vector Layout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oscillator-output-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Oscillator Output Function
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-dynamics-ode_dphase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase Dynamics: ode_dphase
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#amplitude-dynamics-ode_damplitude" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Amplitude Dynamics: ode_damplitude
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#drive-dependent-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drive-Dependent Parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#joint-offset-dynamics-ode_joints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Joint Offset Dynamics: ode_joints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sensory-feedback-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sensory Feedback Channels
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sensory Feedback Channels">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-stretch-receptor-feedback-ode_stretch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Stretch Receptor Feedback: ode_stretch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-contact-reaction-feedback-ode_contacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Contact Reaction Feedback: ode_contacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-external-force-xfrc-feedback-ode_xfrc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. External Force (Xfrc) Feedback: ode_xfrc
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-complete-ode-ode_oscillators_sparse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Complete ODE: ode_oscillators_sparse
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oscillator-naming-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Oscillator Naming Convention
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Oscillator Naming Convention">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#body-oscillators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Body Oscillators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#leg-oscillators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leg Oscillators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#index-computation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Index Computation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#oscillator-connectivity-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Oscillator Connectivity Matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#networkode-integration-of-the-cpg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NetworkODE: Integration of the CPG
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="NetworkODE: Integration of the CPG">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-dopri5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why dopri5?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-step-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration Step Logic
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-connection-type-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Connection Type Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#class-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Class Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#oscillatornetworkstatecy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OscillatorNetworkStateCy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oscillatornetworkstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OscillatorNetworkState
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oscillators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Oscillators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#drivedependentarray" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DriveDependentArray
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oscillatorconnectivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OscillatorConnectivity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Pages
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ekeberg_muscle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ekeberg Muscle Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../joint_controllers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Joint Controllers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture & Design
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture & Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../math_extraction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mathematical Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../abstraction_audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Interfaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="cpg-oscillator-network">CPG Oscillator Network<a class="headerlink" href="#cpg-oscillator-network" title="Permanent link">&para;</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Source Files</p>
+<ul>
+<li><code>farms_amphibious/control/ode.pyx</code> — Cython ODE kernels (compiled to <code>.pyd</code>)</li>
+<li><code>farms_amphibious/data/data_cy.pyx</code> — Cython state containers</li>
+<li><code>farms_amphibious/data/network.py</code> — Python wrappers and data classes</li>
+<li><code>farms_amphibious/control/network.py</code> — ODE integrator</li>
+</ul>
+</div>
+<p>FARMS implements a <strong>biologically inspired Central Pattern Generator (CPG)</strong> network modelled as a system of coupled nonlinear oscillators. This is the mathematical engine that generates rhythmic, coordinated locomotion patterns for swimming and walking in amphibious robots. The oscillators are a <strong>Hopf-type</strong> phase-amplitude system — each oscillator has an independent phase and amplitude, coupled through weighted, phase-biased connections.</p>
+<hr />
+<h2 id="mathematical-foundation">Mathematical Foundation<a class="headerlink" href="#mathematical-foundation" title="Permanent link">&para;</a></h2>
+<h3 id="state-vector-layout">State Vector Layout<a class="headerlink" href="#state-vector-layout" title="Permanent link">&para;</a></h3>
+<p>The complete network state is stored in a flat 1D array of size <code>2·N_osc + N_joints</code> where:</p>
+<ul>
+<li>Indices <code>[0, N_osc)</code> → <strong>phases</strong> <code>φᵢ</code> (in radians)</li>
+<li>Indices <code>[N_osc, 2·N_osc)</code> → <strong>amplitudes</strong> <code>rᵢ</code></li>
+<li>Indices <code>[2·N_osc, 2·N_osc + N_joints)</code> → <strong>joint offsets</strong> <code>δⱼ</code></li>
+</ul>
+<p>This layout is enforced by <code>OscillatorNetworkStateCy</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">cpdef</span> <span class="n">DTYPEv1</span> <span class="n">phases</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unsigned</span> <span class="nb">int</span> <span class="n">iteration</span><span class="p">):</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">iteration</span><span class="p">,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">n_oscillators</span><span class="p">]</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">cpdef</span> <span class="n">DTYPEv1</span> <span class="n">amplitudes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unsigned</span> <span class="nb">int</span> <span class="n">iteration</span><span class="p">):</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">iteration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_oscillators</span><span class="p">:</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">n_oscillators</span><span class="p">]</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">cpdef</span> <span class="n">DTYPEv1</span> <span class="n">offsets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unsigned</span> <span class="nb">int</span> <span class="n">iteration</span><span class="p">):</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">iteration</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">n_oscillators</span><span class="p">:]</span>
+</code></pre></div>
+<h3 id="oscillator-output-function">Oscillator Output Function<a class="headerlink" href="#oscillator-output-function" title="Permanent link">&para;</a></h3>
+<p>The neural output of each oscillator — used to drive muscle models — is:</p>
+<div class="arithmatex">\[
+y_i = r_i \cdot (1 + \cos(\varphi_i))
+\]</div>
+<p>This is computed by <code>outputs()</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">cpdef</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="n">outputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unsigned</span> <span class="nb">int</span> <span class="n">iteration</span><span class="p">):</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">(</span><span class="n">iteration</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phases</span><span class="p">(</span><span class="n">iteration</span><span class="p">)))</span>
+</code></pre></div>
+<div class="admonition important">
+<p class="admonition-title">Why this output function?</p>
+<p>The output <span class="arithmatex">\(y_i \in [0, 2r_i]\)</span> is always non-negative, which directly represents the firing rate of a motor neuron. When <span class="arithmatex">\(\varphi_i = 0\)</span>, output is maximum (<span class="arithmatex">\(2r_i\)</span>); when <span class="arithmatex">\(\varphi_i = \pi\)</span>, output is zero. This is the half-wave rectified cosine — a well-established model for motor neuron activity.</p>
+</div>
+<hr />
+<h2 id="phase-dynamics-ode_dphase">Phase Dynamics: <code>ode_dphase</code><a class="headerlink" href="#phase-dynamics-ode_dphase" title="Permanent link">&para;</a></h2>
+<p>The phase ODE is the core of the CPG. It computes <code>dφᵢ/dt</code> for each oscillator:</p>
+<div class="arithmatex">\[
+\frac{d\varphi_i}{dt} = \omega_i \cdot \left(1 + A^{mod}_i \cdot \cos\!\left(\varphi_i + \Phi^{mod}_i\right)\right)
++ \sum_{j \in \mathcal{C}(i)} r_j \cdot w_{ji} \cdot \sin\!\left(\varphi_j - \varphi_i - \Delta\varphi_{ji}\right)
+\]</div>
+<p>Where:</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Description</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\omega_i\)</span></td>
+<td>Intrinsic angular frequency (rad/s)</td>
+<td><code>oscillators.c_angular_frequency(iteration, i, drives)</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(A^{mod}_i\)</span></td>
+<td>Modular amplitude (frequency modulation depth)</td>
+<td><code>oscillators.c_modular_amplitudes(i)</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\Phi^{mod}_i\)</span></td>
+<td>Modular phase offset</td>
+<td><code>oscillators.c_modular_phases(i)</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(r_j\)</span></td>
+<td>Amplitude of pre-synaptic oscillator <span class="arithmatex">\(j\)</span></td>
+<td><code>state[n_oscillators + j]</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(w_{ji}\)</span></td>
+<td>Coupling weight from <span class="arithmatex">\(j\)</span> to <span class="arithmatex">\(i\)</span></td>
+<td><code>connectivity.c_weight(i)</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\Delta\varphi_{ji}\)</span></td>
+<td>Desired phase difference (phase bias)</td>
+<td><code>connectivity.c_desired_phase(i)</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathcal{C}(i)\)</span></td>
+<td>Set of connections targeting oscillator <span class="arithmatex">\(i\)</span></td>
+<td><code>osc2osc_map</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>From <code>ode.pyx</code> (lines 45–78):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">cpdef</span><span class="w"> </span><span class="kr">inline</span> <span class="kt">void</span> <span class="nf">ode_dphase</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="k">nogil</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_oscillators</span><span class="p">):</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        <span class="c"># Intrinsic frequency</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="n">dstate</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">oscillators</span><span class="o">.</span><span class="n">c_angular_frequency</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">drives</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="k">if</span> <span class="n">oscillators</span><span class="o">.</span><span class="n">c_modular_amplitudes</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-3</span><span class="p">:</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>            <span class="n">dstate</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="p">(</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>                <span class="mf">1</span> <span class="o">+</span> <span class="n">oscillators</span><span class="o">.</span><span class="n">c_modular_amplitudes</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>                    <span class="n">phase</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="n">oscillators</span><span class="o">.</span><span class="n">c_modular_phases</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>                <span class="p">)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>            <span class="p">)</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">connectivity</span><span class="o">.</span><span class="n">n_connections</span><span class="p">):</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="c"># Neural couplings  (OSC2OSC connections only)</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="n">i0</span> <span class="o">=</span> <span class="n">connectivity</span><span class="o">.</span><span class="n">connections</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mf">0</span><span class="p">]</span>   <span class="c"># target</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>        <span class="n">i1</span> <span class="o">=</span> <span class="n">connectivity</span><span class="o">.</span><span class="n">connections</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mf">1</span><span class="p">]</span>   <span class="c"># source</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>        <span class="n">dstate</span><span class="p">[</span><span class="n">i0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">state</span><span class="p">[</span><span class="n">n_oscillators</span><span class="o">+</span><span class="n">i1</span><span class="p">]</span><span class="o">*</span><span class="n">connectivity</span><span class="o">.</span><span class="n">c_weight</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>            <span class="n">phase</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">i1</span><span class="p">)</span> <span class="o">-</span> <span class="n">phase</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">i0</span><span class="p">)</span> <span class="o">-</span> <span class="n">connectivity</span><span class="o">.</span><span class="n">c_desired_phase</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>        <span class="p">)</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Phase coupling is amplitude-weighted</p>
+<p>The coupling term uses <code>state[n_oscillators + i1]</code> — the <strong>amplitude</strong> of the source oscillator, not 1. This means a silenced oscillator (amplitude → 0) stops exerting influence on its neighbours, which is critical for smooth gait transitions.</p>
+</div>
+<hr />
+<h2 id="amplitude-dynamics-ode_damplitude">Amplitude Dynamics: <code>ode_damplitude</code><a class="headerlink" href="#amplitude-dynamics-ode_damplitude" title="Permanent link">&para;</a></h2>
+<p>Each oscillator's amplitude follows a first-order relaxation toward a drive-dependent target:</p>
+<div class="arithmatex">\[
+\frac{dr_i}{dt} = a_i \cdot \left(R_i^{nom} - r_i\right)
+\]</div>
+<p>Where:</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Description</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(a_i\)</span></td>
+<td>Convergence rate (rad/s)</td>
+<td><code>oscillators.c_rate(i)</code></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(R_i^{nom}\)</span></td>
+<td>Nominal amplitude (drive-dependent)</td>
+<td><code>oscillators.c_nominal_amplitude(iteration, i, drives)</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>From <code>ode.pyx</code> (lines 81–99):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">cpdef</span><span class="w"> </span><span class="kr">inline</span> <span class="kt">void</span> <span class="nf">ode_damplitude</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="k">nogil</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_oscillators</span><span class="p">):</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="n">dstate</span><span class="p">[</span><span class="n">n_oscillators</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">oscillators</span><span class="o">.</span><span class="n">c_rate</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">*</span><span class="p">(</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>            <span class="n">oscillators</span><span class="o">.</span><span class="n">c_nominal_amplitude</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">drives</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>            <span class="o">-</span> <span class="n">amplitude</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">n_oscillators</span><span class="p">)</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        <span class="p">)</span>
+</code></pre></div>
+<p>The convergence rate <code>a_i</code> determines how quickly the oscillator amplitude tracks changes in the descending drive. A high value (e.g., 20 rad/s) gives near-instantaneous tracking; a low value (e.g., 1 rad/s) produces smooth interpolation when switching between gaits.</p>
+<hr />
+<h2 id="drive-dependent-parameters">Drive-Dependent Parameters<a class="headerlink" href="#drive-dependent-parameters" title="Permanent link">&para;</a></h2>
+<p>Both <code>ω_i</code> and <code>R_i^{nom}</code> are not fixed — they are <strong>piecewise-linear functions of the descending drive</strong> <code>d_i</code>:</p>
+<div class="arithmatex">\[
+\omega_i(d_i) = \text{clamp}\left(g^{\omega}_i \cdot d_i + b^{\omega}_i,\; s^{\omega}_{lo},\; s^{\omega}_{hi}\right), \quad \text{if } d_i \in [lo_i, hi_i]
+\]</div>
+<p>The drive itself is clamped:</p>
+<div class="arithmatex">\[
+d_i^{eff} = \text{clamp}(d_i, lo_i, hi_i)
+\]</div>
+<p>The <code>DriveDependentArrayCy</code> stores 6 parameters per oscillator: <code>[gain, bias, low, high, saturation_low, saturation_high]</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DriveDependentArray</span><span class="p">(</span><span class="n">DriveDependentArrayCy</span><span class="p">):</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="nd">@classmethod</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">from_vectors</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">gain</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="p">,</span> <span class="n">saturation_low</span><span class="p">,</span> <span class="n">saturation_high</span><span class="p">):</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">gain</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="p">,</span> <span class="n">saturation_low</span><span class="p">,</span> <span class="n">saturation_high</span><span class="p">]))</span>
+</code></pre></div>
+<p>This creates the characteristic "drive-frequency" curve seen in salamander CPG literature: below <code>low</code>, the oscillator is silent; above <code>high</code>, frequency saturates.</p>
+<hr />
+<h2 id="joint-offset-dynamics-ode_joints">Joint Offset Dynamics: <code>ode_joints</code><a class="headerlink" href="#joint-offset-dynamics-ode_joints" title="Permanent link">&para;</a></h2>
+<p>The joint offsets <code>δⱼ</code> (used by muscle models as equilibrium positions) also evolve as first-order systems:</p>
+<div class="arithmatex">\[
+\frac{d\delta_j}{dt} = a_j^{off} \cdot \left(\delta_j^{des}(d) - \delta_j\right)
+\]</div>
+<p><strong>From <code>ode.pyx</code> (lines 237–259):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">cpdef</span><span class="w"> </span><span class="kr">inline</span> <span class="kt">void</span> <span class="nf">ode_joints</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="k">nogil</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">for</span> <span class="n">joint_i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_joints</span><span class="p">):</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="n">dstate</span><span class="p">[</span><span class="mf">2</span><span class="o">*</span><span class="n">n_oscillators</span><span class="o">+</span><span class="n">joint_i</span><span class="p">]</span> <span class="o">=</span> <span class="n">joints</span><span class="o">.</span><span class="n">c_rate</span><span class="p">(</span><span class="n">joint_i</span><span class="p">)</span><span class="o">*</span><span class="p">(</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>            <span class="n">joints</span><span class="o">.</span><span class="n">c_offset_desired</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">joint_i</span><span class="p">,</span> <span class="n">drives</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>            <span class="o">-</span> <span class="n">joint_offset</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">joint_i</span><span class="p">,</span> <span class="n">n_oscillators</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="p">)</span>
+</code></pre></div>
+<p>This allows the limb equilibrium angle to ramp smoothly between walking and swimming values as the drive level changes, preventing discontinuous jumps in the reference position.</p>
+<hr />
+<h2 id="sensory-feedback-channels">Sensory Feedback Channels<a class="headerlink" href="#sensory-feedback-channels" title="Permanent link">&para;</a></h2>
+<p>The FARMS CPG supports <strong>four sensory feedback pathways</strong> that modulate the oscillator dynamics. These add to the <code>dstate</code> buffer computed above.</p>
+<h3 id="1-stretch-receptor-feedback-ode_stretch">1. Stretch Receptor Feedback: <code>ode_stretch</code><a class="headerlink" href="#1-stretch-receptor-feedback-ode_stretch" title="Permanent link">&para;</a></h3>
+<p>Proprioceptive feedback from joint position sensors. Two sub-types:</p>
+<p><strong>Standard stretch:</strong> Direct additive frequency/amplitude modulation:</p>
+<div class="arithmatex">\[
+\frac{d\varphi_{i0}}{dt} \mathrel{+}= w \cdot \theta_{i1} \quad (\text{STRETCH2FREQ})
+\]</div>
+<div class="arithmatex">\[
+\frac{dr_{i0}}{dt} \mathrel{+}= w \cdot \theta_{i1} \quad (\text{STRETCH2AMP})
+\]</div>
+<p><strong>Tegotae stretch:</strong> Multiplied by <span class="arithmatex">\(\sin(\varphi_i)\)</span> — this is phase-dependent feedback:</p>
+<div class="arithmatex">\[
+\frac{d\varphi_{i0}}{dt} \mathrel{+}= w \cdot \theta_{i1} \cdot \sin(\varphi_{i0}) \quad (\text{STRETCH2FREQTEGOTAE})
+\]</div>
+<div class="admonition note">
+<p class="admonition-title">Tegotae feedback origin</p>
+<p>Tegotae (手応え, Japanese for "tactile response") is a control strategy introduced by Owaki &amp; Ishiguro (2017) where each limb CPG is locally modulated by the ground reaction force, producing emergent gait patterns without central coordination. FARMS implements this via <code>sin(phase)</code> multiplication.</p>
+</div>
+<p><strong>From <code>ode.pyx</code> (lines 102–156):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">if</span> <span class="n">connection_type</span> <span class="o">==</span> <span class="n">ConnectionType</span><span class="o">.</span><span class="n">STRETCH2FREQTEGOTAE</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">dstate</span><span class="p">[</span><span class="n">i0</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>        <span class="n">joints2osc_map</span><span class="o">.</span><span class="n">c_weight</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="o">*</span> <span class="n">joints</span><span class="o">.</span><span class="n">position_cy</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">i1</span><span class="p">)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">i0</span><span class="p">])</span>   <span class="c"># Phase-dependent — Tegotae</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="p">)</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="k">elif</span> <span class="n">connection_type</span> <span class="o">==</span> <span class="n">ConnectionType</span><span class="o">.</span><span class="n">STRETCH2FREQ</span><span class="p">:</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">dstate</span><span class="p">[</span><span class="n">i0</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        <span class="n">joints2osc_map</span><span class="o">.</span><span class="n">c_weight</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>        <span class="o">*</span> <span class="n">joints</span><span class="o">.</span><span class="n">position_cy</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">i1</span><span class="p">)</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="p">)</span>
+</code></pre></div>
+<h3 id="2-contact-reaction-feedback-ode_contacts">2. Contact Reaction Feedback: <code>ode_contacts</code><a class="headerlink" href="#2-contact-reaction-feedback-ode_contacts" title="Permanent link">&para;</a></h3>
+<p>Ground reaction forces modulate oscillator frequency:</p>
+<div class="arithmatex">\[
+\|F_{contact}\| = \sqrt{F_x^2 + F_y^2 + F_z^2}
+\]</div>
+<div class="arithmatex">\[
+\frac{d\varphi_{i0}}{dt} \mathrel{+}= w \cdot \|F_{contact,\,i1}\| \quad (\text{REACTION2FREQ})
+\]</div>
+<p>With Tegotae variant:</p>
+<div class="arithmatex">\[
+\frac{d\varphi_{i0}}{dt} \mathrel{+}= w \cdot \|F_{contact,\,i1}\| \cdot \sin(\varphi_{i0}) \quad (\text{REACTION2FREQTEGOTAE})
+\]</div>
+<p><strong>From <code>ode.pyx</code> (lines 159–193):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">contact_reaction</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">contacts</span><span class="o">.</span><span class="n">c_total_x</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">i1</span><span class="p">)</span><span class="o">**</span><span class="mf">2</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="o">+</span> <span class="n">contacts</span><span class="o">.</span><span class="n">c_total_y</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">i1</span><span class="p">)</span><span class="o">**</span><span class="mf">2</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="o">+</span> <span class="n">contacts</span><span class="o">.</span><span class="n">c_total_z</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">i1</span><span class="p">)</span><span class="o">**</span><span class="mf">2</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="p">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">if</span> <span class="n">connection_type</span> <span class="o">==</span> <span class="n">ConnectionType</span><span class="o">.</span><span class="n">REACTION2FREQ</span><span class="p">:</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">dstate</span><span class="p">[</span><span class="n">i0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">contacts2osc_map</span><span class="o">.</span><span class="n">c_weight</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">contact_reaction</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="k">elif</span> <span class="n">connection_type</span> <span class="o">==</span> <span class="n">ConnectionType</span><span class="o">.</span><span class="n">REACTION2FREQTEGOTAE</span><span class="p">:</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">dstate</span><span class="p">[</span><span class="n">i0</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>        <span class="n">contacts2osc_map</span><span class="o">.</span><span class="n">c_weight</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>        <span class="o">*</span> <span class="n">contact_reaction</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>        <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">i0</span><span class="p">])</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    <span class="p">)</span>
+</code></pre></div>
+<h3 id="3-external-force-xfrc-feedback-ode_xfrc">3. External Force (Xfrc) Feedback: <code>ode_xfrc</code><a class="headerlink" href="#3-external-force-xfrc-feedback-ode_xfrc" title="Permanent link">&para;</a></h3>
+<p>Lateral hydrodynamic forces (from <code>xfrc_applied</code> in MuJoCo) modulate oscillators:</p>
+<div class="arithmatex">\[
+\frac{d\varphi_{i0}}{dt} \mathrel{+}= w \cdot |F_{y,\,i1}| \quad (\text{LATERAL2FREQ})
+\]</div>
+<div class="arithmatex">\[
+\frac{dr_{i0}}{dt} \mathrel{+}= w \cdot |F_{y,\,i1}| \quad (\text{LATERAL2AMP})
+\]</div>
+<p>Only the <strong>Y-component</strong> (lateral force) is used, since this is the dominant drag direction during undulatory swimming.</p>
+<hr />
+<h2 id="the-complete-ode-ode_oscillators_sparse">The Complete ODE: <code>ode_oscillators_sparse</code><a class="headerlink" href="#the-complete-ode-ode_oscillators_sparse" title="Permanent link">&para;</a></h2>
+<p>The master function assembles all contributions in order:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">cpdef</span><span class="w"> </span><span class="kr">inline</span> <span class="kt">DTYPEv1</span> <span class="nf">ode_oscillators_sparse</span><span class="p">(</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">DTYPE</span> <span class="n">time</span><span class="p">,</span> <span class="n">DTYPEv1</span> <span class="n">state</span><span class="p">,</span> <span class="n">DTYPEv1</span> <span class="n">dstate</span><span class="p">,</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="nb">unsigned</span> <span class="nb">int</span> <span class="n">iteration</span><span class="p">,</span> <span class="n">AmphibiousDataCy</span> <span class="n">data</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="nb">unsigned</span> <span class="nb">int</span> <span class="n">nosfb</span><span class="o">=</span><span class="mf">0</span><span class="p">,</span>  <span class="c"># No sensory feedback flag</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="p">)</span> <span class="k">nogil</span><span class="p">:</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="c"># 1. Phase dynamics (intrinsic + coupling)</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">ode_dphase</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">dstate</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">drives</span><span class="p">,</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>               <span class="n">data</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">oscillators</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">osc2osc_map</span><span class="p">)</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="c"># 2. Amplitude dynamics (drive-dependent relaxation)</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>    <span class="n">ode_damplitude</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">dstate</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">drives</span><span class="p">,</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>                   <span class="n">data</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">oscillators</span><span class="p">)</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="c"># 3. Joint offset dynamics</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    <span class="n">ode_joints</span><span class="p">(</span><span class="n">iteration</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">dstate</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">drives</span><span class="p">,</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>               <span class="n">data</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">oscillators</span><span class="o">.</span><span class="n">n_oscillators</span><span class="p">)</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>    <span class="c"># 4. Sensory feedback (optional)</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>    <span class="k">if</span> <span class="n">nosfb</span><span class="p">:</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>        <span class="k">return</span> <span class="n">dstate</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>    <span class="n">ode_stretch</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>    <span class="n">ode_contacts</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>    <span class="n">ode_xfrc</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>    <span class="k">return</span> <span class="n">dstate</span>
+</code></pre></div>
+<p>Setting <code>nosfb=1</code> bypasses all sensory feedback, giving a pure open-loop CPG — useful for in-water locomotion experiments where only the descending drive matters.</p>
+<hr />
+<h2 id="oscillator-naming-convention">Oscillator Naming Convention<a class="headerlink" href="#oscillator-naming-convention" title="Permanent link">&para;</a></h2>
+<p>The <code>AmphibiousConvention</code> class defines the canonical name for each oscillator, derived from its role in the body plan. This is critical for constructing connectivity matrices.</p>
+<p>For a robot with <code>n_joints_body</code> body joints and <code>n_legs</code> legs (with <code>n_dof_legs</code> DOF each):</p>
+<h3 id="body-oscillators">Body Oscillators<a class="headerlink" href="#body-oscillators" title="Permanent link">&para;</a></h3>
+<p>With two oscillators per joint (flexor/extensor):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>osc_body_0_L   → index 0   (left/flexor, joint 0)
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>osc_body_0_R   → index 1   (right/extensor, joint 0)
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>osc_body_1_L   → index 2
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>osc_body_1_R   → index 3
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>...
+</code></pre></div>
+<p>With single oscillator per joint (<code>single_osc_body=True</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>osc_body_0     → index 0
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>osc_body_1     → index 1
+</code></pre></div>
+<h3 id="leg-oscillators">Leg Oscillators<a class="headerlink" href="#leg-oscillators" title="Permanent link">&para;</a></h3>
+<p>Pattern: <code>osc_leg_{leg_i}_{side}_{joint_i}_{osc_side}</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>osc_leg_0_L_0_0  → first leg, left side, first DOF, flexor
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>osc_leg_0_L_0_1  → first leg, left side, first DOF, extensor
+</code></pre></div>
+<h3 id="index-computation">Index Computation<a class="headerlink" href="#index-computation" title="Permanent link">&para;</a></h3>
+<p>From <code>convention.py</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">legosc2index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">leg_i</span><span class="p">,</span> <span class="n">side_i</span><span class="p">,</span> <span class="n">joint_i</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">leg_osc_indices</span><span class="p">(</span><span class="n">leg_i</span><span class="o">=</span><span class="n">leg_i</span><span class="p">,</span> <span class="n">side_i</span><span class="o">=</span><span class="n">side_i</span><span class="p">,</span> <span class="n">joint_i</span><span class="o">=</span><span class="n">joint_i</span><span class="p">)[</span><span class="n">side</span><span class="p">]</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">leg_osc_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="n">index</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">n_osc_body</span><span class="p">()</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>        <span class="o">+</span> <span class="n">leg_i</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_legs_dof</span> <span class="o">*</span> <span class="n">leg_opj</span>  <span class="c1"># 2 sides per leg pair</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>        <span class="o">+</span> <span class="n">side_i</span> <span class="o">*</span> <span class="n">n_legs_dof</span> <span class="o">*</span> <span class="n">leg_opj</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>        <span class="o">+</span> <span class="n">joint_i</span> <span class="o">*</span> <span class="n">leg_opj</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    <span class="p">)</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">index</span> <span class="o">+</span> <span class="n">leg_opj</span><span class="p">))</span>
+</code></pre></div>
+<hr />
+<h2 id="oscillator-connectivity-matrix">Oscillator Connectivity Matrix<a class="headerlink" href="#oscillator-connectivity-matrix" title="Permanent link">&para;</a></h2>
+<p>The <code>OscillatorConnectivity</code> class stores the coupling structure as a sparse <code>[N_connections, 3]</code> integer array:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[i, 0]</code></td>
+<td>Target oscillator index <code>i0</code></td>
+</tr>
+<tr>
+<td><code>[i, 1]</code></td>
+<td>Source oscillator index <code>i1</code></td>
+</tr>
+<tr>
+<td><code>[i, 2]</code></td>
+<td>Connection type (<code>OSC2OSC</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>With parallel arrays:
+- <code>weights[i]</code> → coupling strength <span class="arithmatex">\(w_{ji}\)</span>
+- <code>desired_phases[i]</code> → phase bias <span class="arithmatex">\(\Delta\varphi_{ji}\)</span></p>
+<p><strong>Construction from a list of dicts:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">connectivity</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="p">{</span><span class="s1">&#39;in&#39;</span><span class="p">:</span> <span class="s1">&#39;osc_body_0_L&#39;</span><span class="p">,</span> <span class="s1">&#39;out&#39;</span><span class="p">:</span> <span class="s1">&#39;osc_body_1_L&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;OSC2OSC&#39;</span><span class="p">,</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>     <span class="s1">&#39;weight&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="s1">&#39;phase_bias&#39;</span><span class="p">:</span> <span class="mf">0.628</span><span class="p">},</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="o">...</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="p">]</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="n">OscillatorConnectivity</span><span class="o">.</span><span class="n">from_connectivity</span><span class="p">(</span><span class="n">connectivity</span><span class="p">,</span> <span class="n">map1</span><span class="o">=</span><span class="n">osc_name2index</span><span class="p">,</span> <span class="n">map2</span><span class="o">=</span><span class="n">osc_name2index</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="networkode-integration-of-the-cpg"><code>NetworkODE</code>: Integration of the CPG<a class="headerlink" href="#networkode-integration-of-the-cpg" title="Permanent link">&para;</a></h2>
+<p>The <code>NetworkODE</code> class wraps the <code>ode_oscillators_sparse</code> kernel with a SciPy ODE solver:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">NetworkODE</span><span class="p">(</span><span class="n">AnimatNetwork</span><span class="p">):</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">integrator</span><span class="o">=</span><span class="s1">&#39;dopri5&#39;</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">max_step</span><span class="p">,</span> <span class="n">verbosity</span><span class="p">):</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">integrate</span><span class="o">.</span><span class="n">ode</span><span class="p">(</span><span class="n">ode_wrapper</span><span class="p">)</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">set_integrator</span><span class="p">(</span><span class="s1">&#39;dopri5&#39;</span><span class="p">,</span> <span class="n">nsteps</span><span class="o">=</span><span class="n">nsteps</span><span class="p">,</span> <span class="n">max_step</span><span class="o">=</span><span class="n">max_step</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="why-dopri5">Why <code>dopri5</code>?<a class="headerlink" href="#why-dopri5" title="Permanent link">&para;</a></h3>
+<p><code>dopri5</code> is the <strong>Dormand-Prince 4th/5th-order Runge-Kutta</strong> with adaptive step size. It is the same algorithm as MATLAB's <code>ode45</code>. It is chosen because:</p>
+<ol>
+<li><strong>Explicit method</strong> — works well for the non-stiff phase dynamics</li>
+<li><strong>Adaptive stepping</strong> — automatically handles the fast transients when drive changes abruptly</li>
+<li><strong>Embedded error estimate</strong> — 4th order result for stepping, 5th order for error estimation, giving efficient accuracy control</li>
+<li><strong>Low overhead</strong> — uses only 6 function evaluations per step (Butcher tableau with FSAL property)</li>
+</ol>
+<h3 id="integration-step-logic">Integration Step Logic<a class="headerlink" href="#integration-step-logic" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">timestep</span><span class="p">,</span> <span class="n">checks</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    <span class="k">if</span> <span class="n">iteration</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">copy_next_drive</span><span class="p">(</span><span class="n">iteration</span><span class="p">)</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>        <span class="k">return</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="k">if</span> <span class="n">iteration</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">modulo</span><span class="p">:</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>        <span class="c1"># Sub-step: copy previous state</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">iteration</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">iteration</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>        <span class="k">return</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>    <span class="c1"># Full integration step</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">set_f_params</span><span class="p">(</span><span class="n">dstate</span><span class="p">,</span> <span class="n">iteration</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>    <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">successful</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">t</span> <span class="o">&lt;</span> <span class="n">time</span> <span class="o">+</span> <span class="mf">0.99</span><span class="o">*</span><span class="n">timestep</span><span class="p">:</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">iteration</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span><span class="n">time</span> <span class="o">+</span> <span class="n">timestep</span><span class="p">)</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">successful</span><span class="p">():</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>        <span class="k">if</span> <span class="n">strict</span><span class="p">:</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a>            <span class="k">raise</span> <span class="n">IntegrationException</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">set_initial_value</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>  <span class="c1"># Reset solver</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a>    <span class="k">if</span> <span class="n">iteration</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_iterations</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">copy_next_drive</span><span class="p">(</span><span class="n">iteration</span><span class="p">)</span>
+</code></pre></div>
+<p>The <code>0.99*timestep</code> tolerance prevents the solver from stepping past the physics timestep boundary, which would invalidate the sensory feedback values read at <code>iteration</code>.</p>
+<hr />
+<h2 id="complete-connection-type-reference">Complete Connection Type Reference<a class="headerlink" href="#complete-connection-type-reference" title="Permanent link">&para;</a></h2>
+<p>All 19 connection types defined in <code>data_cy.pyx</code> and named in <code>CONNECTIONTYPENAMES</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Enum Value</th>
+<th>Name</th>
+<th>Effect</th>
+<th>Where Applied</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>OSC2OSC</code></td>
+<td>Phase coupling between oscillators</td>
+<td><code>ode_dphase</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>DRIVE2OSC</code></td>
+<td>Direct drive-to-oscillator mapping</td>
+<td>Data structure</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>POS2FREQ</code></td>
+<td>Joint position → frequency</td>
+<td><code>ode_stretch</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>VEL2FREQ</code></td>
+<td>Joint velocity → frequency</td>
+<td><code>ode_stretch</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>TOR2FREQ</code></td>
+<td>Joint torque → frequency</td>
+<td><code>ode_stretch</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>POS2AMP</code></td>
+<td>Joint position → amplitude</td>
+<td><code>ode_stretch</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>VEL2AMP</code></td>
+<td>Joint velocity → amplitude</td>
+<td><code>ode_stretch</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>TOR2AMP</code></td>
+<td>Joint torque → amplitude</td>
+<td><code>ode_stretch</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>STRETCH2FREQTEGOTAE</code></td>
+<td>Position × sin(φ) → frequency (Tegotae)</td>
+<td><code>ode_stretch</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>STRETCH2AMPTEGOTAE</code></td>
+<td>Position × sin(φ) → amplitude (Tegotae)</td>
+<td><code>ode_stretch</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>STRETCH2FREQ</code></td>
+<td>Position → frequency (linear)</td>
+<td><code>ode_stretch</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>STRETCH2AMP</code></td>
+<td>Position → amplitude (linear)</td>
+<td><code>ode_stretch</code></td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>REACTION2FREQ</code></td>
+<td>Contact force magnitude → frequency</td>
+<td><code>ode_contacts</code></td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>REACTION2AMP</code></td>
+<td>Contact force magnitude → amplitude</td>
+<td><code>ode_contacts</code></td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>REACTION2FREQTEGOTAE</code></td>
+<td>Contact × sin(φ) → frequency (Tegotae)</td>
+<td><code>ode_contacts</code></td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>FRICTION2FREQ</code></td>
+<td>Friction force → frequency</td>
+<td>(not yet in ode.pyx)</td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>FRICTION2AMP</code></td>
+<td>Friction force → amplitude</td>
+<td>(not yet in ode.pyx)</td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>LATERAL2FREQ</code></td>
+<td>Lateral xfrc magnitude → frequency</td>
+<td><code>ode_xfrc</code></td>
+</tr>
+<tr>
+<td>18</td>
+<td><code>LATERAL2AMP</code></td>
+<td>Lateral xfrc magnitude → amplitude</td>
+<td><code>ode_xfrc</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="class-reference">Class Reference<a class="headerlink" href="#class-reference" title="Permanent link">&para;</a></h2>
+<h3 id="oscillatornetworkstatecy"><code>OscillatorNetworkStateCy</code><a class="headerlink" href="#oscillatornetworkstatecy" title="Permanent link">&para;</a></h3>
+<p><strong>Source:</strong> <code>farms_amphibious/data/data_cy.pyx</code><br />
+<strong>Base:</strong> <code>DoubleArray2D</code></p>
+<p>Container for the time-history of the full CPG state.</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>array</code></td>
+<td><code>float64[n_iter, state_size]</code></td>
+<td>Full state history array</td>
+</tr>
+<tr>
+<td><code>n_oscillators</code></td>
+<td><code>int</code></td>
+<td>Number of oscillators (partitions the array)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>phases(iteration)</code></td>
+<td><code>float64[N_osc]</code></td>
+<td>Phase values at given iteration</td>
+</tr>
+<tr>
+<td><code>amplitudes(iteration)</code></td>
+<td><code>float64[N_osc]</code></td>
+<td>Amplitude values</td>
+</tr>
+<tr>
+<td><code>offsets(iteration)</code></td>
+<td><code>float64[N_joints]</code></td>
+<td>Joint offset values</td>
+</tr>
+<tr>
+<td><code>outputs(iteration)</code></td>
+<td><code>float64[N_osc]</code></td>
+<td>Neural outputs: <span class="arithmatex">\(r_i(1+\cos\varphi_i)\)</span></td>
+</tr>
+<tr>
+<td><code>phases_all()</code></td>
+<td><code>float64[n_iter, N_osc]</code></td>
+<td>All phase history</td>
+</tr>
+<tr>
+<td><code>amplitudes_all()</code></td>
+<td><code>float64[n_iter, N_osc]</code></td>
+<td>All amplitude history</td>
+</tr>
+<tr>
+<td><code>outputs_all()</code></td>
+<td><code>float64[n_iter, N_osc]</code></td>
+<td>All neural output history</td>
+</tr>
+</tbody>
+</table>
+<h3 id="oscillatornetworkstate"><code>OscillatorNetworkState</code><a class="headerlink" href="#oscillatornetworkstate" title="Permanent link">&para;</a></h3>
+<p><strong>Source:</strong> <code>farms_amphibious/data/network.py</code><br />
+<strong>Base:</strong> <code>OscillatorNetworkStateCy</code></p>
+<p>Python-level extension. Key factory:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nd">@classmethod</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">from_initial_state</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">initial_state</span><span class="p">,</span> <span class="n">n_iterations</span><span class="p">,</span> <span class="n">n_oscillators</span><span class="p">):</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">state_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">([</span><span class="n">n_iterations</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">initial_state</span><span class="p">)],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">float64</span><span class="p">)</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="n">state_array</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">initial_state</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">array</span><span class="o">=</span><span class="n">state_array</span><span class="p">,</span> <span class="n">n_oscillators</span><span class="o">=</span><span class="n">n_oscillators</span><span class="p">)</span>
+</code></pre></div>
+<p>The initial state comes from <code>AmphibiousOptions.state_init()</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">state_init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="k">return</span> <span class="p">(</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>        <span class="p">[</span><span class="n">osc</span><span class="o">.</span><span class="n">initial_phase</span> <span class="k">for</span> <span class="n">osc</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">oscillators</span><span class="p">]</span>     <span class="c1"># N_osc phases</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>        <span class="o">+</span> <span class="p">[</span><span class="n">osc</span><span class="o">.</span><span class="n">initial_amplitude</span> <span class="k">for</span> <span class="n">osc</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">oscillators</span><span class="p">]</span>  <span class="c1"># N_osc amplitudes</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>        <span class="o">+</span> <span class="p">[</span><span class="n">joint</span><span class="o">.</span><span class="n">initial</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">joint</span> <span class="ow">in</span> <span class="n">active_joints</span><span class="p">]</span>          <span class="c1"># N_joints offsets</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>    <span class="p">)</span>
+</code></pre></div>
+<h3 id="oscillators"><code>Oscillators</code><a class="headerlink" href="#oscillators" title="Permanent link">&para;</a></h3>
+<p><strong>Source:</strong> <code>farms_amphibious/data/network.py</code><br />
+<strong>Base:</strong> <code>OscillatorsCy</code></p>
+<p>Stores the per-oscillator parameters array.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>names</code></td>
+<td><code>list[str]</code></td>
+<td>Oscillator names (from convention)</td>
+</tr>
+<tr>
+<td><code>drive2osc_map</code></td>
+<td><code>IntegerArray1D[N_osc]</code></td>
+<td>Which drive index modulates each oscillator</td>
+</tr>
+<tr>
+<td><code>intrinsic_frequencies</code></td>
+<td><code>DriveDependentArray[N_osc, 6]</code></td>
+<td>Frequency vs drive curve</td>
+</tr>
+<tr>
+<td><code>nominal_amplitudes</code></td>
+<td><code>DriveDependentArray[N_osc, 6]</code></td>
+<td>Amplitude vs drive curve</td>
+</tr>
+<tr>
+<td><code>rates</code></td>
+<td><code>DoubleArray1D[N_osc]</code></td>
+<td>Amplitude convergence rates</td>
+</tr>
+<tr>
+<td><code>modular_phases</code></td>
+<td><code>DoubleArray1D[N_osc]</code></td>
+<td>Phase offset for modular frequency</td>
+</tr>
+<tr>
+<td><code>modular_amplitudes</code></td>
+<td><code>DoubleArray1D[N_osc]</code></td>
+<td>Depth of frequency modulation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="drivedependentarray"><code>DriveDependentArray</code><a class="headerlink" href="#drivedependentarray" title="Permanent link">&para;</a></h3>
+<p><strong>Source:</strong> <code>farms_amphibious/data/network.py</code><br />
+<strong>Base:</strong> <code>DriveDependentArrayCy</code></p>
+<p>Encodes piecewise-linear functions of the drive signal. The 6 parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Index</th>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>gain</code></td>
+<td>Slope of the linear mapping</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>bias</code></td>
+<td>Intercept of the linear mapping</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>low</code></td>
+<td>Drive below this → use saturation_low</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>high</code></td>
+<td>Drive above this → use saturation_high</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>saturation_low</code></td>
+<td>Value when drive &lt; low</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>saturation_high</code></td>
+<td>Value when drive &gt; high</td>
+</tr>
+</tbody>
+</table>
+<p>The effective formula is:</p>
+<div class="arithmatex">\[
+f(d) = \begin{cases}
+s_{lo} &amp; \text{if } d &lt; lo \\
+\text{clamp}(g \cdot d + b,\; s_{lo},\; s_{hi}) &amp; \text{if } lo \leq d \leq hi \\
+s_{hi} &amp; \text{if } d &gt; hi
+\end{cases}
+\]</div>
+<h3 id="oscillatorconnectivity"><code>OscillatorConnectivity</code><a class="headerlink" href="#oscillatorconnectivity" title="Permanent link">&para;</a></h3>
+<p><strong>Source:</strong> <code>farms_amphibious/data/network.py</code><br />
+<strong>Base:</strong> <code>OscillatorsConnectivityCy</code></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Shape</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>connections</code></td>
+<td><code>[N_conn, 3]</code></td>
+<td><code>[target, source, type]</code> integer array</td>
+</tr>
+<tr>
+<td><code>weights</code></td>
+<td><code>[N_conn]</code></td>
+<td>Coupling weights <span class="arithmatex">\(w_{ji}\)</span></td>
+</tr>
+<tr>
+<td><code>desired_phases</code></td>
+<td><code>[N_conn]</code></td>
+<td>Phase biases <span class="arithmatex">\(\Delta\varphi_{ji}\)</span> (radians)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="related-pages">Related Pages<a class="headerlink" href="#related-pages" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../ekeberg_muscle/">Ekeberg Muscle Model</a> — How CPG outputs drive joint torques</li>
+<li><a href="../joint_controllers/">Position Muscle &amp; Phase Controllers</a> — How phases map to position commands</li>
+<li><a href="../farms_amphibious_drive/">Descending Drive</a> — How drive signals are computed</li>
+<li><a href="../farms_amphibious_network/">NetworkODE</a> — Integration loop details</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "toc.integrate", "search.suggest", "search.highlight", "content.code.annotate", "navigation.indexes"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
