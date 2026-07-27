@@ -273,46 +273,82 @@ For the full interface contract including all 11 `TaskExtension` methods and the
 
 ### Implementing a Custom Controller
 
+Custom controllers inherit from `AnimatController` and must implement `from_options()`, `positions()`, and/or `torques()`. The Zbot project provides a complete, production-ready reference — `CustomCPGController` — that generates a travelling sine wave across body joints for anguilliform swimming.
+
 ```python
+# experiments/zbot_bout_glide/controller/zbot_controller_sine.py
+"""Custom CPG controller — travelling sine wave for Zbot swimming."""
+
 from farms_core.model.control import AnimatController, ControlType
 import numpy as np
 
-class SineController(AnimatController):
+
+class CustomCPGController(AnimatController):
+
+    def __init__(
+        self,
+        animat_i: int,
+        joints_names: tuple,
+        muscles_names: tuple,
+        max_torques: tuple,
+        frequency: float = 1.0,
+        amplitude: float = 0.4,
+        phase_lag: float = np.pi / 3,
+        substep: bool = True,
+    ):
+        super().__init__(animat_i, joints_names, muscles_names, max_torques, substep)
+        self.frequency = frequency      # Hz — undulation cycles per second
+        self.amplitude = amplitude      # rad — peak joint deflection
+        self.phase_lag = phase_lag      # rad — phase lag between adjacent joints
 
     @classmethod
     def from_options(cls, config, experiment_options, animat_i, animat_data, animat_options):
-        # Build the 7-tuple of joint name lists, one per ControlType
         all_joints = [m.joint_name for m in animat_options.control.motors]
-        joints_by_type = cls.joints_from_control_types(
+        joints_control_types = {
+            m.joint_name: ControlType.from_string_list(m.control_types)
+            for m in animat_options.control.motors
+        }
+        joints_names = cls.joints_from_control_types(
             joints_names=all_joints,
-            joints_control_types={
-                m.joint_name: ControlType.from_string_list(m.control_types)
-                for m in animat_options.control.motors
-            },
+            joints_control_types=joints_control_types,
         )
         max_torques = cls.max_torques_from_control_types(
             joints_names=all_joints,
             max_torques={m.joint_name: m.limits_torque[1] for m in animat_options.control.motors},
-            joints_control_types={
-                m.joint_name: ControlType.from_string_list(m.control_types)
-                for m in animat_options.control.motors
-            },
+            joints_control_types=joints_control_types,
         )
         return cls(
             animat_i=animat_i,
-            joints_names=joints_by_type,
+            joints_names=joints_names,
             muscles_names=[],
             max_torques=max_torques,
         )
 
-    def positions(self, iteration: int, time: float, timestep: float) -> dict:
-        return {
-            name: 0.5 * np.sin(2 * np.pi * time)
-            for name in self.joints_names[ControlType.POSITION]
-        }
+    def positions(self, iteration: int, time: float, timestep: float) -> dict[str, float]:
+        """Compute target joint positions for this control step."""
+        position_joints = self.joints_names[ControlType.POSITION]
+        commands = {}
+
+        for i, joint_name in enumerate(position_joints):
+            phase = 2.0 * np.pi * self.frequency * time - i * self.phase_lag
+            commands[joint_name] = self.amplitude * np.sin(phase)
+
+        return commands
 ```
 
-Register it in `animat_config.yaml` under `control.controller_loader`.
+Register it in `animat_config.yaml` under `control.controller_loader` and optionally pass parameters via the extension `config:` block:
+
+```yaml
+extensions:
+  - loader: zbot_controller_sine.CustomCPGController
+    config:
+      frequency: 1.0      # Hz
+      amplitude: 0.4      # rad
+      phase_lag: 1.0472   # rad (= π/3)
+```
+
+!!! tip "Parameter override"
+    In `from_options`, the `config` argument is the dict under this extension's `config:` key. Use `config.get("key", default)` to read YAML params with graceful fallbacks.
 
 ---
 
