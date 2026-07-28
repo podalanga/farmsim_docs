@@ -83,517 +83,86 @@ touch /app/experiments/zbot_swimming/my_cpg_controller.py
 Generates a travelling sine wave across all body joints to produce
 anguilliform swimming. Each joint has a progressive phase lag relative
 to the head to create a posterior-directed travelling wave.
-
-Zbot segmental CPG controller.
-Reference (C++) -> Python mapping
-----------------------------------
-zbot::CPG                  -> SegmentalCPG
-zbot::ExponentialFilter    -> ExponentialFilter
-zbot::LeakyIntegrator      -> LeakyIntegrator
-zbot::ControllerParameters -> ZbotCPGParameters
-zbot::Controller           -> ZbotCPGController
 """
 
-from enum import Enum, IntEnum
-
 import numpy as np
-
-from farms_core.options import Options
 from farms_core.model.control import AnimatController, ControlType
 
 
-# --------------------------------------------------------------------------
-# Enums
-# --------------------------------------------------------------------------
-
-class SwimmingMode(str, Enum):
-    """Swimming behaviour mode (zbot::SwimmingMode)"""
-    BOUT_AND_GLIDE = 'bout_and_glide'
-    CONTINUOUS = 'continuous'
-
-
-class Side(IntEnum):
-    """Left/right side of the body (zbot::Side)"""
-    LEFT = 0
-    RIGHT = 1
-    NONE = 2
-
-
-class ControllerState(IntEnum):
-    """Controller state (zbot::Controller::State)"""
-    SWIMMING = 0
-    GLIDING = 1
-
-
-# --------------------------------------------------------------------------
-# Parameters
-# --------------------------------------------------------------------------
-
-class ZbotCPGParameters(Options):
-    """Zbot CPG controller parameters (zbot::ControllerParameters)
-
-    Subclasses ``farms_core.options.Options``, so instances can be loaded
-    and saved as YAML the same way as any other FARMS options object
-    (``ZbotCPGParameters.load(path)`` / ``params.save(path)``).
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__()
-        self.n_segments: int = kwargs.pop('n_segments', 6)
-        self.swimming_mode = SwimmingMode(
-            kwargs.pop('swimming_mode', SwimmingMode.BOUT_AND_GLIDE)
-        )
-
-        # Leaky integrator (bout-onset trigger)
-        self.leaky_threshold: float = kwargs.pop('leaky_threshold', 100.0)
-        # Rate at which the leaky integrator accumulates during gliding,
-        # in [threshold-units / s]. Equivalent to the C++ per-tick
-        # `descendingInput` but expressed as a continuous rate so it does
-        # not depend on a fixed hardware control period.
-        self.descending_input_rate: float = kwargs.pop(
-            'descending_input_rate', 20,
-        )
-        #firing rate changed from 0.4 to 20 to make the trigger often ---> Joshua
-
-        # CPG amplitude envelope (bout gate)
-        self.cpg_initial_amplitude: float = kwargs.pop(
-            'cpg_initial_amplitude', 1.25,
-        )
-        self.cpg_decay_factor: float = kwargs.pop('cpg_decay_factor', 0.63)
-        self.cpg_integration_weight: float = kwargs.pop(
-            'cpg_integration_weight', 0.975,
-        )
-        self.cpg_gliding_amplitude_threshold: float = kwargs.pop(
-            'cpg_gliding_amplitude_threshold', 0.1,
-        )
-
-        # CPG oscillator network
-        self.cpg_frequency: float = kwargs.pop('cpg_frequency', 1.0)
-
-        # vSPN (turning drive envelope)
-        self.vspn_initial_amplitude: float = kwargs.pop(
-            'vspn_initial_amplitude', 1.25,
-        )
-        self.vspn_decay_factor: float = kwargs.pop('vspn_decay_factor', 0.63)
-        self.vspn_integration_weight: float = kwargs.pop(
-            'vspn_integration_weight', 0.95,
-        )
-
-        # Motor neurons (sigmoid layer)
-        self.motor_neuron_omega: float = kwargs.pop('motor_neuron_omega', 1.4)
-        self.motor_neuron_bias: float = kwargs.pop('motor_neuron_bias', 2.0)
-
-        # Motor outputs
-        self.tail_amplitude_ratio: float = kwargs.pop(
-            'tail_amplitude_ratio', 1.0,
-        )
-        self.motor_amplitude_biases: list = list(kwargs.pop(
-            'motor_amplitude_biases',
-            [0.203, 0.364, 0.481, 0.594, 0.696, 1.0],
-        ))
-        # Scaling carried over from the original OMR paper code (1.5*1.5)
-        self.motor_output_scaling: float = kwargs.pop(
-            'motor_output_scaling', 1.5*1.5,
-        )
-
-        if kwargs.pop('strict', True) and kwargs:
-            raise ValueError(f'Unknown ZbotCPGParameters keys: {list(kwargs)}')
-
-        assert len(self.motor_amplitude_biases) == self.n_segments, (
-            f'Expected {self.n_segments} motor_amplitude_biases '
-            f'(one per segment), got {len(self.motor_amplitude_biases)}'
-        )
-
-    @classmethod
-    def from_bout_timing(
-            cls,
-            bout_duration_s: float,
-            bout_interval_s: float,
-            tail_frequency: float,
-            tail_amplitude: float = 1.0,
-            **kwargs,
-    ) -> 'ZbotCPGParameters':
-        """Build parameters from high-level bout-and-glide timing.
-
-        Mirrors zbot::ControllerParametersBuilder's
-        setBoutDuration/setBoutInterval/setTailBeatingFrequency/
-        setTailBeatingAmplitude convenience setters.
-        """
-        kwargs.setdefault('swimming_mode', SwimmingMode.BOUT_AND_GLIDE)
-        params = cls(**kwargs)
-        params.cpg_frequency = tail_frequency
-        params.tail_amplitude_ratio = tail_amplitude
-        params.cpg_decay_factor = (
-            params.cpg_gliding_amplitude_threshold ** (1.0/bout_duration_s)
-        )
-        params.descending_input_rate = params.leaky_threshold/bout_interval_s
-        return params
-
-
-# --------------------------------------------------------------------------
-# Stateful building blocks
-# --------------------------------------------------------------------------
-
-class ExponentialFilter:
-    """First-order IIR low-pass filter driven by a decaying exponential
-    (zbot::ExponentialFilter)"""
-
-    def __init__(self, initial_value: float, decay_factor: float, beta: float):
-        self.initial_value = initial_value
-        self.decay_factor = decay_factor
-        self.beta = beta
-        self.time: float = 0.0
-        self.value: float = 0.0
-        self.exponential_value: float = 0.0
-        self.reset()
-
-    def reset(self):
-        """Reset filter state (zbot::ExponentialFilter::reset)"""
-        self.time = 0.0
-        self.value = 0.0
-        self.exponential_value = self.initial_value
-
-    def step(self, timestep: float):
-        """Advance the filter by one control step
-        (zbot::ExponentialFilter::update)"""
-        self.time += timestep
-        self.exponential_value = (
-            self.initial_value*self.decay_factor**self.time
-        )
-        self.value = (
-            self.beta*self.value
-            + (1 - self.beta)*self.exponential_value
-        )
-
-
-class LeakyIntegrator:
-    """Accumulates a drive until a threshold is reached
-    (zbot::LeakyIntegrator)"""
-
-    def __init__(self, threshold: float):
-        self.threshold = threshold
-        self.value: float = 0.0
-
-    def reset(self):
-        """Reset integrator state (zbot::LeakyIntegrator::reset)"""
-        self.value = 0.0
-
-    def step(self, drive: float):
-        """Accumulate drive (zbot::LeakyIntegrator::update)"""
-        self.value += drive
-
-    @property
-    def activated(self) -> bool:
-        """Whether the integrator has crossed its threshold
-        (zbot::LeakyIntegrator::isActivated)"""
-        return self.value >= self.threshold
-
-
-class SegmentalCPG:
-    """Segmental phase-oscillator network (zbot::CPG)
-
-    ``2*n_segments`` oscillators (one left/right pair per body segment),
-    all sharing the same intrinsic frequency, with a fixed rostrocaudal
-    phase lag and left/right antiphase baked into the reset state (the
-    couplings are structural, not integrated).
-    """
-
-    #: Rostrocaudal phase lag between consecutive segments [rad]
-    SEGMENT_PHASE_LAG = 1.2*np.pi/6
-    #: Left/right antiphase [rad]
-    CONTRALATERAL_PHASE_LAG = np.pi
-
-    def __init__(self, n_segments: int, frequency: float):
-        self.n_segments = n_segments
-        self.n_oscillators = 2*n_segments
-        self.frequency = frequency
-        self.phases = np.zeros(self.n_oscillators)
-        self.outputs = np.zeros(self.n_oscillators)
-        self.reset()
-
-    @staticmethod
-    def index(segment: int, side: Side) -> int:
-        """Flat oscillator index for a given (segment, side)
-        (zbot::CPG::getIndex)"""
-        return 2*segment + int(side)
-
-    def reset(self):
-        """Reset phases to their structural (hard-coded) couplings and
-        recompute outputs (zbot::CPG::reset)"""
-        segments = np.arange(self.n_segments)
-        left = self.index(segments, Side.LEFT)
-        right = self.index(segments, Side.RIGHT)
-        self.phases[left] = -segments*self.SEGMENT_PHASE_LAG
-        self.phases[right] = (
-            -segments*self.SEGMENT_PHASE_LAG + self.CONTRALATERAL_PHASE_LAG
-        )
-        self._update_outputs()
-
-    def step(self, timestep: float):
-        """Integrate oscillator phases by one control step
-        (zbot::CPG::update)"""
-        dtheta = 2*np.pi*self.frequency
-        self.phases = np.mod(self.phases + dtheta*timestep, 2*np.pi)
-        self._update_outputs()
-
-    def _update_outputs(self):
-        # Keep outputs in [0, 2] range, as in the reference implementation
-        self.outputs[:] = np.sin(self.phases) + 1.0
-
-    def phase(self, segment: int, side: Side) -> float:
-        """Oscillator phase for a given (segment, side)
-        (zbot::CPG::getPhase)"""
-        return self.phases[self.index(segment, side)]
-
-    def output(self, segment: int, side: Side) -> float:
-        """Oscillator output for a given (segment, side)
-        (zbot::CPG::getOutput)"""
-        return self.outputs[self.index(segment, side)]
-
-
-# --------------------------------------------------------------------------
-# Controller
-# --------------------------------------------------------------------------
-
-class ZbotCPGController(AnimatController):
-    """Zbot segmental CPG controller (zbot::Controller)
-
-    Drives one position-controlled joint per body segment. Internal
-    dynamics (CPG phases, bout gate, vSPN, leaky integrator) are advanced
-    once per control step in ``before_step``; ``positions`` only exposes
-    the resulting joint targets - the same split used by
-    ``farms_amphibious.control.amphibious.AmphibiousController``
-    (``before_step`` steps the network, ``positions_network`` reads it).
-    """
+class ZbotSineCPG(AnimatController):
+    """Open-loop CPG: travelling sine wave over all body joints."""
 
     def __init__(
-            self,
-            animat_i: int,
-            joints_names: tuple,
-            muscles_names: tuple,
-            max_torques: tuple,
-            params: ZbotCPGParameters,
-            substep: bool = True,
+        self,
+        animat_i: int,
+        joints_names: tuple,
+        muscles_names: tuple,
+        max_torques: tuple,
+        frequency: float = 1.0,
+        amplitude: float = 0.4,
+        phase_lag: float = np.pi / 3,
+        substep: bool = True,
     ):
-        super().__init__(
-            animat_i=animat_i,
-            joints_names=joints_names,
-            muscles_names=muscles_names,
-            max_torques=max_torques,
-            substep=substep,
-        )
-        position_joints = self.joints_names[ControlType.POSITION]
-        assert len(position_joints) == params.n_segments, (
-            f'Expected {params.n_segments} position-controlled joints '
-            f'(one per body segment), got {len(position_joints)}: '
-            f'{position_joints}'
-        )
+        super().__init__(animat_i, joints_names, muscles_names, max_torques, substep)
 
-        self.params = params
-        self.cpg = SegmentalCPG(params.n_segments, params.cpg_frequency)
-        self.leaky_integrator = LeakyIntegrator(params.leaky_threshold)
-        self.bout_gate = ExponentialFilter(
-            initial_value=params.cpg_initial_amplitude,
-            decay_factor=params.cpg_decay_factor,
-            beta=params.cpg_integration_weight,
-        )
-        self.vspn = ExponentialFilter(
-            initial_value=params.vspn_initial_amplitude,
-            decay_factor=params.vspn_decay_factor,
-            beta=params.vspn_integration_weight,
-        )
-
-        self.state = ControllerState.SWIMMING
-        self.turning_side = Side.NONE
-        self.motor_neurons = np.zeros(2*params.n_segments)
-        self.motor_outputs = np.zeros(params.n_segments)
+        # --- CPG parameters ---
+        self.frequency = frequency      # Hz  — undulation cycles per second
+        self.amplitude = amplitude      # rad — peak joint deflection
+        self.phase_lag = phase_lag      # rad — phase lag between adjacent joints
+        #   π/3 (60°) → 6 joints span 360° → one full wavelength along the body
 
     @classmethod
-    def from_options(
-            cls,
-            config: dict,
-            experiment_options,
-            animat_i: int,
-            animat_data,
-            animat_options,
-    ):
-        """Build the controller from the animat's extension config.
-
-        ``config`` is the dict under this extension's ``config:`` key in
-        the animat YAML, e.g.::
-
-            extensions:
-              - loader: zbot_controller.ZbotCPGController
-                config:
-                  bout_duration_s: 5.0
-                  bout_interval_s: 5.0
-                  tail_frequency: 1.0
-                  tail_amplitude: 1.0
-
-        Joint names, control types and torque limits are pulled from
-        ``animat_options.control.motors`` via the base
-        ``AnimatController`` helpers - not reimplemented here.
+    def from_options(cls, config, experiment_options, animat_i, animat_data, animat_options):
         """
-        del experiment_options, animat_data  # No sensory feedback in this model
+        Factory method called by farms_sim at experiment setup.
 
-        motors = animat_options.control.motors
-        all_joints = [motor.joint_name for motor in motors]
-        joints_control_types = {
-            motor.joint_name: ControlType.from_string_list(motor.control_types)
-            for motor in motors
-        }
-        joints_names = cls.joints_from_control_types(
-            joints_names=all_joints,
-            joints_control_types=joints_control_types,
-        )
-        max_torques = cls.max_torques_from_control_types(
-            joints_names=all_joints,
-            max_torques={
-                motor.joint_name: motor.limits_torque[1]
-                for motor in motors
-            },
-            joints_control_types=joints_control_types,
-        )
-
-        config = dict(config)
-        params = (
-            ZbotCPGParameters.from_bout_timing(
-                bout_duration_s=config.pop('bout_duration_s'),
-                bout_interval_s=config.pop('bout_interval_s'),
-                tail_frequency=config.pop('tail_frequency'),
-                tail_amplitude=config.pop('tail_amplitude', 1.0),
-                **config,
-            )
-            if 'bout_duration_s' in config
-            else ZbotCPGParameters(**config)
-        )
-
+        Parameters
+        ----------
+        config : dict
+            Contents of the `config:` field under the controller's extension entry.
+            Use this to pass tunable parameters from YAML without hardcoding them.
+        experiment_options : ExperimentOptions
+            Global experiment settings (timestep, etc.).
+        animat_i : int
+            Index of this animat in a multi-robot experiment.
+        animat_data : AmphibiousData
+            Data container holding pre-allocated sensor arrays and joint metadata.
+        animat_options : AmphibiousOptions
+            Full animat configuration loaded from animat_config.yaml.
+        """
         return cls(
             animat_i=animat_i,
-            joints_names=joints_names,
-            muscles_names=(),
-            max_torques=max_torques,
-            params=params,
+            joints_names=animat_data.joints.names,
+            muscles_names=animat_data.muscles.names if animat_data.muscles else (),
+            max_torques=animat_data.joints.max_torques,
+            # Read tunable params from config dict (with defaults)
+            frequency=config.get("frequency", 1.0),
+            amplitude=config.get("amplitude", 0.4),
+            phase_lag=config.get("phase_lag", np.pi / 3),
+            substep=True,
         )
 
-    def set_turning_side(self, side: Side):
-        """Bias the network to turn left/right (Side.NONE to swim straight)
-        (zbot::Controller::setTurningSide)"""
-        self.turning_side = side
-
-    def initialize_episode(self, task, physics):
-        """Reset all stateful components at the start of an episode"""
-        del task, physics
-        self.cpg.reset()
-        self.leaky_integrator.reset()
-        self.bout_gate.reset()
-        self.vspn.reset()
-        self.state = ControllerState.SWIMMING
-        self.motor_neurons[:] = 0.0
-        self.motor_outputs[:] = 0.0
-
-    def before_step(self, task, action, physics):
-        """Advance the network's internal dynamics by one control step"""
-        del action
-        timestep = physics.timestep()/task.units.seconds
-        self.step(timestep)
-
-    def step(self, timestep: float):
-        """Advance CPG/bout-gate/vSPN dynamics and compute motor outputs
-        (zbot::Controller::update)"""
-        if self.state == ControllerState.GLIDING:
-            self._gliding_step(timestep)
-        else:
-            self._swimming_step(timestep)
-        self._update_motor_neurons()
-        self._update_motor_outputs()
-
-    def _gliding_step(self, timestep: float):
-        """zbot::Controller::glidingUpdate"""
-        self.leaky_integrator.step(self.params.descending_input_rate*timestep)
-        if self.leaky_integrator.activated:
-            self.state = ControllerState.SWIMMING
-            self.leaky_integrator.reset()
-
-    def _swimming_step(self, timestep: float):
-        """zbot::Controller::swimmingUpdate"""
-        if self.params.swimming_mode == SwimmingMode.BOUT_AND_GLIDE:
-            self.bout_gate.step(timestep)
-            self.vspn.step(timestep)
-        self.cpg.step(timestep)
-
-        threshold = (
-            self.params.cpg_gliding_amplitude_threshold
-            *self.params.cpg_initial_amplitude
-        )
-        if self.bout_gate.exponential_value < threshold:
-            self.state = ControllerState.GLIDING
-            self.bout_gate.reset()
-            self.vspn.reset()
-            self.cpg.reset()
-
-    def _cpg_amplitude(self) -> float:
-        """zbot::Controller::getCPGAmplitude"""
-        if self.params.swimming_mode == SwimmingMode.CONTINUOUS:
-            return self.params.cpg_initial_amplitude
-        if self.state == ControllerState.GLIDING:
-            return 0.0
-        return self.bout_gate.value
-
-    def _vspn_amplitude(self) -> float:
-        """zbot::Controller::getVSPNAmplitude"""
-        if self.params.swimming_mode == SwimmingMode.CONTINUOUS:
-            return 0.0
-        if self.state == ControllerState.GLIDING:
-            return 0.0
-        if self.turning_side == Side.NONE:
-            return 0.0
-        return self.vspn.value
-
-    def _update_motor_neurons(self):
-        """Sigmoid motor-neuron layer (zbot::Controller::update)"""
-        amplitude_cpg = self._cpg_amplitude()
-        amplitude_vspn = self._vspn_amplitude()
-        omega = self.params.motor_neuron_omega
-        bias = self.params.motor_neuron_bias
-        for i in range(self.motor_neurons.size):
-            output_cpg = amplitude_cpg*self.cpg.outputs[i]
-            output_vspn = amplitude_vspn if i % 2 != self.turning_side else 0.0
-            self.motor_neurons[i] = 1.0/(1.0 + np.exp(
-                -omega*(output_cpg + output_vspn - bias)
-            ))
-
-    def _update_motor_outputs(self):
-        """Left/right neuron combination into per-segment motor commands
-        (zbot::Controller::update)"""
-        left = self.motor_neurons[0::2]
-        right = self.motor_neurons[1::2]
-        self.motor_outputs = (
-            self.params.tail_amplitude_ratio
-            *np.asarray(self.params.motor_amplitude_biases)
-            *(left - right)
-            *self.params.motor_output_scaling
-        )
-
-    def positions(
-            self,
-            iteration: int,
-            time: float,
-            timestep: float,
-    ) -> dict:
-        """Return this step's joint position targets [rad].
-
-        Values are computed once per step in ``before_step`` -> ``step``;
-        this only exposes them, so calling it multiple times per step is
-        safe and side-effect free.
+    def positions(self, iteration: int, time: float, timestep: float) -> dict:
         """
-        del iteration, time, timestep
-        return dict(zip(
-            self.joints_names[ControlType.POSITION],
-            self.motor_outputs,
-        ))
+        Compute target joint positions for this control step.
 
+        Called every cb_sub_steps (2× per MuJoCo env.step() at default settings).
+        Returns a dict mapping each position-controlled joint name → angle in rad.
+        """
+        position_joints = self.joints_names[ControlType.POSITION]
+        commands = {}
 
+        for i, joint_name in enumerate(position_joints):
+            # θ_i = 2π·f·t - i·Δφ
+            # The minus sign propagates the wave from head (i=0) toward tail (i=5)
+            phase = 2.0 * np.pi * self.frequency * time - i * self.phase_lag
+            commands[joint_name] = self.amplitude * np.sin(phase)
+
+        return commands
+
+    def torques(self, iteration: int, time: float, timestep: float) -> dict:
+        """No torque-controlled joints — return empty."""
+        return {}
 ```
 
 ---
