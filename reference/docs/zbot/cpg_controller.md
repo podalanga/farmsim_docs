@@ -175,7 +175,7 @@ class ZbotSineCPG(AnimatController):
 
 ## Step 3 — Wire the Controller to the Experiment
 
-### 3a — Update `animat_config.yaml`
+### Update `animat_config.yaml`
 
 Change `controller_loader` to point to your new class:
 
@@ -210,7 +210,7 @@ control:
     `position_muscle` requires the Ekeberg muscle model to be active. For a raw sine CPG,
     use `equation: position` so the value from `positions()` is used directly as the PD servo setpoint.
 
-### 3b — Also update `experiment_config.yaml` loaders
+### Also update `experiment_config.yaml` loaders
 
 Since you removed the `network:` section, you can switch from `AmphibiousOptions` to the simpler base class — **but only if you removed the network section entirely**. If you keep any `network:` YAML, keep `AmphibiousOptions`.
 
@@ -227,7 +227,7 @@ loaders:
     - farms_amphibious.data.data.AmphibiousData
 ```
 
-### 3c — Run
+### Run
 
 ```bash
 cd /app/experiments/zbot_swimming

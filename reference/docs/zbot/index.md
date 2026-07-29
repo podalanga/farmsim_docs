@@ -80,7 +80,7 @@ Go here if your CPG behaviour does not match expectations. It has the actual pha
 
 ## Quick-Start
 
-### 1 — Enter the container and run the default experiment
+### Enter the container and run the default experiment
 
 ```bash
 docker exec -it farms_zbot bash
@@ -90,13 +90,13 @@ farmsim --experiment_config experiment_config.yaml
 
 The MuJoCo viewer opens automatically. Press **Space** to pause/unpause.
 
-### 2 — Run headless (no viewer)
+### Run headless (no viewer)
 
 ```bash
 farmsim --experiment_config experiment_config.yaml --headless
 ```
 
-### 3 — Analyse results
+### Analyse results
 
 ```bash
 python analysis.py

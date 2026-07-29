@@ -185,7 +185,7 @@ This allows the limb equilibrium angle to ramp smoothly between walking and swim
 
 The FARMS CPG supports **four sensory feedback pathways** that modulate the oscillator dynamics. These add to the `dstate` buffer computed above.
 
-### 1. Stretch Receptor Feedback: `ode_stretch`
+### Stretch Receptor Feedback: `ode_stretch`
 
 Proprioceptive feedback from joint position sensors. Two sub-types:
 
@@ -224,7 +224,7 @@ elif connection_type == ConnectionType.STRETCH2FREQ:
     )
 ```
 
-### 2. Contact Reaction Feedback: `ode_contacts`
+### Contact Reaction Feedback: `ode_contacts`
 
 Ground reaction forces modulate oscillator frequency:
 
@@ -260,7 +260,7 @@ elif connection_type == ConnectionType.REACTION2FREQTEGOTAE:
     )
 ```
 
-### 3. External Force (Xfrc) Feedback: `ode_xfrc`
+### External Force (Xfrc) Feedback: `ode_xfrc`
 
 Lateral hydrodynamic forces (from `xfrc_applied` in MuJoCo) modulate oscillators:
 

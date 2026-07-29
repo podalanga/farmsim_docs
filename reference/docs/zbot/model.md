@@ -105,7 +105,7 @@ All six body segments share identical inertia and drag properties.
 | Drag coefficients (trans.) | **`[-10.0, -10.0, -0.1]`** N·s/m |
 | Drag coefficients (rot.) | `[0, 0, 0]` |
 
-!!! important "Why the tail has higher drag"
+!!! important "Why The Tail Has Higher Drag"
     The tail magnitude `-10.0` is **2.5× larger** than the body segments. This generates greater reactive thrust when the tail undulates — mimicking the caudal-fin propulsion of real anguilliform swimmers. Increasing this value amplifies thrust; reducing it weakens it.
 
 ---
@@ -116,12 +116,12 @@ All six revolute joints are **position-controlled** via a PD servo defined in `a
 
 | Joint | Connects | Axis | Initial pos | Torque limits |
 |-------|----------|------|-------------|---------------|
-| `joint_1` | Head → Segment1 | Y | 0 rad | ±10 Nm |
-| `joint_2` | Segment1 → Segment2 | Y | 0 rad | ±10 Nm |
-| `joint_3` | Segment2 → Segment3 | Y | 0 rad | ±10 Nm |
-| `joint_4` | Segment3 → Segment4 | Y | 0 rad | ±10 Nm |
-| `joint_5` | Segment4 → Segment5 | Y | 0 rad | ±10 Nm |
-| `joint_6` | Segment5 → Segment6 | Y | 0 rad | ±10 Nm |
+| `joint_1` | Head → Segment1 | Y | 0 rad | ±10 N·m |
+| `joint_2` | Segment1 → Segment2 | Y | 0 rad | ±10 N·m |
+| `joint_3` | Segment2 → Segment3 | Y | 0 rad | ±10 N·m |
+| `joint_4` | Segment3 → Segment4 | Y | 0 rad | ±10 N·m |
+| `joint_5` | Segment4 → Segment5 | Y | 0 rad | ±10 N·m |
+| `joint_6` | Segment5 → Segment6 | Y | 0 rad | ±10 N·m |
 
 Joint properties in `animat_config.yaml`:
 

@@ -27,7 +27,7 @@ This document enumerates the tunable parameters (Options classes) across the FAR
 | `initial` | - | rad, rad/s | Simulator init | Initial pos and vel state |
 | `limits` | - | rad | Simulator limits | Range of motion limits |
 | `stiffness` | - | Nm/rad | Physics Engine | Joint spring stiffness |
-| `damping` | - | Nms/rad | Physics Engine | Joint friction/damping |
+| `damping` | - | N·m·s/rad | Physics Engine | Joint friction/damping |
 | `springref` | - | rad | Physics Engine | Spring equilibrium position |
 
 ### `SpawnOptions`
@@ -43,7 +43,7 @@ This document enumerates the tunable parameters (Options classes) across the FAR
 |------|---------|---------|-------------|-------------------|
 | `joint_name` | - | - | Controller | Target joint to actuate |
 | `control_types` | - | - | Controller | Actuation mode (position/torque) |
-| `limits_torque` | - | Nm | Controller | Max/min torque allowed |
+| `limits_torque` | - | N·m | Controller | Max/min torque allowed |
 | `gains` | - | - | Controller | Kp, Kd for PID position control |
 
 ### `SensorsOptions`
@@ -131,5 +131,5 @@ This document enumerates the tunable parameters (Options classes) across the FAR
 |------|---------|---------|-------------|-------------------|
 | `motor_gains` | 0 | - | MotorOptions | Set Kp/Kd for all motors |
 | `leg_turn_gain`| 0 | - | Controller | Modifies leg stroke amplitude |
-| `max_torques` | inf | Nm | MotorOptions | Sets actuator limits |
+| `max_torques` | inf | N·m | MotorOptions | Sets actuator limits |
 | `equations` | phase/pos | - | Controller | Actuation control law |

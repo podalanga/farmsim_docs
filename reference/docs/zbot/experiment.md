@@ -218,8 +218,8 @@ ground_height: -1       # Z-coordinate of the ground plane (m)
 |-------|-------|--------|
 | `height: 0` | Water surface at z=0 | Robot spawned at z=0.01 is immediately submerged |
 | `velocity: [0,0,0]` | Still water | No current; all relative velocity is robot motion |
-| `viscosity: 1.0` | Used as drag multiplier `μ` | `F_drag = C_d × μ × v|v|` |
-| `density: 1000.0` | Fresh water | Used for buoyancy: `F_buoy ∝ m × g / ρ_link` |
+| `viscosity: 1.0` | Used as drag multiplier `μ` | `$F_{\text{drag}} = C_d \cdot \mu \cdot v|v|$` |
+| `density: 1000.0` | Fresh water | Used for buoyancy: `$F_{\text{buoy}} \propto m \cdot g / \rho_{\text{link}}$` |
 
 !!! tip "Adding a Water Current"
     Set `velocity: [0.2, 0, 0]` to add a 0.2 m/s current along X. The `SwimmingExtension` computes drag from **relative** velocity `v_link − v_water`, so the robot will need to swim against the current to stay in place.
@@ -230,7 +230,7 @@ ground_height: -1       # Z-coordinate of the ground plane (m)
 
 This is the largest and most important file. It is split into four logical sections: **spawn**, **morphology**, **control**, and **extensions**.
 
-### 1. Spawn
+### Spawn
 
 ```yaml
 sdf: ../../models/zbot/sdf/zbot.sdf
@@ -242,7 +242,7 @@ spawn:
 
 The pose `[x, y, z, roll, pitch, yaw]` uses **radians**. See [Zbot Model → Spawn Pose](model.md#spawn-pose) for a full explanation of why these angles orient the robot correctly.
 
-### 2. Morphology
+### Morphology
 
 ```yaml
 morphology:
@@ -277,7 +277,7 @@ morphology:
   n_joints_passive: 0
 ```
 
-### 3. Control — Sensors, Motors, and CPG Network
+### Control — Sensors, Motors, and CPG Network
 
 #### Sensors
 
@@ -305,7 +305,7 @@ Each joint has a `motor` entry specifying how torque is computed. For the Zbot, 
 motors:
   - joint_name: joint_1
     control_types: [position]    # Joint is position-controlled
-    limits_torque: [-10.0, 10.0] # Clamp output torque to ±10 Nm
+    limits_torque: [-10.0, 10.0] # Clamp output torque to ±10 N·m
     gains: [3.0, 0.01, 0]        # [Kp, Kd, Ki] for PD servo
     equation: position_muscle    # CPG drives a Ekeberg muscle that outputs a target position
     transform:
@@ -451,7 +451,7 @@ $$
 
 See [Mathematical Models](../mathematical_models.md) for the full derivation.
 
-### 4. Animat-Level Extensions
+### Animat-Level Extensions
 
 ```yaml
 extensions:
@@ -491,18 +491,18 @@ joints = data.animats[0].sensors.joints
 # Available sensor channels (via sensor convention sc):
 joints_pos     = joints.array[:, :, sc.joint_position]      # rad
 joints_vel     = joints.array[:, :, sc.joint_velocity]      # rad/s
-joints_trq_cmd = joints.array[:, :, sc.joint_cmd_torque]    # Nm (commanded)
-joints_trq_act = joints.array[:, :, sc.joint_torque_active] # Nm (active component)
-joints_trq_stf = joints.array[:, :, sc.joint_torque_stiffness] # Nm (stiffness)
-joints_trq_dmp = joints.array[:, :, sc.joint_torque_damping]   # Nm (damping)
-joints_trq_frc = joints.array[:, :, sc.joint_torque_friction]  # Nm (friction)
+joints_trq_cmd = joints.array[:, :, sc.joint_cmd_torque]    # N·m (commanded)
+joints_trq_act = joints.array[:, :, sc.joint_torque_active] # N·m (active component)
+joints_trq_stf = joints.array[:, :, sc.joint_torque_stiffness] # N·m (stiffness)
+joints_trq_dmp = joints.array[:, :, sc.joint_torque_damping]   # N·m (damping)
+joints_trq_frc = joints.array[:, :, sc.joint_torque_friction]  # N·m (friction)
 ```
 
 | Plot | X-axis | Y-axis |
 |------|--------|--------|
 | Joint positions vs time | Time (s) | Position (rad) |
 | Joint velocities vs time | Time (s) | Velocity (rad/s) |
-| Torque commands vs time | Time (s) | Torque Nm |
+| Torque commands vs time | Time (s) | Torque N·m |
 | Phase portrait (pos-vel) | Position (rad) | Velocity (rad/s) |
 | Torque components | Position (rad) | Active/stiffness/damping torques |
 

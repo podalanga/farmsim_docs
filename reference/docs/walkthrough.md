@@ -52,7 +52,7 @@ When `initialize_episode()` is called:
 
 The `run()` method in `farms_mujoco`'s `Simulation` is a `while` loop that iterates until the target time is reached. Within this loop, the system calls `dm_control`'s `env.step()`, which in turn triggers:
 
-### 4.1. Pre-Step (Sensor reading and Extension calculations)
+### Pre-Step (Sensor reading and Extension calculations)
 **Relevant File:** `farms_mujoco/farms_mujoco/simulation/task.py` (see `before_step`)
 
 1. **Update Sensors:** `update_sensors()` copies the current physical state (`physics.data.qpos`, `xpos`, etc.) into the `AnimatData.sensors` structures using the maps we built during initialization.
@@ -62,10 +62,10 @@ The `run()` method in `farms_mujoco`'s `Simulation` is a `while` loop that itera
 
 *(Danger Zone: The order these extensions run is derived from the YAML config. If the swimming extension ran before the controller updated the joints, it would calculate hydrodynamics using the old joint states!)*
 
-### 4.2. Physics Step
+### Physics Step
 MuJoCo takes the populated `physics.data.ctrl` and `physics.data.xfrc_applied` arrays, solves the contact constraints, and performs a numerical integration step forward in time.
 
-### 4.3. Post-Step
+### Post-Step
 The Task's `after_step()` is called. Extensions can perform cleanup, logging, or reward calculation here.
 
 ## 5. Output and Post-Processing

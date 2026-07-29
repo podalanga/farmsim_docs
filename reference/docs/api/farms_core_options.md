@@ -83,7 +83,7 @@ Describes the morphological overrides for rigid bodies and joints.
 | `initial` | list[float] | - | Initial state `[position (rad), velocity (rad/s)]` |
 | `limits` | list[list[float]] | - | Range of motion limits in rad |
 | `stiffness` | float | - | Joint spring stiffness in Nm/rad |
-| `damping` | float | - | Joint friction/damping in Nms/rad |
+| `damping` | float | - | Joint friction/damping in N·m·s/rad |
 | `springref` | float | - | Spring equilibrium position in rad |
 
 ---
@@ -135,7 +135,7 @@ Defines how the animat thinks and acts.
 |------|------|---------|-------------|
 | `joint_name` | str | - | Target joint identifier |
 | `control_types` | list[str] | - | Actuation modes (e.g., POSITION, TORQUE) |
-| `limits_torque` | list[float] | - | Torque limits `[min, max]` in Nm |
+| `limits_torque` | list[float] | - | Torque limits `[min, max]` in N·m |
 | `gains` | list[float] | - | Kp/Kd gains |
 | `equation` | str | - | Actuation control law |
 
