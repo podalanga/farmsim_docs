@@ -107,7 +107,8 @@ Calls `setup_mjcf_xml(experiment_options, ...)` to generate the MJCF, then const
 
 **Key keyword arguments for `from_experiment`**:
 
-| Keyword | Type | Default | Description |
+| Name | Type | Default | Description |
+
 |---------|------|---------|-------------|
 | `save_mjcf` | `bool` | `False` | Write generated MJCF XML to disk |
 | `handle_exceptions` | `bool` | `False` | Catch `PhysicsError` without re-raising |
@@ -175,7 +176,7 @@ class MyExtension(TaskExtension):
 
 ## Hydrodynamics
 
-For aquatic and amphibious robots, `farms_mujoco.swimming` implements a phenomenological drag model in Cython (`swimming/drag.pyx`). See [Hydrodynamic Swimming](api/farms_mujoco_swimming.md) for the full reference.
+For aquatic and amphibious robots, `farms_mujoco.swimming` implements a phenomenological drag model in Cython (`swimming/drag.pyx`). See [Hydrodynamic Swimming](../api/farms_mujoco_swimming.md) for the full reference.
 
 ### Registering the Swimming Extension
 
@@ -214,7 +215,7 @@ Zbot links use `density: 950.0` — slightly less than water, so the robot is na
 
 ### Coordinate Frame for Drag Forces
 
-Drag forces are computed in the **URDF/link-local frame** (using the link's relative velocity rotated into its own coordinate system), then rotated to the **world frame** using the quaternion sandwich product before being written to `physics.data.xfrc_applied`. This is the same rotation operation documented in the [Mathematical Models](mathematical_models.md) coordinate transforms section.
+Drag forces are computed in the **URDF/link-local frame** (using the link's relative velocity rotated into its own coordinate system), then rotated to the **world frame** using the quaternion sandwich product before being written to `physics.data.xfrc_applied`. This is the same rotation operation documented in the [Mathematical Models](./mathematical_models.md) coordinate transforms section.
 
 **Implemented forces** (per body link):
 - Translational drag: quadratic in link velocity, anisotropic per-axis coefficients
@@ -304,9 +305,9 @@ class ThrusterExtension(TaskExtension):
 
 ## See Also
 
-- [ExperimentTask & visual extensions](api/farms_mujoco_simulation.md)
-- [Hydrodynamic swimming model](api/farms_mujoco_swimming.md)
-- [TaskExtension base class](api/farms_core_control.md)
-- [System architecture & execution loop](architecture.md)
-- [Mathematical Models — Coordinate Transforms](mathematical_models.md)
+- [ExperimentTask & visual extensions](../api/farms_mujoco_simulation.md)
+- [Hydrodynamic swimming model](../api/farms_mujoco_swimming.md)
+- [TaskExtension base class](../api/farms_core_control.md)
+- [System architecture & execution loop](./architecture.md)
+- [Mathematical Models — Coordinate Transforms](./mathematical_models.md)
 - **Source**: `farms_mujoco/farms_mujoco/simulation/simulation.py`

@@ -573,7 +573,7 @@ $$
 
 ## Related Pages
 
-- [Ekeberg Muscle Model](ekeberg_muscle.md) — How CPG outputs drive joint torques
-- [Position Muscle & Phase Controllers](joint_controllers.md) — How phases map to position commands
-- [Descending Drive](farms_amphibious_drive.md) — How drive signals are computed
-- [NetworkODE](farms_amphibious_network.md) — Integration loop details
+- [Ekeberg Muscle Model](./ekeberg_muscle.md) — How CPG outputs drive joint torques
+- [Position Muscle & Phase Controllers](./joint_controllers.md) — How phases map to position commands
+- [Descending Drive](./farms_amphibious_drive.md) — How drive signals are computed
+- [NetworkODE](./farms_amphibious_network.md) — Integration loop details

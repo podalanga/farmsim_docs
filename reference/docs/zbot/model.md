@@ -225,7 +225,7 @@ The `arena_water.sdf` provides the geometry that `SwimmingExtension` uses to det
 
 ## See Also
 
-- [Swimming Experiment](experiment.md) — YAML config walkthrough
-- [Custom CPG Controller](cpg_controller.md) — write your own controller
+- [Swimming Experiment](./experiment.md) — YAML config walkthrough
+- [Custom CPG Controller](./cpg_controller.md) — write your own controller
 - [Mathematical Models](../mathematical_models.md) — drag and buoyancy equations
 - [`SwimmingExtension` API](../api/farms_mujoco_swimming.md) — hydrodynamics implementation

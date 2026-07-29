@@ -90,5 +90,5 @@ When complex current flows are required, FARMS uses PNG-based flow fields. This 
 
 ## See Also
 
-- [Controller Base Classes](farms_core_control.md) — How hydrodynamic forces are applied
-- [MuJoCo Simulation](farms_mujoco_simulation.md) — Physics backend integration
+- [Controller Base Classes](./farms_core_control.md) — How hydrodynamic forces are applied
+- [MuJoCo Simulation](./farms_mujoco_simulation.md) — Physics backend integration

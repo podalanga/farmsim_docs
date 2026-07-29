@@ -598,4 +598,4 @@ experiments/
 - [`AmphibiousController` API](../api/farms_amphibious_controller.md) — production CPG
 - [CPG Oscillator Network API](../api/cpg_oscillators.md) — oscillator data structures
 - [Ekeberg Muscle Model API](../api/ekeberg_muscle.md) — muscle torque computation
-- [Swimming Experiment](experiment.md) — full YAML reference
+- [Swimming Experiment](./experiment.md) — full YAML reference

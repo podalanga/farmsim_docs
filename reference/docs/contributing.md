@@ -29,7 +29,7 @@ All four repositories live as submodules inside the `farms/` directory of the `f
 
 ### Requirements
 
-You must work **inside the Docker container** to have all dependencies available. See the [Installation Guide](installation.md) for setup. Inside the container, the following are pre-installed:
+You must work **inside the Docker container** to have all dependencies available. See the [Installation Guide](./installation.md) for setup. Inside the container, the following are pre-installed:
 
 - Python 3.12+
 - Cython (with a GCC/Clang C compiler)
@@ -192,7 +192,7 @@ def step_oscillators(phases, frequencies, dt):
 
 ### YAML Configuration
 
-- All new configurable parameters must be added to the relevant `Options` class in Python **and** documented in the [Configuration Reference](configuration.md).
+- All new configurable parameters must be added to the relevant `Options` class in Python **and** documented in the [Configuration Reference](./configuration.md).
 - YAML keys must use `snake_case`.
 - Units must be SI. Document units explicitly in the `Options` class docstring.
 
@@ -288,7 +288,7 @@ control:
 
 ### Recipe B — Adding a New Controller
 
-Inherit from `AnimatController` and implement the actuation methods. See the [Zbot Tutorial](zbot_tutorial.md) for a full worked example.
+Inherit from `AnimatController` and implement the actuation methods. See the [Zbot tutorial](./zbot/index.md) for a full worked example.
 
 ```python
 from farms_core.model.control import AnimatController, ControlType
@@ -631,7 +631,7 @@ Before submitting a contribution, verify:
 - [ ] Code follows PEP 8 and has docstrings on all public functions and classes
 - [ ] Cython `.pyx` files use typed memoryviews and C types for all hot-path variables
 - [ ] `DEBUG = False` in all `setup.py` files
-- [ ] New YAML parameters are documented in [Configuration Reference](configuration.md)
+- [ ] New YAML parameters are documented in [Configuration Reference](./configuration.md)
 - [ ] Reference simulation runs to completion without NaN/Inf
 - [ ] `analysis.py` plots look physically plausible
 - [ ] New doc pages are added to `mkdocs.yml`
@@ -639,8 +639,8 @@ Before submitting a contribution, verify:
 
 ## See Also
 
-- [Architecture & Data Flow](architecture.md) — understand module boundaries before making changes
-- [Zbot Tutorial](zbot_tutorial.md) — end-to-end example of the system working together
-- [Configuration Reference](configuration.md) — all YAML parameters
-- [Mathematical Models](mathematical_models.md) — CPG and muscle model equations
-- [`farms_core.model.control`](api/farms_core_control.md) — controller base class API
+- [Architecture & Data Flow](./architecture.md) — understand module boundaries before making changes
+- [Zbot tutorial](./zbot/index.md) — end-to-end example of the system working together
+- [Configuration Reference](./configuration.md) — all YAML parameters
+- [Mathematical Models](./mathematical_models.md) — CPG and muscle model equations
+- [`farms_core.model.control`](../api/farms_core_control.md) — controller base class API

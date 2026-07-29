@@ -154,6 +154,6 @@ Use `from_options` to initialize empty containers for simulation, or `from_file`
 
 ## See Also
 
-- [CPG Oscillator Data](cpg_oscillators.md) — Oscillator data structures
-- [CPG Network API](farms_amphibious_network.md) — Network state management
-- [Sensor Data Arrays](farms_core_sensors.md) — Pre-allocated telemetry arrays
+- [CPG Oscillator Data](./cpg_oscillators.md) — Oscillator data structures
+- [CPG Network API](./farms_amphibious_network.md) — Network state management
+- [Sensor Data Arrays](./farms_core_sensors.md) — Pre-allocated telemetry arrays

@@ -219,5 +219,5 @@ If it shows `The agent has no identities`, run `ssh-add ~/.ssh/id_ed25519` and r
 
 ## See Also
 
-- [Installation](installation.md) — full environment setup including Docker and native methods
+- [Installation](./installation.md) — full environment setup including Docker and native methods
 - [GitHub SSH documentation](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)

@@ -42,9 +42,9 @@ Head → [joint_1] → Segment1 → [joint_2] → Segment2 → [joint_3]
 
 | Page | What you will learn |
 |------|---------------------|
-| [Zbot Model](model.md) | SDF structure, link geometry, inertia, mesh files |
-| [Swimming Experiment](experiment.md) | All four YAML config files explained with real values |
-| [Custom CPG Controller](cpg_controller.md) | Step-by-step guide to implement a CPG from scratch |
+| [Zbot Model](./model.md) | SDF structure, link geometry, inertia, mesh files |
+| [Swimming Experiment](./experiment.md) | All four YAML config files explained with real values |
+| [Custom CPG Controller](./cpg_controller.md) | Step-by-step guide to implement a CPG from scratch |
 
 ---
 
@@ -55,13 +55,13 @@ If you are implementing a custom CPG controller, follow this order. Do not skip 
 **Step 1 — This page** *(you are here)*
 Get oriented. Understand the robot anatomy, the system diagram, and what each page covers.
 
-**Step 2 — [Swimming Experiment](experiment.md)**
+**Step 2 — [Swimming Experiment](./experiment.md)**
 Read the YAML configs carefully before writing any Python. You need to understand how `controller_loader`, `equation`, `motors`, and `loaders` interact — most bugs come from misconfigured YAML, not the controller code itself.
 
 **Step 3 — [`AnimatController` API](../api/farms_core_control.md)**
 Study the base class contract: constructor arguments, `from_options()`, `positions()`, `torques()`, and the `ControlType` enum. This is what your class must implement.
 
-**Step 4 — [Custom CPG Controller](cpg_controller.md)**
+**Step 4 — [Custom CPG Controller](./cpg_controller.md)**
 Now implement. Follow Steps 1–4 in that guide (simple sine CPG) and get it running before touching the ODE version.
 
 ---
@@ -128,7 +128,7 @@ flowchart TD
 ```
 
 !!! tip "Don't Skip The YAML"
-    The most common mistake is jumping straight to [Custom CPG Controller](cpg_controller.md) without reading [Swimming Experiment](experiment.md) first. You need to understand the YAML wiring before the Python makes sense.
+    The most common mistake is jumping straight to [Custom CPG Controller](./cpg_controller.md) without reading [Swimming Experiment](./experiment.md) first. You need to understand the YAML wiring before the Python makes sense.
 
 ---
 

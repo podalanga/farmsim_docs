@@ -145,5 +145,5 @@ print(loaded_data["joints"]["knee"])
 
 ## See Also
 
-- [Configuration Classes](farms_core_options.md) — YAML dataclass schemas
+- [Configuration Classes](./farms_core_options.md) — YAML dataclass schemas
 - [Simulation Walkthrough](../walkthrough.md) — End-to-end lifecycle

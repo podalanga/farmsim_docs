@@ -40,7 +40,7 @@ ExperimentOptions
     └── water: WaterOptions
 ```
 
-See [farms_core.model.options](api/farms_core_options.md) for the full class reference and parameter tables.
+See [farms_core.model.options](../api/farms_core_options.md) for the full class reference and parameter tables.
 
 ### How YAML is Loaded
 
@@ -82,7 +82,7 @@ ExperimentData
         └── visuals: VisualsArray       ← visual markers
 ```
 
-See [farms_core.sensors.data](api/farms_core_sensors.md) for the full sensor array reference.
+See [farms_core.sensors.data](../api/farms_core_sensors.md) for the full sensor array reference.
 
 ### Accessing Sensor Data in a Controller
 
@@ -194,7 +194,8 @@ ControlType.from_string_list(['position', 'torque'])  # → [0, 2]
 
 ### `RuntimeSimulationOptions` (`simulation.runtime`)
 
-| Field | Type | Default | Description |
+| Name | Type | Default | Description |
+
 |-------|------|---------|-------------|
 | `n_iterations` | `int` | `1000` | Total simulation steps to run |
 | `buffer_size` | `int` | `n_iterations` | Ring-buffer size for sensor arrays; `0` = same as `n_iterations` |
@@ -206,7 +207,8 @@ ControlType.from_string_list(['position', 'torque'])  # → [0, 2]
 
 ### `PhysicsSimulationOptions` (`simulation.physics`)
 
-| Field | Type | Default | Description |
+| Name | Type | Default | Description |
+
 |-------|------|---------|-------------|
 | `timestep` | `float` | `0.001` | Physics integration timestep [s] |
 | `gravity` | `list[float]` | `[0, 0, -9.81]` | Gravity vector [m/s²] |
@@ -269,7 +271,7 @@ TaskExtension (ABC)
     └── AnimatController (ABC)   ← provides positions/velocities/torques/excitations
 ```
 
-For the full interface contract including all 11 `TaskExtension` methods and the 7 `AnimatController` output methods, see [farms_core control interfaces](api/farms_core_control.md).
+For the full interface contract including all 11 `TaskExtension` methods and the 7 `AnimatController` output methods, see [farms_core control interfaces](../api/farms_core_control.md).
 
 ### Implementing a Custom Controller
 
@@ -360,7 +362,7 @@ extensions:
 | `farms_core.io.hdf5` | Save/load `AnimatData` sensor arrays to HDF5 |
 | `farms_core.io.yaml` | Load YAML to Python objects (`yaml2pyobject`) |
 
-See [farms_core.io](api/farms_core_io.md) for the function reference.
+See [farms_core.io](../api/farms_core_io.md) for the function reference.
 
 ---
 
@@ -448,9 +450,9 @@ extensions:
 
 ## See Also
 
-- [Controller & Extension Interfaces](api/farms_core_control.md)
-- [Sensor Data Arrays](api/farms_core_sensors.md)
-- [Options Hierarchy](api/farms_core_options.md)
-- [I/O: SDF, HDF5, YAML](api/farms_core_io.md)
-- [System Architecture](architecture.md)
+- [Controller & Extension Interfaces](../api/farms_core_control.md)
+- [Sensor Data Arrays](../api/farms_core_sensors.md)
+- [Options Hierarchy](../api/farms_core_options.md)
+- [I/O: SDF, HDF5, YAML](../api/farms_core_io.md)
+- [System Architecture](./architecture.md)
 - **Source**: `farms_core/farms_core/`

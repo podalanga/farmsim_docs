@@ -1,6 +1,6 @@
 # Installation — Docker and native setup
 
-FARMS requires SSH access to GitHub for cloning the repository and its submodules. Before proceeding, ensure your SSH key is configured - see [SSH Key Setup](ssh_setup.md) if you have not done this yet.
+FARMS requires SSH access to GitHub for cloning the repository and its submodules. Before proceeding, ensure your SSH key is configured - see [SSH Key Setup](./ssh_setup.md) if you have not done this yet.
 
 !!! note "Source Files"
     - `docker_config/linux/docker-compose.yml` — Linux Docker configuration
@@ -188,7 +188,7 @@ Use this method if Docker is not available, or you need to modify FARMS source c
 | Git | [git-scm.com](https://git-scm.com/install/) |
 | Git LFS | `git lfs install` |
 | C/C++ compiler | See platform notes below |
-| SSH key on GitHub | [SSH Key Setup](ssh_setup.md) |
+| SSH key on GitHub | [SSH Key Setup](./ssh_setup.md) |
 
 **Windows - Visual C++ Build Tools:**
 Cython extensions require the MSVC compiler. Install **Visual C++ Build Tools 2017 or later**:
@@ -337,6 +337,6 @@ The virtual environment is not activated, or `setup_farms.py` was not run. Activ
 
 ## See Also
 
-- [SSH Key Setup](ssh_setup.md) - generating and registering SSH keys with GitHub
-- [Simulation Walkthrough](walkthrough.md) - running your first experiment
-- [Configuration Reference](configuration.md) - YAML parameter reference
+- [SSH Key Setup](./ssh_setup.md) - generating and registering SSH keys with GitHub
+- [Simulation Walkthrough](./walkthrough.md) - running your first experiment
+- [Configuration Reference](./configuration.md) - YAML parameter reference

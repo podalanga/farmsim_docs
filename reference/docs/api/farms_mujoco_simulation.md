@@ -141,6 +141,6 @@ Renders a rotating arrow to visualize orientation and position, optionally scali
 
 ## See Also
 
-- [Controller Base Classes](farms_core_control.md) — How controllers plug into the physics loop
-- [Swimming Extension](farms_mujoco_swimming.md) — Hydrodynamic forces
+- [Controller Base Classes](./farms_core_control.md) — How controllers plug into the physics loop
+- [Swimming Extension](./farms_mujoco_swimming.md) — Hydrodynamic forces
 - [Architecture Overview](../architecture.md) — Cross-module data flow

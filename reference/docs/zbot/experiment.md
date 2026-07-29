@@ -240,7 +240,7 @@ spawn:
   #       x  y   z  roll  pitch    yaw
 ```
 
-The pose `[x, y, z, roll, pitch, yaw]` uses **radians**. See [Zbot Model → Spawn Pose](model.md#spawn-pose) for a full explanation of why these angles orient the robot correctly.
+The pose `[x, y, z, roll, pitch, yaw]` uses **radians**. See [Zbot Model → Spawn Pose](./model.md#spawn-pose) for a full explanation of why these angles orient the robot correctly.
 
 ### Morphology
 
@@ -293,7 +293,7 @@ control:
     muscles: []
 ```
 
-The `controller_loader` is the **dotted Python class path** FARMS will dynamically import and instantiate. This is the key hook for custom controllers — see [Custom CPG Controller](cpg_controller.md).
+The `controller_loader` is the **dotted Python class path** FARMS will dynamically import and instantiate. This is the key hook for custom controllers — see [Custom CPG Controller](./cpg_controller.md).
 
 Sensor data is written to the `animat_data` object every step and is accessible in your controller via `self.animat_data.sensors.*`.
 
@@ -522,7 +522,7 @@ joints_trq_frc = joints.array[:, :, sc.joint_torque_friction]  # N·m (friction)
 
 ## See Also
 
-- [Zbot Model](model.md) — SDF geometry and physical properties
-- [Custom CPG Controller](cpg_controller.md) — replace the default controller
+- [Zbot Model](./model.md) — SDF geometry and physical properties
+- [Custom CPG Controller](./cpg_controller.md) — replace the default controller
 - [Configuration Reference](../configuration.md) — all YAML parameter definitions
 - [Mathematical Models](../mathematical_models.md) — CPG and Ekeberg equations

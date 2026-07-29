@@ -281,6 +281,6 @@ def before_step(self, task, action, physics):
 
 ## See Also
 
-- [Ekeberg Muscle Model](ekeberg_muscle.md) — Deep dive into active muscle torques
-- [CPG Oscillators](cpg_oscillators.md) — Source of all `outputs()` and `phases()` used here
-- [Amphibious Controller](farms_amphibious_controller.md) — How all controllers are assembled
+- [Ekeberg Muscle Model](./ekeberg_muscle.md) — Deep dive into active muscle torques
+- [CPG Oscillators](./cpg_oscillators.md) — Source of all `outputs()` and `phases()` used here
+- [Amphibious Controller](./farms_amphibious_controller.md) — How all controllers are assembled

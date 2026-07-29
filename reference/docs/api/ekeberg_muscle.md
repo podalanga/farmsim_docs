@@ -229,6 +229,6 @@ This allows post-simulation decomposition of which torque component dominated at
 
 ## See Also
 
-- [CPG Oscillators](cpg_oscillators.md) — Source of all `outputs()` and `phases()` used here
-- [Passive Joint Model](joint_controllers.md#1-passive-joint-passivejointcy) - For joints without CPG drive
-- [Position Muscle](joint_controllers.md#2-position-muscle-positionmusclecy) - Alternative: position-mode control
+- [CPG Oscillators](./cpg_oscillators.md) — Source of all `outputs()` and `phases()` used here
+- [Passive Joint Model](./joint_controllers.md#1-passive-joint-passivejointcy) - For joints without CPG drive
+- [Position Muscle](./joint_controllers.md#2-position-muscle-positionmusclecy) - Alternative: position-mode control

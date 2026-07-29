@@ -94,7 +94,7 @@ class ControlType(IntEnum):
 
 Standardizes the modes by which joints and actuators are driven.
 
-| Value | Code | Controls |
+| Name | Value | Description |
 |-------|------|----------|
 | `POSITION` | `0` | Standard positional targets. |
 | `VELOCITY` | `1` | Target joint velocities. |
@@ -159,4 +159,4 @@ class SineWaveController(AnimatController):
 ## See Also
 
 - [Configuration Reference](../configuration.md) — YAML parameter definitions
-- [MuJoCo Simulation](farms_mujoco_simulation.md) — Physics backend integration
+- [MuJoCo Simulation](./farms_mujoco_simulation.md) — Physics backend integration

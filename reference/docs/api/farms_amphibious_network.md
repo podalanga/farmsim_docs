@@ -127,7 +127,7 @@ def before_step(self, iteration, time, timestep):
 
 ## See Also
 
-- [CPG Oscillators](cpg_oscillators.md) — Mathematical foundation for CPG dynamics
-- [Amphibious Controller](farms_amphibious_controller.md) — How the network is wired into the control loop
+- [CPG Oscillators](./cpg_oscillators.md) — Mathematical foundation for CPG dynamics
+- [Amphibious Controller](./farms_amphibious_controller.md) — How the network is wired into the control loop
 
 Source: `farms_amphibious/control/network.py`

@@ -123,7 +123,8 @@ Parses CLI arguments and loads the experiment configuration from YAML.
 
 **Parameters**:
 
-| Parameter | Type | Default | Description |
+| Name | Type | Default | Description |
+
 |-----------|------|---------|-------------|
 | `clargs` | `Namespace \| None` | `None` | Pre-parsed argument namespace; if `None`, calls `sim_parse_args()` internally |
 | `experiment_options_loader` | `type` | `ExperimentOptions` | Class used to deserialise the YAML (override for custom options subclasses) |
@@ -169,7 +170,8 @@ Instantiates the physics backend **without running** it. Use this when you need 
 
 **Keyword arguments**:
 
-| Keyword | Type | Default | Description |
+| Name | Type | Default | Description |
+
 |---------|------|---------|-------------|
 | `simulator` | `Simulator` | `Simulator.MUJOCO` | Backend selection |
 | `experiment_data` | `ExperimentData \| None` | auto-constructed | Pre-built data container; if not provided, constructed via `experiment_data_class.from_options(experiment_options)` |
@@ -211,7 +213,8 @@ def simulation_post(sim, log_path='', plot=False, video='')
 
 Invokes post-processing on a completed simulation object by calling `sim.postprocess(...)`.
 
-| Parameter | Type | Default | Description |
+| Name | Type | Default | Description |
+
 |-----------|------|---------|-------------|
 | `sim` | `MuJoCoSimulation` | *(required)* | Completed simulation object |
 | `log_path` | `str` | `''` | Directory to write HDF5 data and YAML configs |
@@ -334,7 +337,7 @@ physics:
   cb_sub_steps: 2         # FARMS callback sub-steps (controls extension call rate)
 ```
 
-See [Configuration Reference](configuration.md) for the full parameter table.
+See [Configuration Reference](./configuration.md) for the full parameter table.
 
 ---
 
@@ -356,10 +359,10 @@ See [Configuration Reference](configuration.md) for the full parameter table.
 
 ## See Also
 
-- [farms_core — Framework Foundation](farms_core.md) — Options, data structures, `TaskExtension` base class
-- [farms_mujoco — MuJoCo Physics Backend](farms_mujoco.md) — Simulation lifecycle, MJCF generation
-- [farms_amphibious — Amphibious Animat Control](farms_amphibious.md) — CPG controller, muscle models
-- [System Architecture](architecture.md) — End-to-end module interaction diagram
-- [Configuration Reference](configuration.md) — Full YAML parameter tables
-- [Zbot Tutorial](zbot_tutorial.md) — Step-by-step walkthrough using `farms_sim`
+- [farms_core — Framework Foundation](./farms_core.md) — Options, data structures, `TaskExtension` base class
+- [farms_mujoco — MuJoCo Physics Backend](./farms_mujoco.md) — Simulation lifecycle, MJCF generation
+- [farms_amphibious — Amphibious Animat Control](./farms_amphibious.md) — CPG controller, muscle models
+- [System Architecture](./architecture.md) — End-to-end module interaction diagram
+- [Configuration Reference](./configuration.md) — Full YAML parameter tables
+- [Zbot tutorial](./zbot/index.md) — Step-by-step walkthrough using `farms_sim`
 - **Source**: `farms_sim/farms_sim/simulation.py`, `farms_sim/farms_sim/farmsim.py`, `farms_sim/farms_sim/utils/parse_args.py`
