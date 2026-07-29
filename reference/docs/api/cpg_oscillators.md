@@ -522,8 +522,8 @@ def state_init(self):
 
 Stores the per-oscillator parameters array.
 
-| Field | Type | Description |
-|---|---|---|
+| Parameter | Type | Description |
+|-----------|------|-------------|
 | `names` | `list[str]` | Oscillator names (from convention) |
 | `drive2osc_map` | `IntegerArray1D[N_osc]` | Which drive index modulates each oscillator |
 | `intrinsic_frequencies` | `DriveDependentArray[N_osc, 6]` | Frequency vs drive curve |
@@ -560,11 +560,11 @@ $$
 
 ### `OscillatorConnectivity`
 
-**Source:** `farms_amphibious/data/network.py`  
+**Source:** `farms_amphibious/data/network.py`
 **Base:** `OscillatorsConnectivityCy`
 
-| Field | Shape | Description |
-|---|---|---|
+| Parameter | Shape | Description |
+|-----------|-------|-------------|
 | `connections` | `[N_conn, 3]` | `[target, source, type]` integer array |
 | `weights` | `[N_conn]` | Coupling weights $w_{ji}$ |
 | `desired_phases` | `[N_conn]` | Phase biases $\Delta\varphi_{ji}$ (radians) |

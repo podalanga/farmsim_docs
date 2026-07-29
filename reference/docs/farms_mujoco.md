@@ -205,8 +205,8 @@ The TailSegment in Zbot uses larger magnitude (`-10.0`) than body links (`-4.0`)
 
 The buoyancy force is controlled by `LinkOptions.density` relative to the water density (`WaterOptions.density`, default 1000 kg/m³):
 
-| `density` (kg/m³) | Effect |
-|-------------------|--------|
+| Density (kg/m³) | Buoyancy Effect |
+|-----------------|-----------------|
 | < 1000 | Link is positively buoyant — floats upward |
 | = 1000 | Neutrally buoyant |
 | > 1000 | Negatively buoyant — sinks |

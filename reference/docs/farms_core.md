@@ -221,8 +221,8 @@ ControlType.from_string_list(['position', 'torque'])  # → [0, 2]
 
 ### `SensorsOptions` (`animat.control.sensors`)
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Parameter | Type | Description |
+|-----------|------|-------------|
 | `links` | `list[str]` | Link names to track (position, velocity, orientation, quaternion) |
 | `joints` | `list[str]` | Joint names to track (position, velocity, torque) |
 | `contacts` | `list[str]` or `list[list[str]]` | Link names for contact sensing; or link pairs `[link_a, link_b]` for pairwise contacts |
@@ -233,8 +233,8 @@ ControlType.from_string_list(['position', 'torque'])  # → [0, 2]
 
 ### `MotorOptions` (`animat.control.motors[i]`)
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Parameter | Type | Description |
+|-----------|------|-------------|
 | `joint_name` | `str` | Joint to actuate; must match `morphology.joints[*].name` exactly |
 | `control_types` | `list[str]` | Active control modes for this motor (e.g., `['position']`) |
 | `limits_torque` | `list[float]` | Torque limits `[min_Nm, max_Nm]` |
@@ -356,8 +356,8 @@ extensions:
 
 ## I/O
 
-| Module | Purpose |
-|--------|---------|
+| Name | Purpose |
+|------|---------|
 | `farms_core.io.sdf` | Parse SDF/URDF robot model files → link and joint lists |
 | `farms_core.io.hdf5` | Save/load `AnimatData` sensor arrays to HDF5 |
 | `farms_core.io.yaml` | Load YAML to Python objects (`yaml2pyobject`) |

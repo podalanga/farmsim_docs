@@ -169,8 +169,8 @@ extensions:
 
 #### Physics Solver
 
-| Parameter | Value | Notes |
-|-----------|-------|-------|
+| Parameter | Value | Description |
+|-----------|-------|-------------|
 | `solver: CG` | Conjugate Gradient | Faster but less accurate than Newton for stiff contacts |
 | `integrator: implicitfast` | Implicit fast | MuJoCo's semi-implicit integrator — good for stiff joints |
 | `cone: elliptic` | Elliptic friction cone | More realistic than pyramidal but costs more computation |
