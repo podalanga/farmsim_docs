@@ -1,4 +1,4 @@
-# Configuration Reference
+# Configuration Reference — YAML parameter definitions
 
 This document enumerates the tunable parameters (Options classes) across the FARMS framework, specifically checking `farms_core` and `farms_amphibious` models, simulations, and experiments.
 

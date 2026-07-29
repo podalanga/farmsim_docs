@@ -1,4 +1,4 @@
-# FARMS Architecture and Data Flow
+# Architecture & Data Flow — Cross-module dependencies and execution loop
 
 This document details the cross-module dependencies and execution loop of the FARMS framework.
 

@@ -1,4 +1,4 @@
-# Contributing to FARMS
+# Contributing — Development guide and coding standards
 
 This guide covers everything you need to know to contribute to the FARMS framework — from setting up your development environment and understanding the build system, to coding conventions, adding new features, and submitting your changes.
 

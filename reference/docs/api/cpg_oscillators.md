@@ -1,4 +1,4 @@
-# CPG Oscillator Network
+# farms_amphibious.control.ode
 
 !!! note "Source Files"
     - `farms_amphibious/control/ode.pyx` — Cython ODE kernels (compiled to `.pyd`)

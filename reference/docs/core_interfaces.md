@@ -1,4 +1,4 @@
-# Core Interfaces & Abstractions
+# Core Interfaces — Base class contracts and abstract modules
 
 This document outlines the purpose, override requirements, and implicit contracts for key base classes and interfaces across the FARMS framework modules.
 

@@ -1,4 +1,4 @@
-# Zbot Model
+# Zbot Model — SDF geometry and physical properties
 
 The Zbot's physical description lives in the SDF file at:
 
@@ -54,7 +54,7 @@ The Zbot body is a serial chain of **8 links** connected by **6 revolute joints*
                    └────┬────┘
                         (rigid, no joint)
                    ┌────┴────┐
-                   │  Tail   │  drag_coeff = −10.0 (higher thrust)
+                   │  Tail   │  drag_coeff = -10.0 (higher thrust)
                    │ Segment │
                    └─────────┘
 ```
@@ -70,7 +70,7 @@ All values come directly from `models/zbot/sdf/zbot.sdf` and are overridden/anno
 | Property | Value |
 |----------|-------|
 | SDF pose | `[0, 0, 0, 0, 0, 0]` (world origin) |
-| Inertial CoM offset | `[0, −0.02, 0.04]` m |
+| Inertial CoM offset | `[0, -0.02, 0.04]` m |
 | Mass | **1.9 kg** |
 | Ixx | 0.00856 kg·m² |
 | Iyy | 0.007695 kg·m² |
@@ -78,7 +78,7 @@ All values come directly from `models/zbot/sdf/zbot.sdf` and are overridden/anno
 | Collision geometry | Cylinder (r=0.05 m, L=0.108 m) + Box (0.084×0.108×0.15 m) |
 | Visual meshes | `head_red.stl`, `head_white.stl`, `tube_connector.stl` |
 | Fluid density override | **950 kg/m³** (set in `animat_config.yaml`) |
-| Drag coefficients (trans.) | `[−4.0, −4.0, −0.1]` N·s/m |
+| Drag coefficients (trans.) | `[-4.0, -4.0, -0.1]` N·s/m |
 | Drag coefficients (rot.) | `[0, 0, 0]` |
 
 !!! note "Density < Water"
@@ -94,7 +94,7 @@ All six body segments share identical inertia and drag properties.
 | SDF pose | Segment1 at `z=0.18 m`; each segment offset by ~0.13 m |
 | Collision geometry | Cylinder per segment |
 | Fluid density override | 950 kg/m³ |
-| Drag coefficients (trans.) | `[−4.0, −4.0, −0.1]` N·s/m |
+| Drag coefficients (trans.) | `[-4.0, -4.0, -0.1]` N·s/m |
 | Drag coefficients (rot.) | `[0, 0, 0]` |
 
 ### TailSegment
@@ -102,11 +102,11 @@ All six body segments share identical inertia and drag properties.
 | Property | Value |
 |----------|-------|
 | Mass | ~0.16 kg (same as segments) |
-| Drag coefficients (trans.) | **`[−10.0, −10.0, −0.1]`** N·s/m |
+| Drag coefficients (trans.) | **`[-10.0, -10.0, -0.1]`** N·s/m |
 | Drag coefficients (rot.) | `[0, 0, 0]` |
 
 !!! important "Why the tail has higher drag"
-    The tail magnitude `−10.0` is **2.5× larger** than the body segments. This generates greater reactive thrust when the tail undulates — mimicking the caudal-fin propulsion of real anguilliform swimmers. Increasing this value amplifies thrust; reducing it weakens it.
+    The tail magnitude `-10.0` is **2.5× larger** than the body segments. This generates greater reactive thrust when the tail undulates — mimicking the caudal-fin propulsion of real anguilliform swimmers. Increasing this value amplifies thrust; reducing it weakens it.
 
 ---
 
@@ -177,9 +177,9 @@ When `equation: position_muscle` is set, the `AmphibiousController` does **not**
 
 ```
 CPG Phase (θ_L, θ_R)
-       ↓  Ekeberg:  τ = α(A_L sin θ_L − A_R sin θ_R) + β(co-contraction)(φ_off − φ) − δφ̇
+       ↓  Ekeberg:  τ = α(A_L sin θ_L - A_R sin θ_R) + β(co-contraction)(φ_off - φ) - δφ̇
 Desired position setpoint
-       ↓  PD servo: u = Kp·(φ_des − φ) + Kd·(φ̇_des − φ̇)
+       ↓  PD servo: u = Kp·(φ_des - φ) + Kd·(φ̇_des - φ̇)
 Final torque sent to MuJoCo
 ```
 
@@ -203,7 +203,7 @@ spawn:
   #       x  y   z  roll  pitch    yaw
 ```
 
-- **pitch = −π/2** rotates the robot so its long axis aligns with the X-axis (swimming forward).
+- **pitch = -π/2** rotates the robot so its long axis aligns with the X-axis (swimming forward).
 - **yaw = π** flips the head to face the positive-X direction.
 - **z = 0.01 m** spawns it just above the ground plane to avoid initial collision penetration.
 

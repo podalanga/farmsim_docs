@@ -1,4 +1,4 @@
-# Ekeberg Muscle Model
+# farms_amphibious.control.ekeberg
 
 !!! note "Source Files"
     - `farms_amphibious/control/ekeberg.pyx` — Cython implementation (compiled to `.pyd`)

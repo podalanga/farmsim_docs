@@ -1,4 +1,4 @@
-# Swimming Experiment
+# Swimming Experiment — YAML config walkthrough
 
 This page is a complete walkthrough of the `experiments/zbot_swimming/` directory. Every key field in every config file is explained with its actual value and the effect it has on the simulation.
 

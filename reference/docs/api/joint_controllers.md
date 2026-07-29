@@ -1,4 +1,4 @@
-# Joint Controllers
+# farms_amphibious.control.joints_control_cy
 
 !!! note "Source Files"
     - `farms_amphibious/control/passive_cy.pyx` — `PassiveJointCy`

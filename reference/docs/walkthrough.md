@@ -1,4 +1,4 @@
-# Codebase Walkthrough: The FARMS Lifecycle
+# Walkthrough — End-to-end simulation lifecycle narrative
 
 This guide walks through the exact order of operations in the FARMS framework, from script invocation through the physics loop and to output writing. If you're a new contributor looking to understand how the system is wired together, start here.
 

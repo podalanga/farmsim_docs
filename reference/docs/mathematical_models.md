@@ -1,4 +1,4 @@
-# Mathematical Models
+# Mathematical Models — CPG ODEs, hydrodynamics, and Ekeberg torque
 
 ## 1. CPG Oscillator Equations & Coupling Terms
 Implemented in `farms_amphibious/control/ode.pyx`.

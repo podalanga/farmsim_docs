@@ -1,4 +1,4 @@
-# Glossary
+# Glossary — Domain terminology and implementations
 
 This glossary defines core domain terminology used across the FARMS framework and cross-references where these concepts are actually implemented in the codebase.
 

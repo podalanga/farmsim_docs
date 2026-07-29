@@ -1,4 +1,4 @@
-# Custom CPG Controller
+# Custom CPG Controller — Step-by-step guide
 
 This guide shows you how to implement a **Central Pattern Generator (CPG)** controller for the Zbot from scratch by inheriting from `AnimatController`. By the end you will have a working sine-wave CPG that you can extend with coupling, sensory feedback, and drive modulation.
 

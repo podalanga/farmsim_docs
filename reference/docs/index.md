@@ -1,4 +1,4 @@
-# FARMS Documentation
+# FARMS Documentation — Framework for Animat and Robot Morphologies in Simulation
 
 **FARMS** (Framework for Animat and Robot Morphologies in Simulation) is a modular simulation framework for biorobotics and neuro-mechanical locomotion research. It wraps the MuJoCo physics engine via `dm_control`, and provides CPG-based neural controllers, hydrodynamic models, and a plugin system for extending both the physics and the control layers.
 

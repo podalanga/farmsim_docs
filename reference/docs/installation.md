@@ -1,4 +1,4 @@
-# Installation
+# Installation — Docker and native setup
 
 FARMS requires SSH access to GitHub for cloning the repository and its submodules. Before proceeding, ensure your SSH key is configured - see [SSH Key Setup](ssh_setup.md) if you have not done this yet.
 

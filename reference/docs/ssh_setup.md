@@ -1,4 +1,4 @@
-# SSH Key Setup
+# SSH Key Setup — Generating and registering keys
 
 FARMS uses SSH-based cloning for the main repository and all submodules. This page explains how to generate an SSH key pair, register it on GitHub, and configure your system so that both native Git and Docker builds can use it.
 
