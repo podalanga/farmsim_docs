@@ -2,6 +2,11 @@
 
 FARMS uses SSH-based cloning for the main repository and all submodules. This page explains how to generate an SSH key pair, register it on GitHub, and configure your system so that both native Git and Docker builds can use it.
 
+!!! note "Source Files"
+    - `docker_config/linux/Dockerfile` — SSH agent forwarding setup
+    - `docker_config/windows/docker-compose.yml` — SSH agent volume mount
+    - `.gitmodules` — Submodule definitions (all SSH URLs)
+
 ---
 
 ## Overview

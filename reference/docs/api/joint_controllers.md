@@ -118,7 +118,7 @@ cpdef void step(self, unsigned int iteration):
         )
 ```
 
-!!! note "Why 0.5?"
+!!! note "Why 0.5"
     The factor of 0.5 normalises the neural difference. Since $y_k \in [0, 2r_k]$, the difference $\Delta y \in [-2r, 2r]$. Multiplying by 0.5 gives an effective angular excursion of $r$ per side — matching the nominal amplitude parameter.
 
 ### Construction

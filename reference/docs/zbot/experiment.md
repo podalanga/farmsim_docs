@@ -2,6 +2,13 @@
 
 This page is a complete walkthrough of the `experiments/zbot_swimming/` directory. Every key field in every config file is explained with its actual value and the effect it has on the simulation.
 
+!!! note "Source Files"
+    - `experiments/zbot_swimming/experiment_config.yaml` — Top-level experiment config
+    - `experiments/zbot_swimming/simulation_config.yaml` — Physics and runtime settings
+    - `experiments/zbot_swimming/animat_config.yaml` — Robot morphology, sensors, motors, CPG network
+    - `experiments/zbot_swimming/arena_config.yaml` — Ground plane and water properties
+    - `experiments/zbot_swimming/analysis.py` — Post-processing and plotting script
+
 ---
 
 ## Directory Structure
@@ -81,7 +88,7 @@ The `loaders` section tells `farms_sim` which Python class to instantiate for ea
 | `experiment_data` | `AmphibiousExperimentData` | Container for all animat/arena data |
 | `animats_data` | `AmphibiousData` | Per-animat data arrays (sensors, joints) |
 
-!!! important "Custom controllers still need AmphibiousOptions"
+!!! important "Custom Controllers Still Need AmphibiousOptions"
     Even if you write your own controller, keep `AmphibiousOptions` in the loaders as long as you use the CPG network section in `animat_config.yaml`. Only switch to `AnimatOptions` if you remove the `network:` section entirely.
 
 ---

@@ -207,8 +207,9 @@ options = AmphibiousOptions.from_options({
 
 ---
 
-**See also:**
-- [farms_core_options](farms_core_options.md)
-- [farms_amphibious_controller](farms_amphibious_controller.md)
-- [configuration](../configuration.md)
-- Source: `farms_amphibious/model/options.py`
+## See Also
+
+- [`AmphibiousOptions`](farms_amphibious_options.md) — Core amphibious animat configuration
+- [Configuration Reference](../configuration.md) — All YAML parameter definitions
+
+Source: `farms_amphibious/model/options.py`

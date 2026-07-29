@@ -2,6 +2,12 @@
 
 This document enumerates the tunable parameters (Options classes) across the FARMS framework, specifically checking `farms_core` and `farms_amphibious` models, simulations, and experiments.
 
+!!! note "Source Files"
+    - `farms_core/farms_core/model/options.py` — `AnimatOptions`, `MorphologyOptions`, `ControlOptions`
+    - `farms_core/farms_core/model/extensions.py` — `TaskExtension`, `AnimatExtension`
+    - `farms_amphibious/farms_amphibious/model/options.py` — `AmphibiousOptions`, `AmphibiousArenaOptions`
+    - `farms_amphibious/farms_amphibious/control/network.py` — `NetworkConfig`
+
 ## `farms_core.model.options`
 
 ### `LinkOptions`

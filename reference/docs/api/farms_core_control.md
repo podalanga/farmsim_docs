@@ -157,5 +157,6 @@ class SineWaveController(AnimatController):
 ```
 
 ## See Also
-- [farms_core_options.md](farms_core_options.md)
-- [farms_mujoco_simulation.md](farms_mujoco_simulation.md)
+
+- [Configuration Reference](../configuration.md) — YAML parameter definitions
+- [MuJoCo Simulation](farms_mujoco_simulation.md) — Physics backend integration

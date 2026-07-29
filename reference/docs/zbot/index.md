@@ -2,6 +2,12 @@
 
 The **Zbot** is a bio-inspired, eel-like underwater robot developed for research in swimming locomotion and neural control. It consists of a rigid **Head** module followed by six serially-connected **body segments** (`Segment1`–`Segment6`) and a **TailSegment**, connected by six revolute joints (`joint_1`–`joint_6`). Sinusoidal undulation of these joints generates the travelling wave that propels the robot forward.
 
+!!! note "Source Files"
+    - `models/zbot/sdf/zbot.sdf` — Zbot SDF model definition
+    - `models/zbot/sdf/meshes/` — Visual mesh files (.stl)
+    - `experiments/zbot_swimming/animat_config.yaml` — Zbot animat configuration
+    - `experiments/zbot_swimming/experiment_config.yaml` — Experiment entry point
+
 This section covers everything you need to:
 
 - Understand the robot's physical model and SDF definition
@@ -121,7 +127,7 @@ flowchart TD
     MJ --> LOG
 ```
 
-!!! tip "Don't skip the YAML"
+!!! tip "Don't Skip The YAML"
     The most common mistake is jumping straight to [Custom CPG Controller](cpg_controller.md) without reading [Swimming Experiment](experiment.md) first. You need to understand the YAML wiring before the Python makes sense.
 
 ---

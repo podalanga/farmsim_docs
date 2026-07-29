@@ -2,6 +2,13 @@
 
 This guide walks through the exact order of operations in the FARMS framework, from script invocation through the physics loop and to output writing. If you're a new contributor looking to understand how the system is wired together, start here.
 
+!!! note "Source Files"
+    - `farms_sim/farms_sim/farmsim.py` — CLI entry point (`main()`)
+    - `farms_mujoco/farms_mujoco/simulation/simulation.py` — `Simulation.from_experiment()`
+    - `farms_mujoco/farms_mujoco/simulation/mjcf.py` — MJCF generation
+    - `farms_mujoco/farms_mujoco/simulation/task.py` — `ExperimentTask` lifecycle
+    - `farms_core/farms_core/model/data.py` — `ExperimentData` / `AnimatData`
+
 ## 1. Invocation and Parsing
 
 The standard entry point to run a FARMS simulation is `farms_sim.farmsim` (`python -m farms_sim.farmsim` or via custom runner scripts).

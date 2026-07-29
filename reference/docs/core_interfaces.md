@@ -2,6 +2,13 @@
 
 This document outlines the purpose, override requirements, and implicit contracts for key base classes and interfaces across the FARMS framework modules.
 
+!!! note "Source Files"
+    - `farms_core/farms_core/simulation/extensions.py` — `TaskExtension` base class
+    - `farms_core/farms_core/model/extensions.py` — `AnimatExtension` base class
+    - `farms_core/farms_core/model/control.py` — `AnimatController` base class
+    - `farms_amphibious/farms_amphibious/control/network.py` — `AnimatNetwork` base class
+    - `farms_amphibious/farms_amphibious/control/drive.py` — `DescendingDrive` and `PotentialMap`
+
 ## 1. `farms_core` Base Classes
 
 ### `TaskExtension` (`farms_core.simulation.extensions`)

@@ -2,6 +2,12 @@
 
 This glossary defines core domain terminology used across the FARMS framework and cross-references where these concepts are actually implemented in the codebase.
 
+!!! note "Source Files"
+    - `farms_amphibious/farms_amphibious/control/ode.pyx` — CPG oscillator implementation
+    - `farms_amphibious/farms_amphibious/control/network.py` — `NetworkODE` integration
+    - `farms_mujoco/farms_mujoco/simulation/task.py` — `ExperimentTask` lifecycle
+    - `farms_mujoco/farms_mujoco/simulation/simulation.py` — `Simulation` backend
+
 ## A
 **Added Mass**  
 The inertia added to a system because an accelerating or decelerating body must move some volume of surrounding fluid as it moves through it.  

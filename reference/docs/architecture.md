@@ -2,6 +2,12 @@
 
 This document details the cross-module dependencies and execution loop of the FARMS framework.
 
+!!! note "Source Files"
+    - `farms_mujoco/farms_mujoco/simulation/simulation.py` — `Simulation.from_experiment()`
+    - `farms_mujoco/farms_mujoco/simulation/task.py` — `ExperimentTask` lifecycle
+    - `farms_core/farms_core/model/data.py` — `ExperimentData` / `AnimatData`
+    - `farms_core/farms_core/model/options.py` — `ExperimentOptions` tree
+
 ## Cross-Module Data Flow
 
 The following data flow diagram illustrates how `farms_core` data structures flow into `farms_sim`, are consumed by the execution loop in `farms_mujoco`, and how `farms_amphibious` and hydrodynamics hook into this loop.

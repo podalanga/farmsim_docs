@@ -48,7 +48,7 @@ cpdef np.ndarray outputs(self, unsigned int iteration):
     return self.amplitudes(iteration) * (1 + np.cos(self.phases(iteration)))
 ```
 
-!!! important "Why this output function?"
+!!! important "Why This Output Function"
     The output $y_i \in [0, 2r_i]$ is always non-negative, which directly represents the firing rate of a motor neuron. When $\varphi_i = 0$, output is maximum ($2r_i$); when $\varphi_i = \pi$, output is zero. This is the half-wave rectified cosine — a well-established model for motor neuron activity.
 
 ---

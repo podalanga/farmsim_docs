@@ -171,5 +171,6 @@ Contains subsets of parameters defining the physics engine configuration. Contai
 ---
 
 ## See Also
-- [Configuration Reference](../configuration.md)
-- [farms_amphibious.model.options](farms_amphibious_options.md)
+
+- [Configuration Reference](../configuration.md) — All YAML parameter definitions
+- [Amphibious Options](farms_amphibious_options.md) — Extended amphibious configuration

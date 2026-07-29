@@ -2,6 +2,11 @@
 
 FARMS requires SSH access to GitHub for cloning the repository and its submodules. Before proceeding, ensure your SSH key is configured - see [SSH Key Setup](ssh_setup.md) if you have not done this yet.
 
+!!! note "Source Files"
+    - `docker_config/linux/docker-compose.yml` — Linux Docker configuration
+    - `docker_config/windows/docker-compose.yml` — Windows Docker configuration
+    - `farms_sim/setup_farms.py` — FARMS package installation script
+
 Two installation methods are available. **Docker is the recommended approach** - it handles all system dependencies, Cython compilation, and GPU configuration automatically.
 
 ---

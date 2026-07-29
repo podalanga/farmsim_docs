@@ -2,6 +2,12 @@
 
 This guide covers everything you need to know to contribute to the FARMS framework — from setting up your development environment and understanding the build system, to coding conventions, adding new features, and submitting your changes.
 
+!!! note "Source Files"
+    - `farms_core/setup.py` — Cython build configuration
+    - `farms_mujoco/setup.py` — Cython build configuration
+    - `farms_amphibious/setup.py` — Cython build configuration
+    - `farms_sim/setup.py` — Python package setup
+
 ---
 
 ## Before You Start

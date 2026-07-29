@@ -2,6 +2,12 @@
 
 **FARMS** (Framework for Animat and Robot Morphologies in Simulation) is a modular simulation framework for biorobotics and neuro-mechanical locomotion research. It wraps the MuJoCo physics engine via `dm_control`, and provides CPG-based neural controllers, hydrodynamic models, and a plugin system for extending both the physics and the control layers.
 
+!!! note "Source Files"
+    - `farms_sim/farms_sim/farmsim.py` — CLI entry point and orchestrator
+    - `farms_mujoco/farms_mujoco/simulation/simulation.py` — MuJoCo backend setup
+    - `farms_amphibious/farms_amphibious/control/amphibious.py` — production CPG controller
+    - `farms_core/farms_core/model/options.py` — configuration dataclasses
+
 ---
 
 ## Package Overview

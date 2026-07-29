@@ -262,6 +262,7 @@ class SpeedController(DescendingDrive):
 
 ## See Also
 
-- [farms_amphibious_controller.md](farms_amphibious_controller.md)
-- [farms_amphibious_data.md](farms_amphibious_data.md)
-- Source: `farms_amphibious/control/drive.py`
+- [`DescendingDrive`](farms_amphibious_drive.md) — Abstract base for drive strategies
+- [`PotentialMap`](farms_amphibious_drive.md) — Navigation heading strategies
+
+Source: `farms_amphibious/control/drive.py`

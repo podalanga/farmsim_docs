@@ -106,5 +106,6 @@ Tracks the internal state and dynamics of the robot's joints.
 Logs collision events and reaction forces. It tracks normal forces, friction forces, and contact positions for geometry explicitly tracked in the animat options.
 
 ## See Also
-- [farms_core_control.md](farms_core_control.md)
-- [farms_amphibious_data.md](farms_amphibious_data.md)
+
+- [Controller Base Classes](farms_core_control.md) — How sensor data is consumed
+- [Amphibious Data](farms_amphibious_data.md) — Extended sensor data for amphibious animats

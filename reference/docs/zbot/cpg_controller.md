@@ -2,6 +2,12 @@
 
 This guide shows you how to implement a **Central Pattern Generator (CPG)** controller for the Zbot from scratch by inheriting from `AnimatController`. By the end you will have a working sine-wave CPG that you can extend with coupling, sensory feedback, and drive modulation.
 
+!!! note "Source Files"
+    - `temp/zbot_controller/` — Example Zbot controller implementations
+    - `farms_core/farms_core/model/control.py` — `AnimatController` base class
+    - `farms_amphibious/farms_amphibious/control/amphibious.py` — `AmphibiousController` production implementation
+    - `farms_amphibious/farms_amphibious/control/ode.pyx` — CPG oscillator ODE integration
+
 ---
 
 ## Background: What Is a CPG?

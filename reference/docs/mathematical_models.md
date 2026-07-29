@@ -1,5 +1,10 @@
 # Mathematical Models — CPG ODEs, hydrodynamics, and Ekeberg torque
 
+!!! note "Source Files"
+    - `farms_amphibious/farms_amphibious/control/ode.pyx` — CPG oscillator ODE integration
+    - `farms_amphibious/farms_amphibious/control/ekeberg.pyx` — Ekeberg muscle model
+    - `farms_mujoco/farms_mujoco/swimming/drag.pyx` — hydrodynamic drag model
+
 ## 1. CPG Oscillator Equations & Coupling Terms
 Implemented in `farms_amphibious/control/ode.pyx`.
 
