@@ -455,4 +455,7 @@ extensions:
 - [Options Hierarchy](../api/farms_core_options.md)
 - [I/O: SDF, HDF5, YAML](../api/farms_core_io.md)
 - [System Architecture](./architecture.md)
-- **Source**: `farms_core/farms_core/`
+
+## Source Code
+
+`farms_core/farms_core/`

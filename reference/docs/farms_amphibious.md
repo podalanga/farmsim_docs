@@ -389,4 +389,7 @@ sim = run_simulation(exp_options, simulator=simulator)
 - [Options](../api/farms_amphibious_options.md) — `AmphibiousOptions`, `AmphibiousControlOptions`, `KinematicsControlOptions`
 - [Mathematical Models](./mathematical_models.md) — coordinate transforms, CPG equations
 - [farms_core — Extension System](./farms_core.md) — `TaskExtension`, `AnimatController` base classes
-- **Source**: `farms_amphibious/farms_amphibious/control/`, `farms_amphibious/farms_amphibious/model/`, `farms_amphibious/farms_amphibious/data/`
+
+## Source Code
+
+`farms_amphibious/farms_amphibious/control/`, `farms_amphibious/farms_amphibious/model/`, `farms_amphibious/farms_amphibious/data/`

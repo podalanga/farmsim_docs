@@ -310,4 +310,7 @@ class ThrusterExtension(TaskExtension):
 - [TaskExtension base class](../api/farms_core_control.md)
 - [System architecture & execution loop](./architecture.md)
 - [Mathematical Models — Coordinate Transforms](./mathematical_models.md)
-- **Source**: `farms_mujoco/farms_mujoco/simulation/simulation.py`
+
+## Source Code
+
+`farms_mujoco/farms_mujoco/simulation/simulation.py`

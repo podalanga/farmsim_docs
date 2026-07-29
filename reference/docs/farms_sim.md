@@ -365,4 +365,7 @@ See [Configuration Reference](./configuration.md) for the full parameter table.
 - [System Architecture](./architecture.md) — End-to-end module interaction diagram
 - [Configuration Reference](./configuration.md) — Full YAML parameter tables
 - [Zbot tutorial](./zbot/index.md) — Step-by-step walkthrough using `farms_sim`
-- **Source**: `farms_sim/farms_sim/simulation.py`, `farms_sim/farms_sim/farmsim.py`, `farms_sim/farms_sim/utils/parse_args.py`
+
+## Source Code
+
+`farms_sim/farms_sim/simulation.py`, `farms_sim/farms_sim/farmsim.py`, `farms_sim/farms_sim/utils/parse_args.py`

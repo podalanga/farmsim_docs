@@ -222,7 +222,7 @@ ground_height: -1       # Z-coordinate of the ground plane (m)
 | `density: 1000.0` | Fresh water | Used for buoyancy: `$F_{\text{buoy}} \propto m \cdot g / \rho_{\text{link}}$` |
 
 !!! tip "Adding a Water Current"
-    Set `velocity: [0.2, 0, 0]` to add a 0.2 m/s current along X. The `SwimmingExtension` computes drag from **relative** velocity `v_link − v_water`, so the robot will need to swim against the current to stay in place.
+    Set `velocity: [0.2, 0, 0]` to add a 0.2 m/s current along X. The `SwimmingExtension` computes drag from **relative** velocity `v_link - v_water`, so the robot will need to swim against the current to stay in place.
 
 ---
 
