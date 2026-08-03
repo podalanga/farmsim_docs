@@ -643,4 +643,4 @@ Before submitting a contribution, verify:
 - [Zbot tutorial](./zbot/index.md) — end-to-end example of the system working together
 - [Configuration Reference](./configuration.md) — all YAML parameters
 - [Mathematical Models](./mathematical_models.md) — CPG and muscle model equations
-- [`farms_core.model.control`](../api/farms_core_control.md) — controller base class API
+- [`farms_core.model.control`](api/farms_core_control.md) — controller base class API

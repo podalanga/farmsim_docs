@@ -150,17 +150,18 @@ This copy happens **before** extensions are called in `before_step()`, so extens
 
 #### The `maps` Attribute
 
-`task.maps` is a nested dictionary that maps human-readable names to integer MuJoCo body IDs:
+`task.maps` is a **list of 3 dictionaries** (one per collection pass) that maps human-readable names to integer MuJoCo body IDs:
 
 ```python
-# Structure: task.maps.links[animat_name][link_name] -> int body_id
-# Structure: task.maps.joints[animat_name][joint_name] -> int joint_id
+# Structure: task.maps[i] where i=0 sensors, i=1 ctrl, i=2 muscles/inertias
+# Each element is a dict with keys: 'sensors', 'ctrl', 'muscles', 'inertias'
+# Each key maps link_name -> data array
 
 class MyExtension(TaskExtension):
     def initialize_episode(self, task, physics):
         # Cache body IDs once — much faster than name lookup every step
-        self._head_id = task.maps.links['zbot']['Head']
-        self._joint_1_id = task.maps.joints['zbot']['joint_1']
+        self._head_id = physics.model.body('Head').id
+        self._joint_1_id = physics.model.joint('joint_1').id
 
     def before_step(self, task, action, physics):
         # Use cached integer ID for direct array access — zero overhead
@@ -176,7 +177,7 @@ class MyExtension(TaskExtension):
 
 ## Hydrodynamics
 
-For aquatic and amphibious robots, `farms_mujoco.swimming` implements a phenomenological drag model in Cython (`swimming/drag.pyx`). See [Hydrodynamic Swimming](../api/farms_mujoco_swimming.md) for the full reference.
+For aquatic and amphibious robots, `farms_mujoco.swimming` implements a phenomenological drag model in Cython (`swimming/drag.pyx`). See [Hydrodynamic Swimming](api/farms_mujoco_swimming.md) for the full reference.
 
 ### Registering the Swimming Extension
 
@@ -268,7 +269,7 @@ class ThrusterExtension(TaskExtension):
 
     def initialize_episode(self, task, physics):
         # Cache the integer body ID once — avoids repeated name lookup per step
-        self._body_id = task.maps.links['my_robot'][self.link_name]
+        self._body_id = physics.model.body(self.link_name).id
 
     def before_step(self, task, action, physics):
         # Rotate body-local force to world frame using the body's rotation matrix
@@ -305,9 +306,9 @@ class ThrusterExtension(TaskExtension):
 
 ## See Also
 
-- [ExperimentTask & visual extensions](../api/farms_mujoco_simulation.md)
-- [Hydrodynamic swimming model](../api/farms_mujoco_swimming.md)
-- [TaskExtension base class](../api/farms_core_control.md)
+- [ExperimentTask & visual extensions](api/farms_mujoco_simulation.md)
+- [Hydrodynamic swimming model](api/farms_mujoco_swimming.md)
+- [TaskExtension base class](api/farms_core_control.md)
 - [System architecture & execution loop](./architecture.md)
 - [Mathematical Models — Coordinate Transforms](./mathematical_models.md)
 

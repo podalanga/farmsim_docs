@@ -93,7 +93,7 @@ This document enumerates the tunable parameters (Options classes) across the FAR
 | `timestep` | 1e-3 | s | Physics Engine | Integration time step |
 | `gravity` | [0,0,-9.81]| m/s² | Physics Engine | Global gravity vector |
 | `num_sub_steps` | 1 | - | Physics Engine | Physics Substepping |
-| `cb_sub_steps` | 0 | - | Callback Engine | Callback frequency |
+| `cb_sub_steps` | 1 (effective) | - | Callback Engine | Callback frequency |
 | `n_solver_iters` | 50 | - | Physics Solver | Solver precision limit |
 
 ### `MuJoCoSimulationOptions`

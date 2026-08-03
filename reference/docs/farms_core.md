@@ -40,7 +40,7 @@ ExperimentOptions
     └── water: WaterOptions
 ```
 
-See [farms_core.model.options](../api/farms_core_options.md) for the full class reference and parameter tables.
+See [farms_core.model.options](api/farms_core_options.md) for the full class reference and parameter tables.
 
 ### How YAML is Loaded
 
@@ -82,7 +82,7 @@ ExperimentData
         └── visuals: VisualsArray       ← visual markers
 ```
 
-See [farms_core.sensors.data](../api/farms_core_sensors.md) for the full sensor array reference.
+See [farms_core.sensors.data](api/farms_core_sensors.md) for the full sensor array reference.
 
 ### Accessing Sensor Data in a Controller
 
@@ -195,7 +195,6 @@ ControlType.from_string_list(['position', 'torque'])  # → [0, 2]
 ### `RuntimeSimulationOptions` (`simulation.runtime`)
 
 | Name | Type | Default | Description |
-
 |-------|------|---------|-------------|
 | `n_iterations` | `int` | `1000` | Total simulation steps to run |
 | `buffer_size` | `int` | `n_iterations` | Ring-buffer size for sensor arrays; `0` = same as `n_iterations` |
@@ -208,16 +207,15 @@ ControlType.from_string_list(['position', 'torque'])  # → [0, 2]
 ### `PhysicsSimulationOptions` (`simulation.physics`)
 
 | Name | Type | Default | Description |
-
 |-------|------|---------|-------------|
 | `timestep` | `float` | `0.001` | Physics integration timestep [s] |
 | `gravity` | `list[float]` | `[0, 0, -9.81]` | Gravity vector [m/s²] |
 | `num_sub_steps` | `int` | `1` | MuJoCo-internal sub-steps per `env.step()` call |
-| `cb_sub_steps` | `int` | `0` | FARMS callback sub-steps per outer loop iteration (0 = disabled) |
+| `cb_sub_steps` | `int` | `1` (effective) | FARMS callback sub-steps per outer loop iteration (raw default `0` is clamped to `1` by simulation) |
 | `n_solver_iters` | `int` | `50` | Maximum MuJoCo solver iterations per step |
 
 !!! note "`cb_sub_steps` and Extension Call Rate"
-    When `cb_sub_steps > 0`, `before_step()` is called `cb_sub_steps` times per outer `env.step()` call. For Zbot (`cb_sub_steps: 2`, `timestep: 0.002 s`), extensions run at 1 kHz. When `cb_sub_steps: 0`, `before_step()` is called once per step at the physics timestep rate.
+    `before_step()` is called `cb_sub_steps` times per outer `env.step()` call. The raw YAML default is `0`, but it is always clamped to at least `1` by the simulation (never zero). For Zbot (`cb_sub_steps: 2`, `timestep: 0.002 s`), extensions run at 1 kHz. With `cb_sub_steps: 1`, `before_step()` is called once per step at the physics timestep rate.
 
 ### `SensorsOptions` (`animat.control.sensors`)
 
@@ -271,7 +269,7 @@ TaskExtension (ABC)
     └── AnimatController (ABC)   ← provides positions/velocities/torques/excitations
 ```
 
-For the full interface contract including all 11 `TaskExtension` methods and the 7 `AnimatController` output methods, see [farms_core control interfaces](../api/farms_core_control.md).
+For the full interface contract including all 11 `TaskExtension` methods and the 7 `AnimatController` output methods, see [farms_core control interfaces](api/farms_core_control.md).
 
 ### Implementing a Custom Controller
 
@@ -362,7 +360,7 @@ extensions:
 | `farms_core.io.hdf5` | Save/load `AnimatData` sensor arrays to HDF5 |
 | `farms_core.io.yaml` | Load YAML to Python objects (`yaml2pyobject`) |
 
-See [farms_core.io](../api/farms_core_io.md) for the function reference.
+See [farms_core.io](api/farms_core_io.md) for the function reference.
 
 ---
 
@@ -450,10 +448,10 @@ extensions:
 
 ## See Also
 
-- [Controller & Extension Interfaces](../api/farms_core_control.md)
-- [Sensor Data Arrays](../api/farms_core_sensors.md)
-- [Options Hierarchy](../api/farms_core_options.md)
-- [I/O: SDF, HDF5, YAML](../api/farms_core_io.md)
+- [Controller & Extension Interfaces](api/farms_core_control.md)
+- [Sensor Data Arrays](api/farms_core_sensors.md)
+- [Options Hierarchy](api/farms_core_options.md)
+- [I/O: SDF, HDF5, YAML](api/farms_core_io.md)
 - [System Architecture](./architecture.md)
 
 ## Source Code

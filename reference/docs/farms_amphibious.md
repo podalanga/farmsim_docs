@@ -379,14 +379,14 @@ sim = run_simulation(exp_options, simulator=simulator)
 
 ## See Also
 
-- [CPG Oscillator Network](../api/cpg_oscillators.md) — full ODE kernel signatures and state vector layout
-- [Ekeberg Muscle Model](../api/ekeberg_muscle.md) — detailed muscle equation and parameter table
-- [Joint Controllers](../api/joint_controllers.md) — all five actuator strategies
-- [Amphibious Controller](../api/farms_amphibious_controller.md) — `AmphibiousController` class reference
-- [Network ODE Integrator](../api/farms_amphibious_network.md) — `NetworkODE` and `AnimatNetwork` ABC
-- [Descending Drive](../api/farms_amphibious_drive.md) — `DescendingDrive`, `PotentialMap`, `OrientationFollower`
-- [Data Classes](../api/farms_amphibious_data.md) — `AmphibiousData`, `NetworkStateArray`, `DriveArray`
-- [Options](../api/farms_amphibious_options.md) — `AmphibiousOptions`, `AmphibiousControlOptions`, `KinematicsControlOptions`
+- [CPG Oscillator Network](api/cpg_oscillators.md) — full ODE kernel signatures and state vector layout
+- [Ekeberg Muscle Model](api/ekeberg_muscle.md) — detailed muscle equation and parameter table
+- [Joint Controllers](api/joint_controllers.md) — all five actuator strategies
+- [Amphibious Controller](api/farms_amphibious_controller.md) — `AmphibiousController` class reference
+- [Network ODE Integrator](api/farms_amphibious_network.md) — `NetworkODE` and `AnimatNetwork` ABC
+- [Descending Drive](api/farms_amphibious_drive.md) — `DescendingDrive`, `PotentialMap`, `OrientationFollower`
+- [Data Classes](api/farms_amphibious_data.md) — `AmphibiousData`, `NetworkStateArray`, `DriveArray`
+- [Options](api/farms_amphibious_options.md) — `AmphibiousOptions`, `AmphibiousControlOptions`, `KinematicsControlOptions`
 - [Mathematical Models](./mathematical_models.md) — coordinate transforms, CPG equations
 - [farms_core — Extension System](./farms_core.md) — `TaskExtension`, `AnimatController` base classes
 

@@ -42,8 +42,8 @@ This document outlines the purpose, override requirements, and implicit contract
 * **Purpose**: Acts as the adapter between `farms_core` abstraction definitions and the `dm_control` (MuJoCo) physics backend. `ExperimentTask` inherits from `dm_control.rl.control.Task`. 
 * **Virtual Methods**: Overrides dm_control's lifecycle methods (`initialize_episode`, `before_step`, `after_step`), delegating them directly to registered `TaskExtension`s.
 * **Adding a Force Model**: Users typically do not override the physics backend interface directly. To add a new force model (e.g., fluid dynamics), a user creates an `AnimatExtension` (like `SwimmingExtension`) and calculates/applies forces in the `before_step` hook.
-* **Memory Rules / Implicit Contracts**: 
-  * Applying forces relies on directly mutating underlying MuJoCo C-struct arrays (e.g., `physics.data.xfrc_applied`) at specific indices retrieved from `task.maps`. 
+* **Memory Rules / Implicit Contracts**:
+  * Applying forces relies on directly mutating underlying MuJoCo C-struct arrays (e.g., `physics.data.xfrc_applied`) at specific body indices retrieved via `physics.model.body(name).id` (cached during `initialize_episode`).
   * Memory allocation is fully owned by MuJoCo; extensions must mutate arrays in place and ensure correct coordinate transforms (e.g., local to global frames).
 
 ## 3. `farms_amphibious` Control and Network Base Classes
