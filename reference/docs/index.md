@@ -1,14 +1,6 @@
-# FARMS Documentation — Framework for Animat and Robot Morphologies in Simulation
+# FARMS Documentation
 
 **FARMS** (Framework for Animat and Robot Morphologies in Simulation) is a modular simulation framework for biorobotics and neuro-mechanical locomotion research. It wraps the MuJoCo physics engine via `dm_control`, and provides CPG-based neural controllers, hydrodynamic models, and a plugin system for extending both the physics and the control layers.
-
-!!! note "Source Files"
-    - `farms_sim/farms_sim/farmsim.py` — CLI entry point and orchestrator
-    - `farms_mujoco/farms_mujoco/simulation/simulation.py` — MuJoCo backend setup
-    - `farms_amphibious/farms_amphibious/control/amphibious.py` — production CPG controller
-    - `farms_core/farms_core/model/options.py` — configuration dataclasses
-
----
 
 ## Package Overview
 
@@ -19,44 +11,36 @@
 | [`farms_mujoco`](./farms_mujoco.md) | `farms_mujoco` | MuJoCo physics backend, MJCF generation, task lifecycle, hydrodynamics |
 | [`farms_amphibious`](./farms_amphibious.md) | `farms_amphibious` | CPG networks, descending drive, Ekeberg muscle model, joint actuators |
 
----
-
 ## Quick Start
 
 ```bash
-# Clone the repository and fetch submodules
-git clone git@github.com:farmsim/farms_zbot.git
-cd farms_zbot
-git submodule update --init --recursive
-
-# Initialize and activate virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows use: .venv\Scripts\Activate.ps1
-
-# Install all FARMS packages
+# Install all packages
 cd farms
 python setup_farms.py
 
-# Run a sample simulation
-cd ../experiments/zbot_swimming
-python -m farms_sim.farmsim --experiment_config experiment_config.yaml
+# Run a simulation
+python -m farms_sim.farmsim --experiment_config path/to/experiment_config.yaml
 ```
 
 See [Installation](./installation.md) for full setup instructions including Cython compilation.
 
----
-
 ## Documentation Map
 
 ### Getting Started
-- [Installation](./installation.md) - prerequisites, native install, Docker
-- [Simulation Walkthrough](./walkthrough.md) - end-to-end lifecycle narrative
+- [Installation](./installation.md) — prerequisites, native install, Docker
+- [Simulation Walkthrough](./walkthrough.md) — end-to-end lifecycle narrative
 
 ### Module Guides
-- [farms_core](./farms_core.md) - Options/Data architecture, extension system, built-in loggers
-- [farms_sim](./farms_sim.md) - CLI flags, function reference, RL integration
-- [farms_mujoco](./farms_mujoco.md) - Simulation class, viewer modes, applying external forces
-- [farms_amphibious](./farms_amphibious.md) - CPG math, muscle models, descending drive
+- [farms_core](./farms_core.md) — Options/Data architecture, extension system, built-in loggers
+- [farms_sim](./farms_sim.md) — CLI flags, function reference, RL integration
+- [farms_mujoco](./farms_mujoco.md) — Simulation class, viewer modes, applying external forces
+- [farms_amphibious](./farms_amphibious.md) — CPG math, muscle models, descending drive
+
+### Zbot Robot
+- [Zbot Overview](./zbot/index.md) — bio-inspired eel-like swimming robot
+- [Zbot Model](./zbot/model.md) — SDF geometry and physical properties
+- [Swimming Experiment](./zbot/experiment.md) — full YAML config walkthrough
+- [Custom CPG Controller](./zbot/cpg_controller.md) — step-by-step controller guide
 
 ### API Reference
 - [Controller & Extension Interfaces](api/farms_core_control.md)
@@ -75,23 +59,21 @@ See [Installation](./installation.md) for full setup instructions including Cyth
 - [Amphibious Options](api/farms_amphibious_options.md)
 
 ### Reference
-- [System Architecture](./architecture.md) - data flow diagrams, class hierarchies, execution loop
-- [Mathematical Models](./mathematical_models.md) - CPG ODEs, drag equations, Ekeberg model
-- [Configuration Reference](./configuration.md) - all YAML parameter tables
-- [Core Interfaces](./core_interfaces.md) - abstract base class contracts
+- [System Architecture](./architecture.md) — data flow diagrams, class hierarchies, execution loop
+- [Mathematical Models](./mathematical_models.md) — CPG ODEs, drag equations, Ekeberg model
+- [Configuration Reference](./configuration.md) — all YAML parameter tables
+- [Core Interfaces](./core_interfaces.md) — abstract base class contracts
 - [Glossary](./glossary.md)
 - [Contributing](./contributing.md)
 
----
-
 ## User Paths
 
-**Running experiments** - configure animats via YAML, use the CLI, post-process HDF5 output:
+**Running experiments** — configure animats via YAML, use the CLI, post-process HDF5 output:
 1. [Installation](./installation.md)
 2. [Walkthrough](./walkthrough.md)
 3. [Configuration Reference](./configuration.md)
 
-**Extending the framework** - new controllers, physics models, or animat morphologies:
+**Extending the framework** — new controllers, physics models, or animat morphologies:
 1. [Core Interfaces](./core_interfaces.md)
 2. [System Architecture](./architecture.md)
 3. [Contributing](./contributing.md)

@@ -1,0 +1,115 @@
+/* --- 1. Modern Color Palette with Fixed Link Contrast --- */
+:root {
+  --md-primary-fg-color: #0f172a;
+  --md-primary-fg-color--light: #1e293b;
+  --md-primary-fg-color--dark: #020617;
+  --md-accent-fg-color: #38bdf8;
+  --md-accent-fg-color--transparent: rgba(56, 189, 248, 0.1);
+  /* Light mode link color - dark enough for white bg */
+  --md-typeset-a-color: #2563eb; 
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #0f172a;
+  --md-primary-fg-color--light: #1e293b;
+  --md-primary-fg-color--dark: #020617;
+  --md-default-bg-color: #0f172a;
+  --md-default-fg-color: #e2e8f0;
+  --md-default-fg-color--light: #94a3b8;
+  --md-default-fg-color--lightest: #334155;
+  /* Dark mode link color - bright sky blue for dark bg */
+  --md-typeset-a-color: #38bdf8; 
+  --md-code-bg-color: #1e293b;
+}
+
+/* --- 2. Hero Banner Styling --- */
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+}
+
+.hero-buttons {
+  margin-top: 2rem;
+  margin-bottom: 3rem;
+}
+
+.hero-buttons .md-button {
+  margin-right: 1rem;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* --- 3. Beautiful Feature Cards --- */
+.grid.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.grid.cards > * {
+  background: var(--md-code-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.grid.cards > *:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  border-color: var(--md-accent-fg-color);
+}
+
+.grid.cards h3 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  color: var(--md-accent-fg-color);
+}
+
+/* --- 4. Better Code Blocks & Annotations --- */
+.highlight pre, .highlight code {
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+}
+
+/* Fix annotation numbers in dark mode */
+[data-md-color-scheme="slate"] .md-annotation__index {
+  background: var(--md-accent-fg-color) !important;
+  color: var(--md-primary-fg-color) !important;
+}
+
+/* --- 5. Cleaner Tables --- */
+.md-typeset table:not([class]) {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--md-code-bg-color);
+  color: var(--md-accent-fg-color);
+  font-weight: 600;
+}
+
+/* Ensure table borders are visible in dark mode */
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) td {
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* --- 6. Admonition Tweaks --- */
+.md-typeset .admonition, .md-typeset details {
+  border-radius: 8px;
+  border-left-width: 4px;
+}
+
+/* Fix admonition title contrast in dark mode */
+[data-md-color-scheme="slate"] .md-typeset .admonition-title {
+  background-color: rgba(56, 189, 248, 0.1);
+  color: var(--md-accent-fg-color);
+}

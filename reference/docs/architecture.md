@@ -1,12 +1,7 @@
-# Architecture & Data Flow — Cross-module dependencies and execution loop
+
+# Architecture & Data Flow
 
 This document details the cross-module dependencies and execution loop of the FARMS framework.
-
-!!! note "Source Files"
-    - `farms_mujoco/farms_mujoco/simulation/simulation.py` — `Simulation.from_experiment()`
-    - `farms_mujoco/farms_mujoco/simulation/task.py` — `ExperimentTask` lifecycle
-    - `farms_core/farms_core/model/data.py` — `ExperimentData` / `AnimatData`
-    - `farms_core/farms_core/model/options.py` — `ExperimentOptions` tree
 
 ## Cross-Module Data Flow
 
@@ -21,29 +16,26 @@ flowchart TD
     end
 
     subgraph farms_sim ["farms_sim (Simulation Manager)"]
-        FS_Sim["simulation.py: simulation_setup"]
+        FS_Sim["simulation.py: setup_from_clargs / run_simulation"]
         FS_Sim -->|loads| EO
         FS_Sim -->|initializes| ED
     end
 
     subgraph farms_mujoco ["farms_mujoco (Physics Backend)"]
-        FM_Sim[Simulation]
+        FM_Sim[Simulation.from_experiment]
         Task[ExperimentTask]
         Physics["dm_control Physics"]
         Env["dm_control Environment"]
-        
-        FS_Sim -->|creates| FM_Sim
         FM_Sim -->|creates| Task
         FM_Sim -->|creates| Physics
         FM_Sim -->|creates| Env
-        
         Task -->|"reads/writes state"| ED
     end
 
     subgraph farms_amphibious ["farms_amphibious (Domain Control)"]
-        AC["AmphibiousController / NetworkODE"]
-        AC -.->|implements| TaskExtension["TaskExtension"]
-        AC -->|"computes torques"| Task
+        AC["AmphibiousController / ZbotCPGController"]
+        AC -.->|implements| TaskExtension[TaskExtension]
+        AC -->|"computes torques/positions"| Task
     end
 
     subgraph Hydrodynamics ["farms_mujoco.swimming (Domain Physics)"]
@@ -51,81 +43,59 @@ flowchart TD
         SH[SwimmingHandler]
         SE -.->|implements| TaskExtension
         SE -->|uses| SH
-        SH -->|applies xfrc_applied| Physics
+        SH -->|"applies xfrc_applied"| Physics
     end
-    
+
+    FS_Sim -->|creates| FM_Sim
     Task -->|"calls before_step()"| AC
     Task -->|"calls before_step()"| SE
 ```
 
 ## Class & Inheritance Diagrams
 
-### UML Diagram Conventions
-The diagrams below use standard UML (Unified Modeling Language) notation rendered via Mermaid.js. In these diagrams, a single "box" represents a Class, and it is divided into three horizontal segments:
+### `farms_core`
 
-1. **Top Segment (Class Name):** The name of the class (e.g., `ExampleClass`). It may also contain a tag like `<<Base>>` to indicate it is a base/abstract class.
-2. **Middle Segment (Attributes):** The properties, data, or variables the class holds (e.g., `+String my_variable`).
-3. **Bottom Segment (Methods):** The functions or operations the class can perform (e.g., `+do_something()`).
-
-**Example:**
-```mermaid
-classDiagram
-    class ExampleClass {
-        +String attribute_name
-        +int another_attribute
-        +method_name()
-        +another_method(param)
-    }
-```
-
-### `farms_core` Options
 ```mermaid
 classDiagram
     class Options {
-        <<Base>>
-    }
-    class ModelOptions {
-        <<Base>>
+        <<dict subclass>>
+        +from_options(cls, options)
+        +load(cls, filename)
+        +save(cls, filename)
     }
     class ExperimentOptions
     class AnimatOptions
     class ArenaOptions
-    
     Options <|-- ExperimentOptions
-    Options <|-- ModelOptions
-    ModelOptions <|-- AnimatOptions
-    ModelOptions <|-- ArenaOptions
-```
+    Options <|-- AnimatOptions
+    Options <|-- ArenaOptions
 
-### `farms_core` Data
-```mermaid
-classDiagram
-    class ExperimentData
-    class AnimatData
-```
-
-### `farms_core` Extensions
-```mermaid
-classDiagram
     class TaskExtension {
+        <<ABC>>
         +initialize_episode()
         +before_step()
         +after_step()
     }
     class AnimatExtension {
-        +int animat_i
+        <<ABC>>
+        +animat_i
     }
     TaskExtension <|-- AnimatExtension
-    
     class AnimatController {
+        <<ABC>>
         +positions()
         +velocities()
         +torques()
+        +springrefs()
+        +springcoefs()
+        +dampingcoefs()
+        +excitations()
     }
     AnimatExtension <|-- AnimatController
 ```
 
 ### `farms_sim`
+
 ```mermaid
 classDiagram
     class SimulationManager {
@@ -134,37 +104,36 @@ classDiagram
         +simulation_setup()
         +run_simulation()
     }
+    note for SimulationManager "farms_sim acts as a functional entrypoint\nand simulation runner"
 ```
-*Note: `farms_sim` acts mostly as a functional entrypoint and simulation runner rather than defining OOP hierarchies.*
 
 ### `farms_mujoco`
+
 ```mermaid
 classDiagram
     class dm_control_Task {
         <<dm_control>>
     }
     class ExperimentTask {
-        +List~TaskExtension~ extensions
+        +extensions : List~TaskExtension~
         +initialize_episode()
         +before_step()
         +after_step()
     }
     dm_control_Task <|-- ExperimentTask
-    
     class Simulation {
         +physics : mjcf.Physics
         +task : ExperimentTask
         +run()
     }
     Simulation *-- ExperimentTask
-    
     class SwimmingExtension
     class SwimmingHandler
-    
     SwimmingExtension *-- SwimmingHandler
 ```
 
 ### `farms_amphibious`
+
 ```mermaid
 classDiagram
     class AnimatController {
@@ -175,13 +144,9 @@ classDiagram
         +network : NetworkODE
     }
     class KinematicsController
-    class MantaController
-    
     AnimatController <|-- JointMuscleController
     JointMuscleController <|-- AmphibiousController
     AnimatController <|-- KinematicsController
-    AnimatController <|-- MantaController
-    
     class AnimatNetwork {
         <<Base>>
     }
@@ -198,37 +163,37 @@ The FARMS execution loop involves coordination between `farms_sim` (orchestratio
 
 ```mermaid
 sequenceDiagram
-    participant App as "farms_sim (simulation.py)"
-    participant Sim as "farms_mujoco.Simulation"
-    participant Env as "dm_control Environment"
-    participant Task as "ExperimentTask"
-    participant Phys as "MuJoCo Physics"
-    participant CPG as "AmphibiousController (TaskExtension)"
-    participant Swim as "SwimmingExtension (TaskExtension)"
+    participant App as farms_sim (simulation.py)
+    participant Sim as farms_mujoco.Simulation
+    participant Env as dm_control Environment
+    participant Task as ExperimentTask
+    participant Phys as MuJoCo Physics
+    participant CPG as Controller (TaskExtension)
+    participant Swim as SwimmingExtension (TaskExtension)
 
-    App->>Sim: sim.run()
+    App->>Sim: run_simulation()
+    Sim->>Sim: Simulation.from_experiment()
+    Note over Sim: setup_mjcf_xml() builds MJCF from SDF + arena
+    Sim->>Task: ExperimentTask(...)
+    Sim->>Phys: Physics.from_mjcf_model(mjcf)
+    Sim->>Env: Environment(physics, task)
+
     loop Every Iteration
         loop cb_sub_steps times
             Sim->>Env: env.step(action=None)
             Env->>Task: task.before_step(physics)
-            
             Task->>Task: update_sensors(physics)
             Note over Task: Copies physics.data (qpos, xpos) into AnimatData.sensors
-
             Task->>CPG: extension.before_step()
-            CPG->>CPG: network.step()
-            Task->>CPG: torques() / excitations()
-            CPG-->>Task: returns values
+            CPG->>CPG: network.step() or controller.step()
+            CPG-->>Task: returns torques/positions
             Task->>Phys: writes to physics.data.ctrl
-            
             Task->>Swim: extension.before_step()
             Swim->>Swim: handler.step()
             Swim-->>Phys: writes to physics.data.xfrc_applied
             Note over Task,Swim: Order depends on config YAML array order!
-
             Env->>Phys: physics.step()
             Note over Phys: MuJoCo internal physics integration step
-            
             Env->>Task: task.after_step(physics)
             Task->>CPG: extension.after_step()
             Task->>Swim: extension.after_step()
@@ -236,6 +201,8 @@ sequenceDiagram
     end
 ```
 
-### Potential Fragility in Order-of-Operations
-1. **Extension Ordering**: `Task.extensions` is populated by simply concatenating `simulation.extensions` and `animat.extensions` arrays from the user's YAML config (`ExperimentTask.extract_extensions`). `ExperimentTask` iterates this array sequentially. If the `SwimmingExtension` (hydrodynamics) is listed before `AmphibiousController` (CPG), the hydrodynamics model computes forces based on the *previous* step's positions/velocities before the controller actuates the joints.
+## Potential Fragility in Order-of-Operations
+
+1. **Extension Ordering**: `Task.extensions` is populated by concatenating `simulation.extensions` and `animat.extensions` arrays from the user's YAML config (`ExperimentTask.extract_extensions`). `ExperimentTask` iterates this array sequentially. If the `SwimmingExtension` (hydrodynamics) is listed before the controller, the hydrodynamics model computes forces based on the *previous* step's positions/velocities before the controller actuates the joints.
+
 2. **Buffer Overwrites**: `update_sensors()` writes into `AnimatData.sensors` using modulo arithmetic `index = task.iteration % buffer_size`. If an extension processes history longer than `buffer_size`, it will encounter overwritten data.

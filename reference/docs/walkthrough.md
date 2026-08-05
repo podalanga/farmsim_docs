@@ -1,19 +1,12 @@
-# Walkthrough — End-to-end simulation lifecycle narrative
+# Codebase Walkthrough: The FARMS Lifecycle
 
 This guide walks through the exact order of operations in the FARMS framework, from script invocation through the physics loop and to output writing. If you're a new contributor looking to understand how the system is wired together, start here.
-
-!!! note "Source Files"
-    - `farms_sim/farms_sim/farmsim.py` — CLI entry point (`main()`)
-    - `farms_mujoco/farms_mujoco/simulation/simulation.py` — `Simulation.from_experiment()`
-    - `farms_mujoco/farms_mujoco/simulation/mjcf.py` — MJCF generation
-    - `farms_mujoco/farms_mujoco/simulation/task.py` — `ExperimentTask` lifecycle
-    - `farms_core/farms_core/model/data.py` — `ExperimentData` / `AnimatData`
 
 ## 1. Invocation and Parsing
 
 The standard entry point to run a FARMS simulation is `farms_sim.farmsim` (`python -m farms_sim.farmsim` or via custom runner scripts).
 
-**Relevant Files:** 
+**Relevant Files:**
 - `farms_sim/farms_sim/farmsim.py`
 - `farms_sim/farms_sim/simulation.py`
 
@@ -52,7 +45,8 @@ When `initialize_episode()` is called:
 
 The `run()` method in `farms_mujoco`'s `Simulation` is a `while` loop that iterates until the target time is reached. Within this loop, the system calls `dm_control`'s `env.step()`, which in turn triggers:
 
-### Pre-Step (Sensor reading and Extension calculations)
+### 4.1. Pre-Step (Sensor reading and Extension calculations)
+
 **Relevant File:** `farms_mujoco/farms_mujoco/simulation/task.py` (see `before_step`)
 
 1. **Update Sensors:** `update_sensors()` copies the current physical state (`physics.data.qpos`, `xpos`, etc.) into the `AnimatData.sensors` structures using the maps we built during initialization.
@@ -62,14 +56,16 @@ The `run()` method in `farms_mujoco`'s `Simulation` is a `while` loop that itera
 
 *(Danger Zone: The order these extensions run is derived from the YAML config. If the swimming extension ran before the controller updated the joints, it would calculate hydrodynamics using the old joint states!)*
 
-### Physics Step
+### 4.2. Physics Step
+
 MuJoCo takes the populated `physics.data.ctrl` and `physics.data.xfrc_applied` arrays, solves the contact constraints, and performs a numerical integration step forward in time.
 
-### Post-Step
+### 4.3. Post-Step
+
 The Task's `after_step()` is called. Extensions can perform cleanup, logging, or reward calculation here.
 
 ## 5. Output and Post-Processing
 
-Once the target number of iterations is reached, the simulation loop exits. 
+Once the target number of iterations is reached, the simulation loop exits.
 
 If logging was enabled, the `ExperimentData` structure (which has been quietly buffering the simulation state in numpy arrays) is written to disk as an HDF5 file alongside a copy of the configuration YAMLs used. This produces a perfectly reproducible artifact of the run.

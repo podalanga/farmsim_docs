@@ -32,8 +32,6 @@ The `TaskExtension` is an abstract base class for any simulation hook. Custom ex
 | `observation_spec(self, task: Task, physics: Physics)` | Defines the observation specification. |
 | `end_episode(self, task: Task, physics: Physics)` | Called at the end of the simulation. |
 
----
-
 ## AnimatExtension
 
 ```python
@@ -49,8 +47,6 @@ Inherits `initialize_episode()`, `before_step()`, and all other simulation lifec
 |--------|-------------|
 | `from_options(cls, config: dict, experiment_options: ExperimentOptions, animat_i: int, animat_data: AnimatData, animat_options: AnimatOptions)` | **Abstract.** Instantiates the extension for a specific animat. |
 
----
-
 ## AnimatController
 
 ```python
@@ -61,13 +57,13 @@ class AnimatController(AnimatExtension):
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `animat_i` | `int` | *Required* | Index of the animat this controller drives. |
-| `joints_names` | `tuple[list[str], ...]` | *Required* | 7-tuple of joint name lists, one for each `ControlType`. |
-| `muscles_names` | `tuple[str, ...]` | *Required* | Tuple of muscle names. |
-| `max_torques` | `tuple[NDARRAY_V1, ...]` | *Required* | 7-tuple of maximum torques per `ControlType`. |
+| `animat_i` | `int` | *(required)* | Index of the animat this controller drives. |
+| `joints_names` | `tuple[list[str], ...]` | *(required)* | 7-tuple of joint name lists, one for each `ControlType`. |
+| `muscles_names` | `tuple[str, ...]` | *(required)* | Tuple of muscle names. |
+| `max_torques` | `tuple[NDARRAY_V1, ...]` | *(required)* | 7-tuple of maximum torques per `ControlType`. |
 | `substep` | `bool` | `True` | Whether controller runs on substeps. |
 
-The `AnimatController` bridges high-level behavior (like a CPG) to low-level physical actuation. 
+The `AnimatController` bridges high-level behavior (like a CPG) to low-level physical actuation.
 
 ### Methods
 
@@ -80,10 +76,8 @@ The following methods output the active commands for the current iteration. Each
 | `torques` | `dict[str, float]` | Direct torque or force commands. |
 | `springrefs` | `dict[str, float]` | Dynamic spring equilibrium references. |
 | `springcoefs` | `dict[str, float]` | Dynamic stiffness coefficients. |
-| `dampingcoefs`| `dict[str, float]` | Dynamic damping coefficients. |
+| `dampingcoefs` | `dict[str, float]` | Dynamic damping coefficients. |
 | `excitations` | `dict[str, float]` | Muscle activation levels. |
-
----
 
 ## ControlType
 
@@ -94,17 +88,15 @@ class ControlType(IntEnum):
 
 Standardizes the modes by which joints and actuators are driven.
 
-| Name | Value | Description |
+| Value | Code | Controls |
 |-------|------|----------|
 | `POSITION` | `0` | Standard positional targets. |
 | `VELOCITY` | `1` | Target joint velocities. |
 | `TORQUE` | `2` | Direct effort, forces, or torques. |
 | `SPRINGREF` | `3` | Equilibrium point (rest length/angle) of a simulated spring. |
-| `SPRINGCOEF` | `4` | Joint stiffness (spring constant $K$). |
-| `DAMPINGCOEF`| `5` | Joint damping ($D$). |
+| `SPRINGCOEF` | `4` | Joint stiffness (spring constant *K*). |
+| `DAMPINGCOEF` | `5` | Joint damping (*D*). |
 | `MUSCLE` | `6` | Muscle excitation levels (activations). |
-
----
 
 ## ExperimentLogger
 
@@ -116,13 +108,11 @@ class ExperimentLogger(TaskExtension):
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `experiment_options` | `ExperimentOptions` | *Required* | The options for the experiment. |
-| `log_path` | `str` | *Required* | Directory to save the HDF5 file. |
-| `skip` | `int` | *Required* | Number of frames to skip between logging. |
+| `experiment_options` | `ExperimentOptions` | *(required)* | The options for the experiment. |
+| `log_path` | `str` | *(required)* | Directory to save the HDF5 file. |
+| `skip` | `int` | *(required)* | Number of frames to skip between logging. |
 
 A simulation extension that logs animat data arrays into an HDF5 file (`simulation.hdf5`) at the end of the simulation.
-
----
 
 ## ExperimentOptionsLogger
 
@@ -134,12 +124,10 @@ class ExperimentOptionsLogger(TaskExtension):
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `experiment_options` | `ExperimentOptions` | *Required* | The options for the experiment. |
-| `log_path` | `str` | *Required* | Directory to save the YAML files. |
+| `experiment_options` | `ExperimentOptions` | *(required)* | The options for the experiment. |
+| `log_path` | `str` | *(required)* | Directory to save the YAML files. |
 
 A simulation extension that writes the initial simulation, animat, and arena configuration options into distinct YAML files (`simulation_options.yaml`, `animat_X_options.yaml`, `arena_X_options.yaml`) before the simulation steps begin.
-
----
 
 ## Usage Example
 
@@ -158,5 +146,5 @@ class SineWaveController(AnimatController):
 
 ## See Also
 
-- [Configuration Reference](../configuration.md) — YAML parameter definitions
-- [MuJoCo Simulation](./farms_mujoco_simulation.md) — Physics backend integration
+- [farms_core_options.md](farms_core_options.md)
+- [farms_mujoco_simulation.md](farms_mujoco_simulation.md)

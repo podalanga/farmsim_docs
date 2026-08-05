@@ -88,14 +88,14 @@ Replays pre-recorded joint kinematics instead of computing closed-loop physics. 
 The controller relies on dynamic mapping classes to translate abstract models to continuous simulation arrays.
 - `JointsMap`: Maps abstract joint names to physics simulation indices.
 - `MusclesMap`: Maps logical muscle definitions to physics actuator parameters.
+
 These mappings are populated dynamically during `initialize_episode`, rendering the controller agnostic to the underlying physics engine.
 
 !!! note
-    The Cython actuator models (`EkebergMuscleCy`, `PassiveJointCy`, `PositionMuscleCy`, `PositionPhaseCy`) are documented in [api/ekeberg_muscle.md](./ekeberg_muscle.md) and [api/joint_controllers.md](./joint_controllers.md).
+    The Cython actuator models (`EkebergMuscleCy`, `PassiveJointCy`, `PositionMuscleCy`, `PositionPhaseCy`) are documented in [api/ekeberg_muscle.md](ekeberg_muscle.md) and [api/joint_controllers.md](joint_controllers.md).
 
-## See Also
-
-- [CPG Oscillator Network API](./farms_amphibious_network.md) — CPG network and coupling
-- [Ekeberg Muscle Actuator Models](./ekeberg_muscle.md) — Muscle torque computation
-- [Joint Controllers](./joint_controllers.md) — Passive joint and position control
-- [Controller Base Classes](./farms_core_control.md) — AnimatController and TaskExtension
+**See also:**
+- [farms_amphibious.control.network](farms_amphibious_network.md)
+- [Ekeberg Muscle Actuator Models](ekeberg_muscle.md)
+- [Joint Controllers](joint_controllers.md)
+- [Core Control Module](farms_core_control.md)

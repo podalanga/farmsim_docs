@@ -20,8 +20,8 @@ def heading(self, pos)
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `pos` | `NDARRAY_V1` | _Required_ | Current 2D or 3D cartesian position in meters. |
+| ---- | ---- | ------- | ----------- |
+| `pos` | `NDARRAY_V1` | *(required)* | Current 2D or 3D cartesian position in meters. |
 
 ### `heading_cartesian`
 
@@ -30,8 +30,8 @@ def heading_cartesian(self, pos, radius=1)
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `pos` | `NDARRAY_V1` | _Required_ | Current cartesian position in meters. |
+| ---- | ---- | ------- | ----------- |
+| `pos` | `NDARRAY_V1` | *(required)* | Current cartesian position in meters. |
 | `radius` | `float` | `1` | Radius of the output vector. |
 
 ### `limit_cycle`
@@ -52,9 +52,9 @@ def mesh(self, lin_x, lin_y, radius=1)
 Generates a vector field mesh for visualization.
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `lin_x` | `NDARRAY_V1` | _Required_ | X-axis evaluation points. |
-| `lin_y` | `NDARRAY_V1` | _Required_ | Y-axis evaluation points. |
+| ---- | ---- | ------- | ----------- |
+| `lin_x` | `NDARRAY_V1` | *(required)* | X-axis evaluation points. |
+| `lin_y` | `NDARRAY_V1` | *(required)* | Y-axis evaluation points. |
 | `radius` | `float` | `1` | Vector radius normalization. |
 
 ---
@@ -68,7 +68,7 @@ def __init__(self, **kwargs)
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
+| ---- | ---- | ------- | ----------- |
 | `gain` | `float` | `1` | Lateral correction gain. |
 | `origin` | `NDARRAY_V1` | `[0, 0]` | Origin point of the line in meters. |
 | `theta` | `float` | `0` | Angle of the line in radians. |
@@ -84,7 +84,7 @@ def __init__(self, **kwargs)
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
+| ---- | ---- | ------- | ----------- |
 | `gain` | `float` | `1` | Radial correction gain. |
 | `origin` | `NDARRAY_V1` | `[0, 0]` | Center point of the circle in meters. |
 | `radius` | `float` | `4` | Radius of the orbit in meters. |
@@ -101,8 +101,8 @@ def __init__(self, drives: DriveArray)
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `drives` | `DriveArray` | _Required_ | Pre-allocated time-series array of drive channels. |
+| ---- | ---- | ------- | ----------- |
+| `drives` | `DriveArray` | *(required)* | Pre-allocated time-series array of drive channels. |
 
 ### `step`
 
@@ -112,10 +112,10 @@ def step(self, iteration: int, time: float, timestep: float)
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `iteration` | `int` | _Required_ | Current simulation iteration. |
-| `time` | `float` | _Required_ | Current simulation time in seconds. |
-| `timestep` | `float` | _Required_ | Simulation timestep in seconds. |
+| ---- | ---- | ------- | ----------- |
+| `iteration` | `int` | *(required)* | Current simulation iteration. |
+| `time` | `float` | *(required)* | Current simulation time in seconds. |
+| `timestep` | `float` | *(required)* | Simulation timestep in seconds. |
 
 ### `get_left_drives`
 
@@ -124,8 +124,8 @@ def get_left_drives(self, iteration: int)
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `iteration` | `int` | _Required_ | Simulation iteration index. |
+| ---- | ---- | ------- | ----------- |
+| `iteration` | `int` | *(required)* | Simulation iteration index. |
 
 ### `get_right_drives`
 
@@ -134,8 +134,8 @@ def get_right_drives(self, iteration: int)
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `iteration` | `int` | _Required_ | Simulation iteration index. |
+| ---- | ---- | ------- | ----------- |
+| `iteration` | `int` | *(required)* | Simulation iteration index. |
 
 ### `set_left_drives`
 
@@ -144,9 +144,9 @@ def set_left_drives(self, iteration: int, values, brain: bool = True)
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `iteration` | `int` | _Required_ | Simulation iteration index. |
-| `values` | `NDARRAY_V1` | _Required_ | Array of drive values to assign. |
+| ---- | ---- | ------- | ----------- |
+| `iteration` | `int` | *(required)* | Simulation iteration index. |
+| `values` | `NDARRAY_V1` | *(required)* | Array of drive values to assign. |
 | `brain` | `bool` | `True` | Whether to also write to the brain left indices. |
 
 ### `set_right_drives`
@@ -156,9 +156,9 @@ def set_right_drives(self, iteration: int, values, brain: bool = True)
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `iteration` | `int` | _Required_ | Simulation iteration index. |
-| `values` | `NDARRAY_V1` | _Required_ | Array of drive values to assign. |
+| ---- | ---- | ------- | ----------- |
+| `iteration` | `int` | *(required)* | Simulation iteration index. |
+| `values` | `NDARRAY_V1` | *(required)* | Array of drive values to assign. |
 | `brain` | `bool` | `True` | Whether to also write to the brain right indices. |
 
 ### `set_left_drive`
@@ -170,9 +170,9 @@ def set_left_drive(self, iteration: int, value: float, brain: bool = True)
 Sets all left drive channels (spine and optionally brain) to a single scalar value.
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `iteration` | `int` | _Required_ | Simulation iteration index. |
-| `value` | `float` | _Required_ | Scalar drive value. |
+| ---- | ---- | ------- | ----------- |
+| `iteration` | `int` | *(required)* | Simulation iteration index. |
+| `value` | `float` | *(required)* | Scalar drive value. |
 | `brain` | `bool` | `True` | Whether to also write to the brain left indices. |
 
 ### `set_right_drive`
@@ -184,9 +184,9 @@ def set_right_drive(self, iteration: int, value: float, brain: bool = True)
 Sets all right drive channels (spine and optionally brain) to a single scalar value.
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `iteration` | `int` | _Required_ | Simulation iteration index. |
-| `value` | `float` | _Required_ | Scalar drive value. |
+| ---- | ---- | ------- | ----------- |
+| `iteration` | `int` | *(required)* | Simulation iteration index. |
+| `value` | `float` | *(required)* | Scalar drive value. |
 | `brain` | `bool` | `True` | Whether to also write to the brain right indices. |
 
 ---
@@ -200,14 +200,14 @@ def __init__(self, strategy: PotentialMap, animat_data: AmphibiousData, timestep
 ```
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `strategy` | `PotentialMap` | _Required_ | The heading strategy to follow. |
-| `animat_data` | `AmphibiousData` | _Required_ | Simulation animat data. |
-| `timestep` | `float` | _Required_ | Controller timestep in seconds. |
+| ---- | ---- | ------- | ----------- |
+| `strategy` | `PotentialMap` | *(required)* | The heading strategy to follow. |
+| `animat_data` | `AmphibiousData` | *(required)* | Simulation animat data. |
+| `timestep` | `float` | *(required)* | Controller timestep in seconds. |
 | `pid_p` | `float` | `0.2` | Proportional gain for steering. |
 | `pid_i` | `float` | `0.0` | Integral gain for steering. |
 | `pid_d` | `float` | `0.0` | Derivative gain for steering. |
-| `output_limits` | `tuple` | `(-0.7, 0.7)` | PID output clamping bounds. |
+| `output_limits` | `tuple` | `(-0.9, 0.9)` | PID output clamping bounds. |
 | `links_indices` | `list` | `[0]` | Indices of links to use for position tracking. |
 | `heading_offset` | `float` | `0` | Constant offset added to the observed heading in radians. |
 | `contact_threshold` | `float` | `0` | Contact force threshold for global gait switching. |
@@ -235,10 +235,10 @@ def drive_from_config(filename, animat_data, simulation_options)
 Factory function that instantiates the appropriate `DescendingDrive` subclass based on a YAML configuration file.
 
 | Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| `filename` | `str` | _Required_ | Path to the YAML configuration file. |
-| `animat_data` | `AmphibiousData` | _Required_ | Simulation animat data. |
-| `simulation_options` | `SimulationOptions` | _Required_ | Global simulation options object. |
+| ---- | ---- | ------- | ----------- |
+| `filename` | `str` | *(required)* | Path to the YAML configuration file. |
+| `animat_data` | `AmphibiousData` | *(required)* | Simulation animat data. |
+| `simulation_options` | `SimulationOptions` | *(required)* | Global simulation options object. |
 
 ---
 
@@ -255,14 +255,14 @@ class SpeedController(DescendingDrive):
     def step(self, iteration: int, time: float, timestep: float):
         # Gradually increase drive speed up to 3.0
         current_drive = min(self.base_drive + 0.1 * time, 3.0)
-        
         self.set_left_drive(iteration, current_drive)
         self.set_right_drive(iteration, current_drive)
 ```
 
+---
+
 ## See Also
 
-- [`DescendingDrive`](./farms_amphibious_drive.md) — Abstract base for drive strategies
-- [`PotentialMap`](./farms_amphibious_drive.md) — Navigation heading strategies
-
-Source: `farms_amphibious/control/drive.py`
+- [farms_amphibious_controller.md](farms_amphibious_controller.md)
+- [farms_amphibious_data.md](farms_amphibious_data.md)
+- **Source**: `farms_amphibious/control/drive.py`
