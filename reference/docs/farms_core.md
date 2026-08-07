@@ -58,6 +58,162 @@ ExperimentData
 
 See [farms_core.sensors.data](api/farms_core_sensors.md) for the full sensor array reference.
 
+### Accessing Sensor Data in a Controller
+
+Inside any controller or extension method, sensor data is accessed through the ring buffer. **Always use modulo indexing** — accessing raw `iteration` as the index will cause an `IndexError` when `iteration >= buffer_size`.
+
+```python
+from farms_core.model.control import AnimatController, ControlType
+import numpy as np
+
+class ClosedLoopController(AnimatController):
+
+    @classmethod
+    def from_options(cls, config, experiment_options, animat_i, animat_data, animat_options):
+        controller = cls(
+            animat_i=animat_i,
+            joints_names=animat_data.joints.names,
+            muscles_names=(),
+            max_torques=animat_data.joints.max_torques,
+        )
+        # Store reference for sensor access inside control methods
+        controller._data = animat_data
+        controller._buffer_size = experiment_options.simulation.runtime.buffer_size
+        return controller
+
+    def positions(self, iteration: int, time: float, timestep: float) -> dict:
+        # IMPORTANT: Always use modulo index for ring buffer access
+        idx = iteration % self._buffer_size
+
+        # Read current joint positions [n_joints] in radians
+        joint_positions = self._data.sensors.joints.positions.array[idx]
+
+        # Read current joint velocities [n_joints] in rad/s
+        joint_velocities = self._data.sensors.joints.velocities.array[idx]
+
+        # Read contact forces (if contacts are configured) [n_contacts, 6]
+        # contact_forces = self._data.sensors.contacts.array[idx]
+
+        # Read external forces applied to links (hydrodynamic) [n_links, 6]
+        # xfrc = self._data.sensors.xfrc.array[idx]
+
+        # Example: simple PD control using current joint positions
+        commands = {}
+        for i, joint_name in enumerate(self.joints_names[ControlType.POSITION]):
+            target = 0.4 * np.sin(2 * np.pi * time)
+            error = target - joint_positions[i]
+            commands[joint_name] = target + 0.1 * error
+        return commands
+```
+
+---
+
+## `ControlType` Enum
+
+`ControlType` (`farms_core.model.control`) is an `IntEnum` that identifies which output signal a motor expects. Each `AnimatController` output method (`positions`, `velocities`, `torques`, etc.) corresponds to exactly one `ControlType` index.
+
+| Value | `int` | String form | Method | Description |
+|-------|-------|-------------|--------|-------------|
+| `POSITION` | 0 | `'position'` | `positions()` | Target joint angle [rad] |
+| `VELOCITY` | 1 | `'velocity'` | `velocities()` | Target joint velocity [rad/s] |
+| `TORQUE` | 2 | `'torque'` | `torques()` | Direct torque command [N·m] |
+| `SPRINGREF` | 3 | `'springref'` | `springrefs()` | Spring reference angle [rad] |
+| `SPRINGCOEF` | 4 | `'springcoef'` | `springcoefs()` | Spring stiffness override [N·m/rad] |
+| `DAMPINGCOEF` | 5 | `'dampingcoef'` | `dampingcoefs()` | Damping coefficient override [N·m·s/rad] |
+| `MUSCLE` | 6 | `'muscle'` | `excitations()` | Muscle excitation (dimensionless, 0–1) |
+
+The `AnimatController` constructor requires a tuple of exactly **7 lists** of joint names — one per `ControlType`. Motors not assigned to a given type get an empty list at that index.
+
+Conversion utilities:
+
+```python
+from farms_core.model.control import ControlType
+
+# String → enum
+ControlType.from_string('position')   # → ControlType.POSITION
+
+# Enum → string
+ControlType.to_string(ControlType.TORQUE)  # → 'torque'
+
+# Parse a list of strings (from YAML)
+ControlType.from_string_list(['position', 'torque'])  # → [0, 2]
+```
+
+---
+
+## `SpawnMode` Enum
+
+`SpawnMode` (`farms_core.model.options`) controls the degrees of freedom applied to the animat's base link at spawn. Set via `animat.spawn.mode` in YAML.
+
+| Value | Description |
+|-------|-------------|
+| `free` | Fully free-floating, 6-DoF (default) |
+| `fixed` | Base link is world-fixed |
+| `rotx` | Rotation around X-axis only |
+| `roty` | Rotation around Y-axis only |
+| `rotz` | Rotation around Z-axis only |
+| `sagittal` | Move in sagittal plane (XZ), rotate around Y |
+| `sagittal0` | Move in sagittal plane (XZ), no rotations |
+| `sagittal3` | Move in sagittal plane (XZ), all rotations |
+| `coronal` | Move in coronal plane (YZ), rotate around X |
+| `coronal0` | Move in coronal plane (YZ), no rotations |
+| `coronal3` | Move in coronal plane (YZ), all rotations |
+| `transverse` | Move in transverse plane (XY), rotate around Z |
+| `transverse0` | Move in transverse plane (XY), no rotations |
+| `transverse3` | Move in transverse plane (XY), all rotations |
+
+---
+
+## `SimulationOptions` Parameter Reference
+
+### `RuntimeSimulationOptions` (`simulation.runtime`)
+
+| Name | Type | Default | Description |
+
+|-------|------|---------|-------------|
+| `n_iterations` | `int` | `1000` | Total simulation steps to run |
+| `buffer_size` | `int` | `n_iterations` | Ring-buffer size for sensor arrays; `0` = same as `n_iterations` |
+| `play` | `bool` | `True` | Start unpaused in interactive viewer |
+| `rtl` | `float` | `1.0` | Real-time limiter (1.0 = real-time, 0.5 = half-speed) |
+| `fast` | `bool` | `False` | Run as fast as possible, bypassing `rtl` |
+| `headless` | `bool` | `False` | No viewer window; required for SSH/cluster runs |
+| `show_progress` | `bool` | `True` | Show `tqdm` progress bar in headless mode |
+
+### `PhysicsSimulationOptions` (`simulation.physics`)
+
+| Name | Type | Default | Description |
+
+|-------|------|---------|-------------|
+| `timestep` | `float` | `0.001` | Physics integration timestep [s] |
+| `gravity` | `list[float]` | `[0, 0, -9.81]` | Gravity vector [m/s²] |
+| `num_sub_steps` | `int` | `1` | MuJoCo-internal sub-steps per `env.step()` call |
+| `cb_sub_steps` | `int` | `0` | FARMS callback sub-steps per outer loop iteration (0 = disabled) |
+| `n_solver_iters` | `int` | `50` | Maximum MuJoCo solver iterations per step |
+
+!!! note "`cb_sub_steps` and Extension Call Rate"
+    When `cb_sub_steps > 0`, `before_step()` is called `cb_sub_steps` times per outer `env.step()` call. For Zbot (`cb_sub_steps: 2`, `timestep: 0.002 s`), extensions run at 1 kHz. When `cb_sub_steps: 0`, `before_step()` is called once per step at the physics timestep rate.
+
+### `SensorsOptions` (`animat.control.sensors`)
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `links` | `list[str]` | Link names to track (position, velocity, orientation, quaternion) |
+| `joints` | `list[str]` | Joint names to track (position, velocity, torque) |
+| `contacts` | `list[str]` or `list[list[str]]` | Link names for contact sensing; or link pairs `[link_a, link_b]` for pairwise contacts |
+| `xfrc` | `list[str]` | Link names for external force sensing (reads `physics.data.xfrc_applied`) |
+| `muscles` | `list[str]` | Muscle names to track (torque components) |
+| `adhesions` | `list[str]` | Adhesion names to track |
+| `visuals` | `list[str]` | Visual marker names to track |
+
+### `MotorOptions` (`animat.control.motors[i]`)
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `joint_name` | `str` | Joint to actuate; must match `morphology.joints[*].name` exactly |
+| `control_types` | `list[str]` | Active control modes for this motor (e.g., `['position']`) |
+| `limits_torque` | `list[float]` | Torque limits `[min_Nm, max_Nm]` |
+| `gains` | `list[float]` | PD gains `[Kp, Kd]` for position control |
+
 ---
 
 ## The Extension System

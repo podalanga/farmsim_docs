@@ -65,6 +65,7 @@ nav:
     - Glossary: glossary.md
     - Contributing: contributing.md
   - API Reference:
+    - Overview: api/index.md
     - farms_core:
       - Controller & Extension Interfaces: api/farms_core_control.md
       - Sensor Data Arrays: api/farms_core_sensors.md
@@ -82,3 +83,7 @@ nav:
       - Descending Drive: api/farms_amphibious_drive.md
       - Amphibious Data Classes: api/farms_amphibious_data.md
       - Amphibious Options: api/farms_amphibious_options.md
+    - Zbot Guides:
+      - Custom CPG Controller: api/cpg_controller.md
+      - Swimming Experiment: api/experiment.md
+      - Zbot Model: api/model.md

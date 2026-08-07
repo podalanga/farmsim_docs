@@ -72,5 +72,5 @@ This controller:
 
 - [Zbot Model](./model.md)
 - [Swimming Experiment](./experiment.md)
-- [Amphibious Controller API](../api/farms_amphibious_controller.md)
-- [Controller & Extension Interfaces](../api/farms_core_control.md)
+- [Amphibious Controller API](farms_amphibious_controller.md)
+- [Controller & Extension Interfaces](farms_core_control.md)
