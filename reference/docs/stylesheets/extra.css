@@ -1,34 +1,121 @@
-/* --- 1. Modern Color Palette with Fixed Link Contrast --- */
+/* =========================================================================
+   FARMS Documentation — brand theme
+   Red/black palette matched to the project logo, tuned for a modern,
+   fluid, smooth feel across light and dark mode.
+   ========================================================================= */
+
+/* --- 1. Brand palette ---------------------------------------------------- */
 :root {
-  --md-primary-fg-color: #0f172a;
-  --md-primary-fg-color--light: #1e293b;
-  --md-primary-fg-color--dark: #020617;
-  --md-accent-fg-color: #38bdf8;
-  --md-accent-fg-color--transparent: rgba(56, 189, 248, 0.1);
-  /* Light mode link color - dark enough for white bg */
-  --md-typeset-a-color: #2563eb; 
+  --farms-red: #da251c;
+  --farms-red-dark: #a91d16;
+  --farms-red-light: #ff5c4d;
+  --farms-ink: #1f1a17;
+
+  --md-primary-fg-color: var(--farms-ink);
+  --md-primary-fg-color--light: #342924;
+  --md-primary-fg-color--dark: #120e0c;
+  --md-accent-fg-color: var(--farms-red);
+  --md-accent-fg-color--transparent: rgba(218, 37, 28, 0.1);
+  /* Light mode link color - darkened red, readable on white */
+  --md-typeset-a-color: var(--farms-red-dark);
+
+  color-scheme: light;
 }
 
 [data-md-color-scheme="slate"] {
-  --md-primary-fg-color: #0f172a;
-  --md-primary-fg-color--light: #1e293b;
-  --md-primary-fg-color--dark: #020617;
-  --md-default-bg-color: #0f172a;
-  --md-default-fg-color: #e2e8f0;
-  --md-default-fg-color--light: #94a3b8;
-  --md-default-fg-color--lightest: #334155;
-  /* Dark mode link color - bright sky blue for dark bg */
-  --md-typeset-a-color: #38bdf8; 
-  --md-code-bg-color: #1e293b;
+  --md-primary-fg-color: var(--farms-ink);
+  --md-primary-fg-color--light: #342924;
+  --md-primary-fg-color--dark: #0d0a09;
+  --md-default-bg-color: #14100e;
+  --md-default-fg-color: #ece6e2;
+  --md-default-fg-color--light: #b8afa9;
+  --md-default-fg-color--lightest: #3a322e;
+  /* Dark mode link color - brighter red, readable on dark bg */
+  --md-typeset-a-color: var(--farms-red-light);
+  --md-code-bg-color: #1e1815;
+  --md-accent-fg-color: var(--farms-red-light);
+  color-scheme: dark;
 }
 
-/* --- 2. Hero Banner Styling --- */
+* {
+  scroll-behavior: smooth;
+}
+
+body,
+.md-typeset {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* --- 2. Header & navigation: subtle depth, smooth motion ---------------- */
+.md-header {
+  background: linear-gradient(180deg, var(--farms-ink), var(--md-primary-fg-color--light));
+  box-shadow: 0 1px 0 rgba(218, 37, 28, 0.25), 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.md-header, .md-tabs {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 1.6rem;
+  width: 1.6rem;
+  transition: transform 0.2s ease;
+}
+
+.md-header__button.md-logo:hover img,
+.md-header__button.md-logo:hover svg {
+  transform: scale(1.08) rotate(-4deg);
+}
+
+.md-tabs {
+  background: var(--md-primary-fg-color--light);
+}
+
+.md-tabs__link {
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.md-tabs__link:hover {
+  color: var(--farms-red-light);
+  opacity: 1;
+}
+
+.md-nav__link--active,
+.md-nav__link:focus,
+.md-nav__link:hover {
+  color: var(--farms-red);
+}
+
+[data-md-color-scheme="slate"] .md-nav__link--active,
+[data-md-color-scheme="slate"] .md-nav__link:focus,
+[data-md-color-scheme="slate"] .md-nav__link:hover {
+  color: var(--farms-red-light);
+}
+
+.md-nav__item, .md-nav__link {
+  transition: color 0.15s ease;
+}
+
+/* Search box refinement */
+.md-search__input {
+  border-radius: 8px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.md-search__input:focus {
+  box-shadow: 0 0 0 3px rgba(218, 37, 28, 0.25);
+}
+
+/* --- 3. Hero banner ------------------------------------------------------ */
 .hero-title {
-  font-size: 3.5rem;
+  font-size: 3.6rem;
   font-weight: 800;
-  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  letter-spacing: -0.02em;
+  background: linear-gradient(100deg, var(--farms-red) 0%, var(--farms-red-light) 55%, #ff8c7a 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 0.5rem;
 }
 
@@ -39,12 +126,32 @@
 
 .hero-buttons .md-button {
   margin-right: 1rem;
-  padding: 0.6rem 1.5rem;
-  border-radius: 8px;
+  padding: 0.65rem 1.6rem;
+  border-radius: 999px;
   font-weight: 600;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-/* --- 3. Beautiful Feature Cards --- */
+.hero-buttons .md-button--primary {
+  background-color: var(--farms-red);
+  border-color: var(--farms-red);
+}
+
+.hero-buttons .md-button--primary:hover {
+  background-color: var(--farms-red-dark);
+  border-color: var(--farms-red-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(218, 37, 28, 0.35);
+}
+
+.hero-buttons .md-button:not(.md-button--primary):hover {
+  transform: translateY(-2px);
+  border-color: var(--farms-red);
+  color: var(--farms-red);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* --- 4. Feature cards ----------------------------------------------------- */
 .grid.cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -53,63 +160,185 @@
 }
 
 .grid.cards > * {
-  background: var(--md-code-bg-color);
+  background: var(--md-code-bg-color, #faf7f6);
   border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 1.5rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .grid.cards > *:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-  border-color: var(--md-accent-fg-color);
+  transform: translateY(-5px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
+  border-color: var(--farms-red);
 }
 
 .grid.cards h3 {
   margin-top: 0;
   font-size: 1.2rem;
-  color: var(--md-accent-fg-color);
+  color: var(--farms-red);
 }
 
-/* --- 4. Better Code Blocks & Annotations --- */
+[data-md-color-scheme="slate"] .grid.cards h3 {
+  color: var(--farms-red-light);
+}
+
+/* --- 5. Code blocks & annotations ---------------------------------------- */
 .highlight pre, .highlight code {
-  border-radius: 8px !important;
+  border-radius: 10px !important;
   font-size: 0.85rem !important;
 }
 
-/* Fix annotation numbers in dark mode */
-[data-md-color-scheme="slate"] .md-annotation__index {
-  background: var(--md-accent-fg-color) !important;
-  color: var(--md-primary-fg-color) !important;
+.md-clipboard {
+  transition: color 0.2s ease, transform 0.15s ease;
 }
 
-/* --- 5. Cleaner Tables --- */
+.md-clipboard:hover {
+  color: var(--farms-red);
+  transform: scale(1.1);
+}
+
+[data-md-color-scheme="slate"] .md-annotation__index {
+  background: var(--farms-red-light) !important;
+  color: var(--farms-ink) !important;
+}
+
+/* --- 6. Tables ------------------------------------------------------------ */
 .md-typeset table:not([class]) {
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .md-typeset table:not([class]) th {
-  background-color: var(--md-code-bg-color);
-  color: var(--md-accent-fg-color);
+  background-color: var(--farms-ink);
+  color: #fff;
   font-weight: 600;
 }
 
-/* Ensure table borders are visible in dark mode */
+.md-typeset table:not([class]) tr {
+  transition: background-color 0.15s ease;
+}
+
+.md-typeset table:not([class]) tr:hover {
+  background-color: var(--md-accent-fg-color--transparent);
+}
+
 [data-md-color-scheme="slate"] .md-typeset table:not([class]) td {
   border-top: 1px solid var(--md-default-fg-color--lightest);
 }
 
-/* --- 6. Admonition Tweaks --- */
+/* --- 7. Admonitions -------------------------------------------------------- */
 .md-typeset .admonition, .md-typeset details {
-  border-radius: 8px;
+  border-radius: 10px;
   border-left-width: 4px;
+  transition: box-shadow 0.2s ease;
 }
 
-/* Fix admonition title contrast in dark mode */
+.md-typeset .admonition:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
 [data-md-color-scheme="slate"] .md-typeset .admonition-title {
-  background-color: rgba(56, 189, 248, 0.1);
-  color: var(--md-accent-fg-color);
+  background-color: rgba(255, 92, 77, 0.12);
+  color: var(--farms-red-light);
+}
+
+.md-typeset .admonition.note, .md-typeset .admonition.tip {
+  border-left-color: var(--farms-red);
+}
+
+/* --- 8. Buttons & misc interactive polish ---------------------------------- */
+.md-typeset .md-button {
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.md-content a.md-button--primary {
+  background-color: var(--farms-red);
+  border-color: var(--farms-red);
+}
+
+.md-content a.md-button--primary:hover {
+  background-color: var(--farms-red-dark);
+  border-color: var(--farms-red-dark);
+}
+
+::selection {
+  background: rgba(218, 37, 28, 0.25);
+}
+
+/* Smooth page transitions for instant loading */
+.md-content__inner {
+  animation: farms-fade-in 0.25s ease;
+}
+
+@keyframes farms-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 9. Layout width & breathing room --------------------------------------- */
+/* The default Material grid caps the content column fairly narrow; widen it
+   and give the typeset text more room to breathe on large screens. */
+@media screen and (min-width: 76.25em) {
+  .md-grid {
+    max-width: 68rem;
+  }
+}
+
+@media screen and (min-width: 100em) {
+  .md-grid {
+    max-width: 80rem;
+  }
+}
+
+.md-content {
+  max-width: 100%;
+}
+
+.md-typeset {
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+.md-typeset h1 {
+  margin-bottom: 1.25rem;
+}
+
+.md-typeset h2 {
+  margin-top: 2.2rem;
+}
+
+.md-typeset p {
+  margin-bottom: 1rem;
+}
+
+/* Code blocks: allow them to breathe and scroll instead of cramming */
+.md-typeset pre > code {
+  padding: 0.9rem 1rem;
+}
+
+.md-typeset .highlight {
+  margin: 1.2rem 0;
+}
+
+/* Plain (unlabeled) fenced blocks are frequently used here for ASCII-art
+   box diagrams. Keep them left-aligned, non-wrapping, and horizontally
+   scrollable so the box-drawing characters never collapse or overflow
+   the page awkwardly. */
+.md-typeset pre {
+  overflow-x: auto;
+}
+
+.md-typeset pre code {
+  white-space: pre;
+}
+
+/* --- 9. Footer clean-up ----------------------------------------------------- */
+.md-footer {
+  background-color: var(--farms-ink);
+}
+
+.md-footer-meta {
+  background-color: var(--md-primary-fg-color--dark);
 }

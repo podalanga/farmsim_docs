@@ -1,25 +1,44 @@
 site_name: FARMS Documentation
+site_description: Documentation for the FARMS robotics simulation framework
 theme:
   name: material
+  logo: assets/logo.svg
+  favicon: assets/favicon.png
+  icon:
+    repo: fontawesome/brands/github
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: custom
       accent: custom
       toggle:
-        icon: material/brightness-7
+        icon: material/weather-sunny
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: custom
       accent: custom
       toggle:
-        icon: material/brightness-4
+        icon: material/weather-night
         name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
   features:
+    - navigation.tabs
     - navigation.tabs.sticky
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - toc.follow
+    - search.suggest
+    - search.highlight
     - content.code.copy
     - content.code.annotate
+    - content.tooltips
 extra_css:
   - stylesheets/extra.css
 extra_javascript:
@@ -27,6 +46,8 @@ extra_javascript:
   - javascripts/mathjax.js
   - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+extra:
+  generator: false
 markdown_extensions:
   - pymdownx.superfences:
       custom_fences:
@@ -40,50 +61,80 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - tables
+  - attr_list
+  - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 nav:
   - Home: index.md
-  - Getting Started:
-    - Installation: installation.md
-    - SSH Key Setup: ssh_setup.md
-    - Simulation Walkthrough: walkthrough.md
-  - Module Guides:
-    - farms_core: farms_core.md
-    - farms_sim: farms_sim.md
-    - farms_mujoco: farms_mujoco.md
-    - farms_amphibious: farms_amphibious.md
-  - Zbot Robot:
-    - Overview: zbot/index.md
-    - Model: zbot/model.md
-    - Swimming Experiment: zbot/experiment.md
-    - Custom CPG Controller: zbot/cpg_controller.md
-  - Architecture & Design:
-    - System Architecture: architecture.md
-    - Mathematical Models: mathematical_models.md
-    - Core Interfaces: core_interfaces.md
+  - Tutorials:
+    - Install and Run a Simulation: tutorials/install-and-run.md
+    - Trace a Simulation Step: tutorials/simulation-workflow.md
+    - Write a Custom Controller: tutorials/custom-controller.md
+    - Zbot Overview: tutorials/zbot-overview.md
+    - Zbot Model (SDF Geometry): tutorials/zbot-model.md
+    - Zbot Swimming Experiment (YAML Walkthrough): tutorials/zbot-experiment.md
+    - Zbot Custom CPG Controller (Step-by-Step): tutorials/zbot-custom-controller.md
+  - How-to Guides:
+    - Configure an Experiment YAML: how-to/configure-yaml.md
+    - Add and Configure Sensors: how-to/configure-sensors.md
+    - Write an AnimatExtension: how-to/write-extension.md
+    - Write a Controller: how-to/write-controller.md
+    - Configure CPG Network Parameters: how-to/configure-cpg-network.md
+    - Use Built-in Extensions: how-to/use-extensions.md
+    - Save, Load, and Inspect Data: how-to/save-load-data.md
+    - Plug into FARMS Modules: how-to/plug-into-farms.md
+    - Contributing and Development Setup: how-to/contributing.md
   - Reference:
-    - Configuration Reference: configuration.md
-    - Glossary: glossary.md
-    - Contributing: contributing.md
-  - API Reference:
-    - Overview: api/index.md
-    - farms_core:
-      - Controller & Extension Interfaces: api/farms_core_control.md
-      - Sensor Data Arrays: api/farms_core_sensors.md
-      - Options Hierarchy: api/farms_core_options.md
-      - I/O Utilities: api/farms_core_io.md
-    - farms_mujoco:
-      - MuJoCo Simulation & Extensions: api/farms_mujoco_simulation.md
-      - Hydrodynamic Swimming Model: api/farms_mujoco_swimming.md
-    - farms_amphibious:
-      - CPG Oscillator Network: api/cpg_oscillators.md
-      - Ekeberg Muscle Model: api/ekeberg_muscle.md
-      - Joint Controllers: api/joint_controllers.md
-      - Amphibious Controller: api/farms_amphibious_controller.md
-      - Network ODE Integrator: api/farms_amphibious_network.md
-      - Descending Drive: api/farms_amphibious_drive.md
-      - Amphibious Data Classes: api/farms_amphibious_data.md
-      - Amphibious Options: api/farms_amphibious_options.md
-    - Zbot Guides:
-      - Custom CPG Controller: api/cpg_controller.md
-      - Swimming Experiment: api/experiment.md
-      - Zbot Model: api/model.md
+    - Environment & Config:
+      - CLI Reference: reference/env/cli.md
+      - YAML Configuration Schema: reference/env/yaml-schema.md
+      - Configuration Parameter Reference: reference/env/configuration-reference.md
+      - Data Model: reference/env/data-model.md
+      - Glossary: reference/env/glossary.md
+    - farms_core (shared abstractions):
+      - Package Overview: reference/core/farms-core.md
+      - Core Interfaces and Abstractions: reference/core/core-interfaces.md
+      - Core Control (AnimatController, TaskExtension, ControlType): reference/core/core-control.md
+      - Core Options (Options, ExperimentOptions, AnimatOptions): reference/core/core-options.md
+      - Core I/O (SDF, HDF5, YAML): reference/core/core-io.md
+      - Core Sensors (SensorData, SensorsData, JointSensorArray): reference/core/core-sensors.md
+      - Extension API: reference/core/extension-api.md
+    - farms_amphibious (CPG control stack):
+      - Package Overview: reference/amphibious/farms-amphibious.md
+      - CPG Oscillators (ODE, Phase/Amplitude Dynamics): reference/amphibious/cpg-oscillators.md
+      - NetworkODE (CPG Integration): reference/amphibious/network-ode.md
+      - Ekeberg Muscle Model: reference/amphibious/ekeberg-muscle.md
+      - Joint Controllers (Passive, PositionMuscle, PositionPhase): reference/amphibious/joint-controllers.md
+      - Amphibious Controller (AmphibiousController): reference/amphibious/amphibious-controller.md
+      - Amphibious Data (OscillatorNetworkState, DriveArray): reference/amphibious/amphibious-data.md
+      - Amphibious Options (AmphibiousOptions, NetworkOptions): reference/amphibious/amphibious-options.md
+      - Descending Drive (OrientationFollower, PotentialMap): reference/amphibious/descending-drive.md
+    - farms_mujoco (physics & swimming):
+      - Package Overview: reference/mujoco/farms-mujoco.md
+      - MuJoCo Simulation (ExperimentTask, Visual Extensions): reference/mujoco/mujoco-simulation.md
+      - MuJoCo Swimming (SwimmingExtension, Drag Model): reference/mujoco/mujoco-swimming.md
+    - farms_sim:
+      - Package Overview: reference/sim/farms-sim.md
+  - Explanation:
+    - System Architecture: explanation/architecture.md
+    - Architecture Diagrams and Data Flow: explanation/architecture-diagrams.md
+    - Codebase Walkthrough: explanation/codebase-walkthrough.md
+    - Simulation Lifecycle: explanation/simulation-lifecycle.md
+    - Mathematical Models (CPG ODEs, Hydrodynamics, Ekeberg): explanation/mathematical-models.md
+    - Options and YAML Design: explanation/options-yaml-design.md
+    - Extension and Controller Design: explanation/extension-design.md
+    - Data Flow and Persistence: explanation/data-flow.md
+    - CPG Control Architecture: explanation/cpg-architecture.md
+  - Internals (Maintainer Guide):
+    - "AmphibiousConvention: Naming and Indexing": internals/amphibious-convention.md
+    - "ODE Internals: CPG Integration": internals/ode-internals.md
+    - "Cython Equation Handlers": internals/cython-equation-handlers.md
+    - "ExperimentTask Internals": internals/experiment-task-internals.md
+    - "MJCF Builder Internals": internals/mjcf-builder-internals.md
+    - "Hydrodynamics and Swimming": internals/hydrodynamics-internals.md
+    - "Data Pre-allocation and Serialization": internals/data-allocation-internals.md
+    - "Options and YAML Deserialization": internals/options-yaml-internals.md
+    - "Descending Drive and Sensory Feedback": internals/descending-drive-internals.md
+    - "Physics Sensor Mapping": internals/physics-sensor-mapping.md
