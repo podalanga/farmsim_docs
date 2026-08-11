@@ -11,7 +11,7 @@ specific need, with concrete examples for each.
 | Joint position/velocity/torque targets | `AnimatController` subclass | `farms_core.model.control.AnimatController` |
 | YAML-configured custom object | `loader` dotted path + `Options` subclass | `farms_core.options.Options` |
 | MuJoCo-specific physics behavior | `farms_mujoco` task/extension layer | `farms_mujoco.simulation.task.ExperimentTask` |
-| CPG-based locomotion control | `farms_amphibious` network/controller | `farms_amphibious.control.amphibious.JointMuscleController` |
+| CPG-based locomotion control | `farms_amphibious` network/controller | `farms_amphibious.control.amphibious.AmphibiousController` |
 | Custom fluid force model | Swimming extension subclass | `farms_mujoco.swimming.extension.SwimmingExtension` |
 | Custom sensor data | Extension with pre-allocated array | `AnimatExtension` |
 | Custom options/parameters | `Options` subclass + `from_options()` | `farms_core.options.Options` |
@@ -89,8 +89,8 @@ for details.
 network.
 
 **How:** Use `AmphibiousOptions` as your animat options loader and configure
-the `control.network` section. The default controller
-(`JointMuscleController`) is loaded automatically.
+the `control.network` section. Set `controller_loader` to
+`AmphibiousController` — the concrete, ready-to-use controller.
 
 ```yaml
 # experiment_config.yaml
@@ -104,7 +104,7 @@ loaders:
 ```yaml
 # animat_config.yaml
 control:
-  controller_loader: farms_amphibious.control.amphibious.JointMuscleController
+  controller_loader: farms_amphibious.control.amphibious.AmphibiousController
   network:
     oscillators:
       - name: osc_0
@@ -118,6 +118,19 @@ control:
         contacts: []
     # ...
 ```
+
+`AmphibiousController` — not the shared base `JointMuscleController`
+(`farms_amphibious/control/amphibious.py`) — is what every real FARMS
+experiment uses for `controller_loader`, confirmed in both
+`experiments/zbot_swimming/animat_config.yaml` and
+`experiments/zbot_bout_glide/animat_config.yaml`. `AmphibiousController`
+subclasses `JointMuscleController` and, in its own `__init__`, does the
+actual muscle-map wiring (`PositionMuscleCy`/`PositionPhaseCy`
+construction, joint-index lookup) needed for `equation:
+position_muscle`/`position_phase` motors to work. Reach for
+`JointMuscleController` directly only if you're implementing a new
+controller class and want to extend that shared base yourself — not as a
+`controller_loader` value in a working experiment.
 
 See [Configure CPG Network Parameters](configure-cpg-network.md) for the full
 network schema.

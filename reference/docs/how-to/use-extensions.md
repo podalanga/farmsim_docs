@@ -3,25 +3,19 @@
 This guide lists the built-in extensions provided by FARMS and their
 configuration options.
 
-!!! bug "Corrected — viewer/camera extensions are simulation-level, not animat-level"
-    An earlier draft of this page listed `MjcfSaver`, `CameraFollower`, and
-    the marker/trail viewers under "Animat-level extensions", registered in
-    `animat_config.yaml`. That's wrong: all of these subclass `TaskExtension`
-    directly (`farms_mujoco/simulation/extensions.py`) — not `AnimatExtension`
-    — and their `from_options(cls, config, experiment_options)` takes the
-    2-argument `TaskExtension` signature, not the 5-argument
-    `AnimatExtension` one (`animat_i`, `animat_data`, `animat_options`).
-    They are registered in **`simulation_config.yaml`**'s top-level
-    `extensions:` list, alongside `ExperimentLogger` — confirmed against
-    `experiments/zbot_swimming/simulation_config.yaml`, which lists
-    `ExperimentLogger`, `ExperimentOptionsLogger`, `MjcfSaver`, and
-    `CameraFollower` together in that one list. Because they're
-    `TaskExtension`s and don't get `animat_data` injected automatically,
-    each one that needs animat data reaches for it manually via
-    `task.data.animats[self.animat_id].sensors.links` in
-    `initialize_episode()` — that's why every one of them takes an
-    `animat_id` config key even though they live in the simulation-level
-    list, not the animat-level one.
+FARMS's viewer/camera extensions — `MjcfSaver`, `CameraFollower`, and the
+marker/trail viewers — subclass `TaskExtension` directly
+(`farms_mujoco/simulation/extensions.py`), not `AnimatExtension`, and are
+registered in `simulation_config.yaml`'s top-level `extensions:` list
+alongside `ExperimentLogger`, not in `animat_config.yaml` (confirmed against
+`experiments/zbot_swimming/simulation_config.yaml`, which lists
+`ExperimentLogger`, `ExperimentOptionsLogger`, `MjcfSaver`, and
+`CameraFollower` together in that one list). Because they're
+`TaskExtension`s and don't get `animat_data` injected automatically, each
+one that needs animat data reaches for it manually via
+`task.data.animats[self.animat_id].sensors.links` in `initialize_episode()`
+— that's why every one of them still takes an `animat_id` config key even
+though they live in the simulation-level list, not the animat-level one.
 
 ## Simulation-level extensions
 

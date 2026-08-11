@@ -52,7 +52,7 @@ class ForceLogger(AnimatExtension):
             animat_data=animat_data,
             animat_options=animat_options,
         )
-        n_iterations = experiment_options.simulation.run.n_iterations
+        n_iterations = experiment_options.simulation.runtime.n_iterations
         extension.force_log = np.zeros(n_iterations)
         return extension
 
@@ -161,14 +161,27 @@ def before_step(self, task, action, physics):
     qpos = physics.data.qpos.copy()
     qvel = physics.data.qvel.copy()
 
-    # Apply external force to a link
-    body_id = physics.model.body('link_head').id
-    physics.data.xfrc_applied[body_id] = [fx, fy, fz, tx, ty, tz]
+    # Apply external force to a link, by name, via dm_control's named accessor
+    physics.named.data.xfrc_applied['link_head'] = [fx, fy, fz, tx, ty, tz]
 
     # Read time
     sim_time = physics.time() / task.units.seconds
     dt = physics.timestep() / task.units.seconds
 ```
+
+!!! note "Prefer `physics.named.*` for name-based lookups, precompute indices for hot loops"
+    `physics.named.data.<field>['link_name']` (dm_control's named-axis
+    accessor) is the idiomatic way to read/write MuJoCo arrays by name — used
+    throughout `farms_mujoco/simulation/physics.py` for building every
+    sensor map. It's convenient but does a name lookup every call, so
+    `farms_mujoco`'s own hot-path code (`SwimmingExtension.before_step()`,
+    `swimming/extension.py`) never calls it inside the step loop: instead it
+    resolves `physics.named.data.xfrc_applied.axes.row` **once**, at
+    `initialize_episode()`, into a plain integer index array, then indexes
+    the raw `physics.data.xfrc_applied[indices, :]` array directly every
+    step. Follow the same pattern if your extension's `before_step()` needs
+    to touch many links/joints every physics step — resolve names to
+    indices once, not every call.
 
 ## Common patterns
 
@@ -176,9 +189,8 @@ def before_step(self, task, action, physics):
 
 ```python
 def before_step(self, task, action, physics):
-    body_id = physics.model.body('link_tail').id
-    physics.data.xfrc_applied[body_id, :3] = [0.0, 1.0, 0.0]  # force
-    physics.data.xfrc_applied[body_id, 3:] = [0.0, 0.0, 0.0]  # torque
+    physics.named.data.xfrc_applied['link_tail', :3] = [0.0, 1.0, 0.0]  # force
+    physics.named.data.xfrc_applied['link_tail', 3:] = [0.0, 0.0, 0.0]  # torque
 ```
 
 ### Reading another extension's data
@@ -192,9 +204,11 @@ into `animat_data.sensors` arrays is visible to all others.
 @classmethod
 def from_options(cls, config, experiment_options, animat_i,
                 animat_data, animat_options):
-    duration = experiment_options.simulation.run.duration
-    timestep = experiment_options.simulation.run.timestep
-    n_iterations = int(duration / timestep)
+    sim_options = experiment_options.simulation
+    n_iterations = sim_options.runtime.n_iterations   # int, not a duration
+    timestep = sim_options.physics.timestep           # seconds per physics step
+    duration = sim_options.duration()                 # method, not an attribute:
+                                                        # physics.timestep * (n_iterations - 1)
     # ...
 ```
 

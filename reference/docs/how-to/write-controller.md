@@ -28,19 +28,109 @@ class AnimatController(AnimatExtension):
     def torques(self, iteration, time, timestep) -> dict[str, float]:
         return {}
 
+    def springrefs(self, iteration, time, timestep) -> dict[str, float]:
+        return {}
+
+    def springcoefs(self, iteration, time, timestep) -> dict[str, float]:
+        return {}
+
+    def dampingcoefs(self, iteration, time, timestep) -> dict[str, float]:
+        return {}
+
+    def excitations(self, iteration, time, timestep) -> dict[str, float]:
+        return {}
+
     def before_step(self, task, action, physics):
         ...
 ```
+
+`AnimatController` defines seven override points in total, one per
+`ControlType` value, and `farms_mujoco/simulation/task.py` calls all of
+them. Beyond `positions()`/`velocities()`/`torques()`:
+
+- `springrefs()` — writes into `physics.model.qpos_spring` (the passive
+  spring rest position for `SPRINGREF`-controlled joints)
+- `springcoefs()` — writes into `physics.model.jnt_stiffness`
+- `dampingcoefs()` — writes into `physics.model.dof_damping`
+- `excitations()` — muscle excitation values, read by muscle-equation
+  handlers rather than written directly to `physics.data`/`physics.model`
+
+The first three are called **unconditionally alongside `torques()`**
+inside `step_joints_control_torque()` — not gated behind their own
+`ControlType` check the way `positions()`/`velocities()`/`torques()` are —
+because they set MuJoCo **model** parameters (not per-step `data.ctrl`
+values) that only make sense for torque-driven joints with a passive
+spring/damper component, such as the Zbot's `stiffness`/`springref`/
+`damping` fields in `morphology.joints`. Return `{}` (the base class
+default) from any of these you don't need; only populate a method if your
+controller actually modulates that quantity at runtime (e.g. an
+adaptive-stiffness controller would implement `springcoefs()`).
 
 ### Constructor parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `animat_i` | int | Animat index |
-| `joints_names` | list[str] | Joint names, grouped by control type |
-| `muscles_names` | list[str] | Muscle names (can be empty) |
-| `max_torques` | list[float] | Torque limits per joint |
+| `joints_names` | `tuple[list[str], ...]` (length 7) | Joint names **grouped by `ControlType`** — index `[ControlType.POSITION]` for the joints driven by `positions()`, `[ControlType.VELOCITY]` for `velocities()`, etc. Build this with `AnimatController.joints_from_control_types()`, don't hand-roll it — the length-7, enum-ordered shape is asserted in `__init__` (`len(joints_names) == len(ControlType)`). |
+| `muscles_names` | `tuple[str, ...]` | Muscle names read by `excitations()` (can be empty) |
+| `max_torques` | `tuple[NDArray, ...]` (length 7) | Torque limits, same length-7/`ControlType`-grouped shape as `joints_names`. Build with `AnimatController.max_torques_from_control_types()`. |
 | `substep` | bool | Whether to run at substep resolution |
+
+!!! tip "Reading back your own grouped joint names"
+    Once constructed, `self.joints_names[ControlType.POSITION]` **is** the
+    list of position-controlled joint names for this animat — there's no
+    need to separately recompute or cache a `self.position_joints` list in
+    your own subclass the way the example below does for clarity; the base
+    class already has it, pre-filtered and pre-ordered, right after
+    `__init__`.
+
+!!! bug "The base `AnimatController.from_options()` is a non-functional stub — you must override it"
+    `AnimatController.from_options()` computes `joints_names` from
+    `animat_options.morphology.joints` but then **discards it**, calling
+    `cls(..., joints_names=[[]]*7, muscles_names=[], max_torques=[[]]*7)` —
+    seven empty lists, unconditionally. Verified in
+    `farms_core/model/control.py`: this is not a working default
+    implementation, it's a placeholder that produces a controller with no
+    joints wired to any control type. Every real controller —
+    `AmphibiousController` included — overrides `from_options()` completely
+    rather than calling `super().from_options()`. Don't rely on inheriting
+    this method; write your own as shown below.
+
+## How `ExperimentTask` actually calls into your controller
+
+This is the part that's normally invisible from the YAML/controller-authoring
+side. Verified against `farms_mujoco/simulation/task.py`:
+
+1. At `initialize_episode()`, the task builds one `ctrl` index map per
+   animat per `ControlType`, keyed by `prefix + joint_name` (the prefix
+   disambiguates joints across multiple animats sharing one MJCF model).
+2. Every `before_step()`, for each registered controller, the task checks
+   `controller.joints_names[ControlType.POSITION]` — **only if that list is
+   non-empty** does it call `controller.positions(...)` and write the
+   returned `{joint: value}` dict into `physics.data.ctrl` (radians, no unit
+   scaling). The same pattern repeats independently for `VELOCITY` (scaled
+   by `units.angular_velocity`) and `TORQUE` (scaled by `units.torques`).
+3. If `TORQUE` joints exist, `springrefs()`/`springcoefs()`/`dampingcoefs()`
+   are **also** called that step (see the bug note above) and written into
+   `physics.model.qpos_spring` / `jnt_stiffness` / `dof_damping` — note this
+   mutates the **model**, not just `physics.data`, so a controller that
+   changes stiffness at runtime is changing MuJoCo's compiled joint
+   properties on the fly, not just commanding a target.
+4. Every dispatch call passes `iteration=index` where
+   `index = self.iteration % self.buffer_size` — the *ring-buffer* index,
+   not necessarily the raw simulation step count. For `n_iterations <=
+   buffer_size` (the normal case — see
+   [`buffer_size` sizing](../tutorials/zbot-experiment.md#key-parameters-explained))
+   these are identical; only relevant if you deliberately run with a buffer
+   smaller than the run length.
+
+For the Zbot specifically, `control_types: [position]` on every motor in
+`animat_config.yaml` means only step 2's `POSITION` branch — and never the
+`TORQUE`/spring branches — actually fires; `AmphibiousController`'s
+`position_muscle` equation computes each target position from the CPG
+oscillator + Ekeberg-muscle state (see
+[Mathematical Models](../explanation/mathematical-models.md)) and returns it
+from `positions()`.
 
 ## Control types
 

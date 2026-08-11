@@ -123,7 +123,7 @@ files. These can be reloaded:
 from farms_core.experiment.options import ExperimentOptions
 
 options = ExperimentOptions.load('options/experiment_config.yaml')
-print(options.simulation.run.duration)
+print(options.simulation.duration())  # method, not `.run.duration` — see note below
 ```
 
 ## Analysis tips

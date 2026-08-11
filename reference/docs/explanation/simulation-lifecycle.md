@@ -14,15 +14,8 @@ run_sim.py                     # adds experiment dir to sys.path itself
         → simulation.run_simulation()
 ```
 
-!!! warning "Corrected: `_bootstrap.main()` takes no arguments"
-    A previous version of this page showed `_bootstrap.main(__file__)`.
-    That function signature does not exist — see
-    `reference/farms-sim.md` for the verified entry-point chain and why
-    this matters (the `sys.path` fix-up happens in `run_sim.py`, not in
-    `_bootstrap`). Also note `profile_simulation()` and `main()` live in
-    `farms_sim/farmsim.py`, not in `simulation.py` as previously stated.
-
-`farmsim.main()` performs:
+See `reference/farms-sim.md` for the full entry-point chain. `farmsim.main()`
+performs:
 
 1. **Parse arguments and load options** — `setup_from_clargs()` calls
    `sim_parse_args()` for the experiment config path and simulator type,

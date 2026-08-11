@@ -96,6 +96,54 @@ Each `extensions` entry:
 | `loader` | str | Yes | Dotted Python path to extension class |
 | `config` | dict | No | Config dict passed to `from_options()` |
 
+### Built-in simulation-level extension catalog
+
+These are the `TaskExtension` subclasses shipped with FARMS that go in
+`simulation_config.yaml`'s `extensions:` list. Every one of them takes an
+`animat_id` key even though it's registered at the simulation level, because
+none of them receive `animat_data` automatically — each reaches for
+`task.data.animats[self.animat_id]` itself in `initialize_episode()`.
+Full field-by-field detail, defaults, and known gotchas for each are in
+[Use Built-in Extensions](../../how-to/use-extensions.md); this table is the
+quick-lookup index.
+
+| Loader path | Purpose | Key config fields |
+|-------------|---------|--------------------|
+| `farms_core.simulation.extensions.ExperimentLogger` | Writes `simulation.hdf5` at episode end | `log_path`, `skip` |
+| `farms_core.simulation.extensions.ExperimentOptionsLogger` | Writes YAML snapshots of the options actually used, for reproducibility | `log_path` |
+| `farms_mujoco.simulation.extensions.MjcfSaver` | Dumps the compiled MJCF XML to disk at episode start | `path` (full file path, not a directory) |
+| `farms_mujoco.simulation.extensions.CameraFollower` | Moves the **interactive viewer's** camera; no effect headless or in exported video | `animat_id`, `azimuth`, `distance`, `elevation`, `angular_velocity` |
+| `farms_mujoco.sensors.camera.CameraRecording` | Independent offscreen camera + renderer that captures frames to an `.mp4`/`.html` video file, works headless | `path`, `resolution`, `fps`, `speed`, `animat_id`, `offset`, `distance`, `azimuth`, `elevation`, `angular_velocity`, `motion_filter`, `geomgroups`, `skips` |
+| `farms_mujoco.simulation.extensions.CoMViewer` | Draws a sphere at the animat's centre of mass, in the interactive viewer only | `animat_id`, `size`, `rgba` |
+| `farms_mujoco.simulation.extensions.TrailCoMViewer` | Draws a line trail following the animat's CoM over time | `animat_id`, `width`, `rgba`, `spacing` |
+| `farms_mujoco.simulation.extensions.TrailLinkViewer` | Same as above but for one named link instead of the whole-animat CoM | `animat_id`, `link`, `width`, `rgba`, `spacing` |
+| `farms_mujoco.simulation.extensions.ArrowViewer` | Draws a rotating arrow above the animat's CoM (generic, not bound to a physical vector by default) | `animat_id`, `size`, `rgba`, `offset` |
+
+!!! tip "`CameraFollower` vs `CameraRecording`"
+    These are two independent implementations that both move a camera and
+    are easy to confuse. `CameraFollower` only touches the live,
+    interactive `mujoco.viewer` window and does nothing when
+    `runtime.headless: true`. `CameraRecording` renders offscreen with its
+    own `mujoco.Renderer` and works identically headless or not — use it
+    whenever you need an actual video file, not just a nicer live view.
+
+### Built-in animat-level extension catalog
+
+These extend `AnimatExtension` (`farms_core/model/extensions.py`) and go in
+`animat_config.yaml`'s `extensions:` list instead:
+
+| Loader path | Purpose | Key config fields |
+|-------------|---------|--------------------|
+| `farms_amphibious.control.amphibious.AmphibiousController` | The CPG controller itself, registered as an extension so it participates in the same `before_step`/`after_step` lifecycle as everything else | `{}` (all real configuration comes from `control.network`/`control.muscles` in the same file, not from this extension's own `config`) |
+| `farms_mujoco.swimming.extension.SwimmingExtension` | Computes hydrodynamic drag + buoyancy per step and writes them into `xfrc_applied` | `water_properties` (`null` to inherit from the arena's `water:` block) |
+
+!!! warning "Extension order matters"
+    Both simulation- and animat-level extensions execute in YAML declaration
+    order every step. For the Zbot, `AmphibiousController` must run before
+    `SwimmingExtension` so hydrodynamic forces are computed from
+    up-to-date joint torques rather than lagging by one step — see
+    [Extension ordering](../../how-to/use-extensions.md#extension-ordering).
+
 ## animat_config.yaml (AnimatOptions)
 
 Parsed by `AnimatOptions` (`farms_core/model/options.py`).
@@ -176,15 +224,31 @@ for and used by real configs — a pre-existing inconsistency in
 
 ### SensorsOptions
 
-| Key | Type | Required | Description |
-|-----|------|----------|-------------|
-| `links` | list[str] | Yes | Link names to sense |
-| `joints` | list[str] | Yes | Joint names to sense |
-| `contacts` | list[str] | Yes | Contact link names |
-| `xfrc` | list[str] | Yes | XFRC link names |
-| `muscles` | list[str] | Yes | Muscle names |
-| `adhesions` | list[str] | Yes | Adhesion names |
-| `visuals` | list[str] | Yes | Visual sensor names |
+Declared under `control.sensors` in `animat_config.yaml`. Each field is a
+list of link/joint/etc. names to record; sensor data is written every step
+into fixed-shape NumPy arrays under `AnimatData.sensors`, with the exact
+per-category column layout defined by the `sc` (sensor convention) enum in
+`farms_core/sensors/sensor_convention.pyx` — see
+[Add and Configure Sensors](../../how-to/configure-sensors.md#sensor-types)
+for the full column-by-column table (link/joint/contact/xfrc/muscle
+layouts) and code examples reading each array.
+
+| Key | Type | Required | Records | Array shape |
+|-----|------|----------|---------|-------------|
+| `links` | list[str] | Yes | CoM + URDF-frame position/orientation, linear/angular velocity, per named link | `(n_iters, n_links, 20)` |
+| `joints` | list[str] | Yes | Position, velocity, torque, commanded values, torque decomposition, per named joint | `(n_iters, n_joints, 17)` |
+| `contacts` | list[str] \| list[list[str]] | Yes | Reaction/friction/total force + contact position, per named link or `[link_a, link_b]` pair | `(n_iters, n_contacts, 12)` |
+| `xfrc` | list[str] | Yes | External applied force/torque (e.g. from `SwimmingExtension`), per named link | `(n_iters, n_links, 6)` |
+| `muscles` | list[str] | Yes | Excitation/activation, tendon/fibre length & velocity, force, spindle feedback, per named muscle | `(n_iters, n_muscles, 17)` |
+| `adhesions` | list[str] | Yes | Adhesion force, per named adhesion actuator | `(n_iters, n_adhesions, 1)` |
+| `visuals` | list[str] | Yes | Colour + emission RGBA, per named visual | `(n_iters, n_visuals, 8)` |
+
+!!! tip "Empty lists are the normal state for unused sensor categories"
+    The Zbot config sets `muscles: []`, `adhesions: []`, and `visuals: []` —
+    this is expected, not a gap: those categories only apply to
+    Hill-muscle-actuated or adhesion/visual-effector morphologies. Only
+    `links`, `joints`, and `xfrc` are populated for a plain swimming
+    experiment.
 
 ### MotorOptions
 
@@ -244,11 +308,12 @@ Parsed by `ArenaOptions` (`farms_core/model/options.py`).
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
-| `sdf` | str | No | `''` | Water visual SDF |
-| `drag` | list[float] | Yes | — | 6 drag coefficients |
-| `buoyancy` | bool | Yes | — | Enable buoyancy |
-| `height` | float | Yes | — | Water surface height |
-| `velocity` | list[float] | No | `[0,0,0,0,0,0]` | Fluid velocity |
-| `viscosity` | float | No | `0.0` | Fluid viscosity |
-| `density` | float | Yes | — | Fluid density [kg/m³] |
-| `maps` | dict | No | `{}` | Per-link fluid maps |
+| `sdf` | str | No | `''` | Water visual/volume SDF |
+| `drag` | bool | Yes | — | Whether to apply hydrodynamic drag forces at all (not a coefficient list — the per-link coefficients live in each link's own `drag_coefficients`, see `LinkOptions` above) |
+| `buoyancy` | bool | Yes | — | Enable buoyancy forces |
+| `height` | float | Yes | — | Water surface height [m] |
+| `velocity` | list[float] (3) | No | `[0,0,0]` | Fluid current `[Vx, Vy, Vz]` [m/s] |
+| `viscosity` | float | No | `0.0` | Used as a drag multiplier by `SwimmingHandler` |
+| `density` | float | Yes | — | Fluid density [kg/m³], used for buoyancy |
+| `maps` | list[str] | No | `['', '']` | Optional spatially-varying velocity/height callback references; empty strings disable spatial variation and use the uniform `velocity`/`height` values everywhere |
+

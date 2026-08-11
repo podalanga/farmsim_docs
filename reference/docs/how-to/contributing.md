@@ -349,10 +349,14 @@ class WindForceExtension(TaskExtension):
         )
 
     def initialize_episode(self, task, physics):
-        """Called once at simulation start. Cache MuJoCo body IDs here."""
-        # Pre-cache body IDs for efficient per-step access
+        """Called once at simulation start. Cache xfrc row indices here."""
+        # Pre-cache xfrc_applied row indices for efficient per-step access —
+        # this is the same pattern used by SwimmingExtension
+        # (farms_mujoco/swimming/extension.py) to resolve link names once
+        # instead of doing a named lookup every step.
+        row = physics.named.data.xfrc_applied.axes.row
         self._body_ids = [
-            physics.model.body(name).id
+            row.index(name)
             for name in task.data.animats[0].sensors.links.names
         ]
 

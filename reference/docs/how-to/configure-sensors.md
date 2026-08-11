@@ -22,20 +22,6 @@ category is defined by the `sc` (sensor convention) Cython enum in
 | Adhesions | `adhesions` | `adhesion_size` = 1 | `force` | `(n_iters, n_adhesions, 1)` |
 | Visuals | `visuals` | `visual_size` = 8 | `color_r/g/b/a` (4) + `emission_r/g/b/i` (4) | `(n_iters, n_visuals, 8)` |
 
-!!! bug "Previous revision of this page had wrong column counts"
-    An earlier draft of this table listed `links` as 19 columns including
-    "3 linear + 3 angular acceleration" fields, `joints` as 3 columns
-    (position/velocity/torque only), and `contacts` as 7 columns
-    ("3 force + 3 torque + 1 normal magnitude"). None of that matches the
-    `sc` enum: there are **no acceleration fields** on links at all (links
-    store *two* position/orientation pairs instead — `com_*` and `urdf_*` —
-    which is where the extra columns actually come from); joints have 17
-    columns, not 3, including command values and torque decomposition
-    (`active`/`stiffness`/`damping`/`friction`); and contacts have 12
-    columns organized as `reaction`/`friction`/`total`/`position` vectors,
-    not a force+torque+magnitude layout. The table above is read directly
-    from `sensor_convention.pxd`/`sensor_convention.pyx`.
-
 ## Declaring sensors in YAML
 
 Sensors are declared in `animat_config.yaml` under `control.sensors`:
@@ -161,7 +147,7 @@ class MySensorExtension(AnimatExtension):
     @classmethod
     def from_options(cls, config, experiment_options, animat_i,
                     animat_data, animat_options):
-        n_iterations = experiment_options.simulation.run.n_iterations
+        n_iterations = experiment_options.simulation.runtime.n_iterations
         extension = cls(
             animat_i=animat_i,
             animat_data=animat_data,

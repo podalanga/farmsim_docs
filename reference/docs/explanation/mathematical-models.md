@@ -96,6 +96,29 @@ Where:
 
 - $\tau_{fric} = -\epsilon \operatorname{sgn}(\dot{\phi}_{joint})$: Coulomb friction, providing constant resistance opposing the direction of motion.
 
+!!! warning "DISCREPANCY FLAG — $\tau_{act}$, $\tau_{act\_stiff}$, $\tau_{pass\_stiff}$ are missing a per-joint scaling factor"
+    `EkebergMuscleCy.step()` (`ekeberg.pyx`) multiplies `active_torque`,
+    `active_stiffness`, and `passive_stiffness` — but **not** `damping` or
+    `friction` — by `self.transform_gain[joint_data_i]`, the same per-joint
+    gain used to convert between the CPG's internal "amphibious convention"
+    joint space and SDF/URDF joint space. The code actually computes:
+
+    $$
+    \tau_{act} = \alpha (M_L - M_R) \, k_i
+    \qquad
+    \tau_{act\_stiff} = \beta (M_L + M_R) \, \Delta\phi_i \, k_i
+    \qquad
+    \tau_{pass\_stiff} = \gamma \beta \, \Delta\phi_i \, k_i
+    $$
+
+    where $k_i$ = `transform_gain[joint_data_i]` and $\Delta\phi_i$ =
+    `m_delta_phi`, itself
+    $\phi_{off, i} - (\phi_{joint, i} - b_i)/k_i$ — **not** the plain
+    $\phi_{off} - \phi_{joint}$ shown above — with $b_i$ =
+    `transform_bias[joint_data_i]`. $\tau_{damp}$ and $\tau_{fric}$ are
+    *not* scaled by $k_i$. The simplified forms above only hold when a
+    joint's SDF-to-amphibious transform is the identity ($k_i=1$, $b_i=0$).
+
 Definitions:
 
 - $M_L, M_R$: Neural output activations for left/flexor and right/extensor muscles
@@ -115,6 +138,10 @@ Definitions:
 - $\phi_{joint}$: Current joint position
 
 - $\dot{\phi}_{joint}$: Current joint velocity
+
+- $k_i$: Per-joint SDF↔amphibious-convention transform gain (`transform_gain[joint_data_i]`) — scales $\tau_{act}$, $\tau_{act\_stiff}$, $\tau_{pass\_stiff}$ only
+
+- $b_i$: Per-joint SDF↔amphibious-convention transform bias (`transform_bias[joint_data_i]`) — offsets $\Delta\phi_i$ inside $\tau_{act\_stiff}$/$\tau_{pass\_stiff}$
 
 ## 2. Hydrodynamic Force Models
 Implemented across `farms_mujoco/swimming/drag.pyx` (drag), `farms_mujoco/swimming/buoyancy_cy.pyx` (buoyancy), and `farms_mujoco/swimming/hydrodynamics.pyx` (orchestration: `SwimmingHandler` drives `compute_link_forces`/`apply_swimming_forces` per link per step).

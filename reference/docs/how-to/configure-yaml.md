@@ -179,10 +179,16 @@ spawn:
 ## Adding extensions
 
 Extensions are configured in both `simulation_config.yaml` and
-`animat_config.yaml`:
+`animat_config.yaml` — but **which file** an extension goes in depends on
+whether it's a `TaskExtension` (simulation-level) or an `AnimatExtension`
+(animat-level), not on what it conceptually "does". Camera and viewer
+extensions all subclass `TaskExtension` directly and belong in
+`simulation_config.yaml`, even though they visually track one animat by
+`animat_id` — they reach for `task.data.animats[animat_id]` themselves
+rather than receiving it automatically the way an `AnimatExtension` does.
 
 ```yaml
-# In simulation_config.yaml (sim-level extensions)
+# In simulation_config.yaml (sim-level extensions — includes ALL camera/viewer extensions)
 extensions:
   - loader: farms_core.simulation.extensions.ExperimentLogger
     config:
@@ -190,18 +196,34 @@ extensions:
       skip: 1
   - loader: farms_mujoco.simulation.extensions.MjcfSaver
     config:
-      path: ./model
-
-# In animat_config.yaml (animat-level extensions)
-extensions:
-  - loader: farms_mujoco.swimming.extension.SwimmingExtension
-    config: {}
+      path: ./model.xml
   - loader: farms_mujoco.simulation.extensions.CameraFollower
     config:
       animat_id: 0
       azimuth: 90
       distance: 2.0
       elevation: -30
+      angular_velocity: 0.0   # deg/s; non-zero for a continuously orbiting live-viewer camera
+  - loader: farms_mujoco.sensors.camera.CameraRecording
+    config:
+      path: Output/video          # extension (.mp4/.html) appended automatically
+      resolution: [1280, 720]
+      fps: 30
+      speed: 1.0
+      animat_id: 0
+      offset: [0, 0, 0]
+      distance: 2
+      azimuth: -30
+      elevation: -15
+      angular_velocity: 0
+
+# In animat_config.yaml (animat-level extensions — controller + physics only)
+extensions:
+  - loader: farms_amphibious.control.amphibious.AmphibiousController
+    config: {}
+  - loader: farms_mujoco.swimming.extension.SwimmingExtension
+    config:
+      water_properties: null
 ```
 
 Each extension entry has:
@@ -211,7 +233,14 @@ Each extension entry has:
 | `loader` | str | Yes | Dotted Python path to the extension class |
 | `config` | dict | No | Configuration passed to `from_options()` |
 
-See [Use Built-in Extensions](use-extensions.md) for the full extension catalog.
+`CameraFollower` moves the **live interactive viewer's** camera only (no
+effect headless, no effect on exported video). `CameraRecording` is a fully
+independent offscreen renderer that produces an actual video file and works
+identically whether or not a viewer window is open — use it whenever you
+need output you can share, not just a nicer live view. See
+[Use Built-in Extensions](use-extensions.md) for the full extension catalog,
+every config field, and known gotchas for each one (including a documented
+`CameraRecording` bug around the `camera` config key).
 
 ## Multiple animats
 

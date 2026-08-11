@@ -23,18 +23,8 @@ TaskExtension (ABC)                     farms_core.simulation.extensions
     └── SwimmingExtension                farms_mujoco.swimming.extension
 ```
 
-!!! bug "Corrected — `MjcfSaver`/`CameraFollower`/marker viewers were nested under `AnimatExtension`"
-    An earlier draft of this diagram nested `MjcfSaver`, `CameraFollower`,
-    `CoMViewer`, `TrailCoMViewer`, `TrailLinkViewer`, and `ArrowViewer`
-    under `AnimatExtension`. They subclass `TaskExtension` directly
-    (`farms_mujoco/simulation/extensions.py`), and their `from_options`
-    takes the 2-argument `TaskExtension` signature (`config`,
-    `experiment_options`), not the 5-argument `AnimatExtension` one. They're
-    registered in `simulation_config.yaml`, not `animat_config.yaml` — see
-    [Use Built-in Extensions](../../how-to/use-extensions.md). Also added
-    `CameraRecording` (`farms_mujoco/sensors/camera.py`), an offscreen
-    moving-camera video-export `TaskExtension` that was missing from this
-    reference entirely.
+See [Use Built-in Extensions](../../how-to/use-extensions.md) for where each
+of these gets registered in YAML.
 
 ## TaskExtension
 

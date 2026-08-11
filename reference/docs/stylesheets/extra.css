@@ -60,12 +60,21 @@ body,
 .md-header__button.md-logo svg {
   height: 1.6rem;
   width: 1.6rem;
-  transition: transform 0.2s ease;
+  transform-style: preserve-3d;
+  perspective: 400px;
+}
+
+/* Barrel roll: a full 360° spin around the horizontal axis, like an
+   aircraft doing an aileron roll. Triggered purely on hover so it never
+   plays on page load or on touch devices without a pointer. */
+@keyframes farms-barrel-roll {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 .md-header__button.md-logo:hover img,
 .md-header__button.md-logo:hover svg {
-  transform: scale(1.08) rotate(-4deg);
+  animation: farms-barrel-roll 0.7s ease-in-out 1;
 }
 
 .md-tabs {
