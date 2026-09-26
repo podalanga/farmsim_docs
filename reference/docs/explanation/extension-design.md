@@ -105,10 +105,10 @@ In `ExperimentTask.before_step()`, for each extension in order:
 
 1. `extension.before_step(task, action, physics)` is called;
 2. if the extension is an `AnimatController`, its commands are read right
-   away (`positions()`, `velocities()`, `torques()`, `springrefs()`,
-   `springcoefs()`, `dampingcoefs()` for the joints of each control type)
-   and written to MuJoCo (actuator controls, spring references, stiffness
-   and damping).
+   away and written to MuJoCo: `positions()`, `velocities()` and
+   `torques()` to the actuators when the controller has joints of that
+   type, `springrefs()`, `springcoefs()` and `dampingcoefs()` to the model
+   along with the torques, and `excitations()` to the muscle actuators.
 
 All extensions run before the MuJoCo step, from the state at the start of
 the step, so their order only matters when one extension reads what

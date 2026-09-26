@@ -41,7 +41,9 @@ its `AnimatData` and its options.
 An `AnimatExtension` whose commands `ExperimentTask` writes to the
 actuators after its `before_step()`. Each command method takes
 `(iteration, time, timestep)` and returns a `dict[str, float]` from joint
-(or muscle) name to value:
+name to value, except `excitations()`, which returns an array ordered
+like `muscles_names`. `springrefs()`, `springcoefs()` and `dampingcoefs()`
+are only called for controllers that have torque controlled joints:
 
 | Method | Command | `ControlType` |
 |--------|---------|---------------|

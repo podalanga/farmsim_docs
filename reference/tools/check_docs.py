@@ -7,7 +7,9 @@ Checks, for every Markdown page under docs/:
 1. Dotted references (`farms_mujoco.swimming.extension.SwimmingExtension`)
    import and resolve.
 2. Source paths (`farms_mujoco/swimming/cob.pyx`) exist.
-3. Command line flags used with run_sim.py / farms_sim exist in the parser.
+3. Command line flags exist in the parser: flags on run_sim.py / farmsim
+   command lines, and flags written alone in a code span (`--log_path`),
+   except the flags of other tools listed in OTHER_TOOLS_FLAGS.
 4. Keys of YAML examples are known configuration options (see
    docgen.known_option_keys). A block whose first line is
    `# check-docs: skip` is not checked.
@@ -30,6 +32,12 @@ SOURCE_PATH = re.compile(
     r'\b(farms_(?:core|mujoco|sim|amphibious)/[A-Za-z0-9_/.]+?\.(?:pyx|pxd|py))\b'
 )
 FLAG = re.compile(r'(?<![\w-])(--[a-z][a-z0-9_-]*)')
+FLAG_SPAN = re.compile(r'`(--[a-z][a-z0-9_-]*)`')
+# Flags of other tools (pip, uv, ...) or aliases handled outside the parser
+OTHER_TOOLS_FLAGS = {
+    '--no-build-isolation',  # pip / uv
+    '--experiment-config',   # Rewritten to --experiment_config by run_sim.py
+}
 CLI_LINE = re.compile(r'run_sim\.py|farms_sim|farmsim\b')
 FENCE = re.compile(r'^(\s*)```(\w*)')
 EM_DASH = '—'
@@ -79,10 +87,12 @@ def check_page(path, docs_dir, context):
         for source in set(SOURCE_PATH.findall(line)):
             if not any((root / source).exists() for root in context['roots']):
                 problems.append((number, f'missing source file `{source}`'))
+        flags = set(FLAG_SPAN.findall(line))
         if CLI_LINE.search(line):
-            for flag in FLAG.findall(line):
-                if flag not in context['flags']:
-                    problems.append((number, f'unknown CLI flag `{flag}`'))
+            flags.update(FLAG.findall(line))
+        for flag in sorted(flags - OTHER_TOOLS_FLAGS):
+            if flag not in context['flags']:
+                problems.append((number, f'unknown CLI flag `{flag}`'))
     for language, start, block in iter_blocks(lines):
         if language not in ('yaml', 'yml') or not block:
             continue

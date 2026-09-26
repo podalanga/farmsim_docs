@@ -1,197 +1,195 @@
 # Configure CPG Network Parameters
 
-This guide explains how to configure the CPG (Central Pattern Generator)
-oscillator network used by `farms_amphibious` for locomotion control.
+How to configure the CPG (Central Pattern Generator) network that
+`AmphibiousController` (`farms_amphibious`) uses to drive the joints. The
+equations are in [Mathematical Models](../explanation/mathematical-models.md),
+the design in [CPG Control Architecture](../explanation/cpg-architecture.md),
+and the Zbot values in [Swimming Experiment](../tutorials/zbot-experiment.md#cpg-network).
 
-## Overview
+## Where it is configured
 
-The amphibious CPG network is defined in `AmphibiousNetworkOptions`
-(`farms_amphibious/model/options.py`). It consists of:
-
-- **Oscillators**: phase/amplitude oscillators that generate rhythmic patterns
-- **Drives**: descending drive signals that modulate oscillator frequency and
-  amplitude
-- **Connections**: weighted connections between oscillators, sensors, and drives
-
-## Enabling the CPG network
-
-The CPG network is configured under `control.network` in `animat_config.yaml`:
+The network is `control.network` of `animat_config.yaml`
+(`AmphibiousNetworkOptions`), and the joints use it through
+`control.muscles` and the motor `equation`:
 
 ```yaml
 control:
+  motors:
+    - joint_name: joint_1
+      control_types: [position]
+      equation: position_muscle
+      # ...
   network:
-    drives:
-      - name: drv_body_L_0
-        initial_value: 1.0
-        kind: spine_left
-        contacts: []
-    oscillators:
-      - name: osc_body_L_0
-        initial_phase: 0.0
-        initial_amplitude: 0.0
-        frequency_gain: 1.0
-        frequency_bias: 0.0
-        # ... more fields
+    drive_loader: ''
+    drive_config: ''
+    drives: [...]
+    oscillators: [...]
     osc2osc: [...]
     drive2osc: [...]
+    drive2joint: [...]
+    joint2osc: []
+    contact2osc: []
+    xfrc2osc: []
+  muscles: [...]
+extensions:
+  - loader: farms_amphibious.control.amphibious.AmphibiousController
+    config: {}
 ```
 
-!!! note "When the network is used"
-    The `AmphibiousControlOptions.__init__` only creates the network if the
-    `network` key is present AND contains an `oscillators` sub-key. Otherwise
-    `self.network` is set to `None`. When using a custom controller (like
-    ZbotCPGController), the network section is typically not used, the
-    controller manages its own oscillators internally.
+The network is only created when `control.network` has an `oscillators`
+key, and it is only used when `AmphibiousController` is in the animat's
+`extensions:`. A custom controller (such as `ZbotCPGController`) ignores
+it.
 
-## Network option keys
+## Top-level keys
 
-### Top-level network keys
+| Key | Required | Description |
+|-----|----------|-------------|
+| `drive_loader` | No (`''`) | Dotted path of a descending drive class (see [Descending Drive](../reference/amphibious/descending-drive.md)). Empty: the drives keep their initial values |
+| `drive_config` | Yes | Configuration of the drive loader (`''` when unused) |
+| `drives` | Yes | Descending drives |
+| `oscillators` | Yes | Oscillators |
+| `single_osc_body`, `single_osc_legs` | No (`false`) | One oscillator per joint instead of two |
+| `osc2osc` | No | Couplings between oscillators |
+| `drive2osc` | No | Drive of each oscillator |
+| `drive2joint` | No | Drives setting the offset of each joint |
+| `joint2osc`, `contact2osc`, `xfrc2osc` | No | Sensory feedback |
 
-| Key | Type | Required | Default | Parsed by | Notes |
-|-----|------|----------|---------|-----------|-------|
-| `drive_loader` | str | No | `''` | `AmphibiousNetworkOptions.__init__` | Dotted path to drive loader |
-| `drive_config` | str | No | `''` | `AmphibiousNetworkOptions.__init__` | Drive configuration file |
-| `drives` | list[dict] | Yes | `[]` | `AmphibiousDriveOptions` | Descending drives |
-| `oscillators` | list[dict] | Yes | `[]` | `AmphibiousOscillatorOptions` | CPG oscillators |
-| `single_osc_body` | bool | No | `False` | `AmphibiousNetworkOptions.__init__` | One oscillator per body joint |
-| `single_osc_legs` | bool | No | `False` | `AmphibiousNetworkOptions.__init__` | One oscillator per leg joint |
-| `osc2osc` | list[dict] \| null | No | `None` | `AmphibiousNetworkOptions.__init__` | Oscillator-to-oscillator connections |
-| `joint2osc` | list[dict] \| null | No | `None` | `AmphibiousNetworkOptions.__init__` | Joint sensor → oscillator |
-| `contact2osc` | list[dict] \| null | No | `None` | `AmphibiousNetworkOptions.__init__` | Contact sensor → oscillator |
-| `xfrc2osc` | list[dict] \| null | No | `None` | `AmphibiousNetworkOptions.__init__` | External force → oscillator |
-| `drive2osc` | list[int] \| null | No | `None` | `AmphibiousNetworkOptions.__init__` | Drive → oscillator mapping |
-| `drive2joint` | list[list[int]] \| null | No | `None` | `AmphibiousNetworkOptions.__init__` | Drive → joint mapping |
+## Drives
 
-### Oscillator options
-
-Each entry in the `oscillators` list is parsed by `AmphibiousOscillatorOptions`:
-
-| Key | Type | Required | Default | Notes |
-|-----|------|----------|---------|-------|
-| `name` | str | Yes | n/a | Oscillator name (e.g., `osc_body_L_0`) |
-| `initial_phase` | float | Yes | n/a | Initial phase [rad] |
-| `initial_amplitude` | float | Yes | n/a | Initial amplitude |
-| `frequency_gain` | float | Yes | n/a | Frequency gain (multiplied by drive) |
-| `frequency_bias` | float | Yes | n/a | Frequency bias [Hz] |
-| `frequency_low` | float | Yes | n/a | Minimum frequency [Hz] |
-| `frequency_high` | float | Yes | n/a | Maximum frequency [Hz] |
-| `frequency_saturation_low` | float | Yes | n/a | Low saturation frequency |
-| `frequency_saturation_high` | float | Yes | n/a | High saturation frequency |
-| `amplitude_gain` | float | Yes | n/a | Amplitude gain (multiplied by drive) |
-| `amplitude_bias` | float | Yes | n/a | Amplitude bias |
-| `amplitude_low` | float | Yes | n/a | Minimum amplitude |
-| `amplitude_high` | float | Yes | n/a | Maximum amplitude |
-| `amplitude_saturation_low` | float | Yes | n/a | Low saturation amplitude |
-| `amplitude_saturation_high` | float | Yes | n/a | High saturation amplitude |
-| `rate` | float | Yes | n/a | Filter rate |
-| `modular_phase` | float | No | `0` | Modular phase offset |
-| `modular_amplitude` | float | No | `0` | Modular amplitude offset |
-
-!!! todo "Saturation field inconsistency"
-    The `defaults_from_convention()` method uses a `saturation` key (without
-    `_low`/`_high` suffix) when generating default frequency/amplitude dicts,
-    but `AmphibiousOscillatorOptions.__init__` expects `frequency_saturation_low`
-    and `frequency_saturation_high`. This may indicate the defaults path and
-    the explicit YAML path handle saturation differently. Verify against the
-    actual `ode_oscillators_sparse` ODE function if you rely on saturation.
-
-### Drive options
-
-Each entry in the `drives` list is parsed by `AmphibiousDriveOptions`:
-
-| Key | Type | Required | Default | Notes |
-|-----|------|----------|---------|-------|
-| `name` | str | Yes | n/a | Drive name (e.g., `drv_body_L_0`) |
-| `initial_value` | float | Yes | n/a | Initial drive value |
-| `kind` | str (DriveKind) | Yes | n/a | Drive type (see below) |
-| `contacts` | list[tuple[str, str]] | Yes | n/a | Associated contact links |
-
-### DriveKind enum
-
-`DriveKind` (str Enum, in `farms_amphibious/model/options.py`):
-
-| Value | String | Description |
-|-------|--------|-------------|
-| `BRAIN_LEFT` | `brain_left` | Left brain descending drive |
-| `BRAIN_RIGHT` | `brain_right` | Right brain descending drive |
-| `SPINE_LEFT` | `spine_left` | Left spinal drive |
-| `SPINE_RIGHT` | `spine_right` | Right spinal drive |
-
-### Connection types
-
-Connections in `osc2osc`, `joint2osc`, `contact2osc`, and `xfrc2osc` are dicts
-with these keys:
-
-| Key | Type | Description |
-|-----|------|-------------|
-| `in` | str | Input oscillator name |
-| `out` | str or tuple | Output target (oscillator name or sensor link name) |
-| `type` | str | Connection type (see below) |
-| `weight` | float | Connection weight |
-| `phase_bias` | float | Phase bias [rad] (osc2osc only) |
-
-Connection types used in the code:
-
-| Type | Description |
-|------|-------------|
-| `OSC2OSC` | Oscillator to oscillator |
-| `REACTION2FREQ` | Contact sensor to oscillator frequency |
-| `LATERAL2FREQ` | External force (xfrc) to oscillator frequency |
-| `LATERAL2AMP` | External force (xfrc) to oscillator amplitude |
-
-## Automatic defaults via convention
-
-When `AmphibiousOptions.from_options()` is used without explicit network
-configuration, `defaults_from_convention()` auto-generates:
-
-- Oscillator names and initial phases based on body/leg convention
-- Default frequencies (gain=0, bias=0, low=1, high=5 for body; low=1, high=3
-  for legs)
-- Default amplitudes (all zeros unless `body_walk_amplitude` etc. specified)
-- Default rates (10.0 for all oscillators)
-- Default connectivity (standing wave with phase lag along body)
-
-The convention is determined by `AmphibiousConvention`, which uses morphology
-parameters (`n_joints_body`, `n_legs`, `n_dof_legs`) to compute oscillator
-counts, naming, and connectivity.
-
-## The ODE integrator
-
-The CPG network is integrated by `NetworkODE` (`farms_amphibious/control/network.py`):
-
-```python
-class NetworkODE(AnimatNetwork):
-    def __init__(self, data, integrator='dopri5', **kwargs):
-        self.ode = kwargs.pop('ode', ode_oscillators_sparse)
-        self.solver = integrate.ode(f=self.ode)
-        self.solver.set_integrator(self.integrator, **self.integrator_kwargs)
-        self.solver.set_initial_value(y=data.state.array[0, :], t=0.0)
+```yaml
+drives:
+  - name: drive_body_0_L
+    initial_value: 4
+    kind: null          # brain_left, brain_right, spine_left, spine_right or null
+    contacts: []
 ```
 
-- Uses `scipy.integrate.ode` with the `dopri5` (Dormand-Prince) integrator by
-  default
-- The ODE function `ode_oscillators_sparse` computes phase and amplitude
-  derivatives from drive inputs, oscillator parameters, and connectivity
-- A `modulo` parameter controls how often the ODE is integrated (default: 1,
-  meaning every step)
+`kind` (`DriveKind`) is used by descending drive controllers such as
+`OrientationFollower` to know which drives to change.
 
-## Muscle mapping
+## Oscillators
 
-Oscillator outputs are mapped to joints via `AmphibiousMuscleSetOptions`:
+```yaml
+oscillators:
+  - name: osc_body_0_L
+    initial_phase: 1.0489             # [rad]
+    initial_amplitude: 0.0
+    frequency_gain: 1.5708            # [rad/s per drive unit]
+    frequency_bias: 0.0               # [rad/s]
+    frequency_low: 1                  # Drive range where the linear rule applies
+    frequency_high: 5
+    frequency_saturation_low: 0       # [rad/s] below frequency_low
+    frequency_saturation_high: 0      # [rad/s] above frequency_high
+    amplitude_gain: 0.15
+    amplitude_bias: 0.0
+    amplitude_low: 0.9
+    amplitude_high: 5
+    amplitude_saturation_low: 0
+    amplitude_saturation_high: 0.75
+    rate: 3.0                         # Amplitude convergence rate [1/s]
+    modular_phase: 0                  # Optional frequency modulation
+    modular_amplitude: 0
+```
 
-| Key | Type | Description |
-|-----|------|-------------|
-| `joint_name` | str | Target joint |
-| `osc1` | str | Primary oscillator name |
-| `osc2` | str | Antagonist oscillator name |
-| `alpha` | float | Gain |
-| `beta` | float | Stiffness gain |
-| `gamma` | float | Tonic gain |
-| `delta` | float | Damping coefficient |
-| `epsilon` | float | Friction coefficient |
+The intrinsic angular frequency and the nominal amplitude follow the
+same rule from the drive $d$ of the oscillator:
+
+- `gain*d + bias` when `low <= d <= high`;
+- `saturation_low` when `d < low`, `saturation_high` when `d > high`.
+
+The saturation values are not clamps: with `frequency_saturation_high: 0`,
+a drive above `frequency_high` stops the oscillator. With `modular_amplitude`
+above 0.001, the frequency is multiplied by
+`1 + modular_amplitude*cos(phase + modular_phase)`.
+
+## Connections
+
+### osc2osc
+
+```yaml
+osc2osc:
+  - in: osc_body_1_L      # The oscillator receiving the coupling
+    out: osc_body_0_L     # The oscillator it is coupled to
+    type: OSC2OSC
+    weight: 30.0
+    phase_bias: 1.0472    # At steady state, phase(out) - phase(in) = phase_bias
+```
+
+This entry makes `osc_body_0_L` lead `osc_body_1_L` by 60°. A coupling is
+one-way: add the reverse entry (with `phase_bias` $-\varphi$, or
+$2\pi - \varphi$) for a symmetric coupling.
+
+### drive2osc and drive2joint
+
+```yaml
+drive2osc:
+  - drive: drive_body_0_L
+    oscillator: osc_body_0_L
+drive2joint:
+  - drive0: drive_body_0_L
+    drive1: drive_body_0_R
+    joint: joint_1
+```
+
+With `drive2joint`, the joint offset converges (at the motor's
+`offsets.rate`) to `offsets.gain*(drive1 - drive0) + offsets.bias`, while
+the mean of the two drives is within `[offsets.low, offsets.high]`: a
+difference between the left and right drives bends the body, to turn.
+
+### Sensory feedback
+
+`joint2osc`, `contact2osc` and `xfrc2osc` entries have `in` (the
+oscillator), `out` (the joint or link), `type` and `weight`. The types
+(`ConnectionType`, `farms_amphibious/data/data_cy.pxd`):
+
+| Connection | Types | Effect |
+|------------|-------|--------|
+| `joint2osc` | `STRETCH2FREQ`, `STRETCH2AMP`, `STRETCH2FREQTEGOTAE`, `STRETCH2AMPTEGOTAE` | Joint position times the weight (times `sin(phase)` for Tegotae) added to the phase or amplitude derivative |
+| `contact2osc` | `REACTION2FREQ`, `REACTION2FREQTEGOTAE` | Norm of the total contact force |
+| `xfrc2osc` | `LATERAL2FREQ`, `LATERAL2AMP` | Absolute y component (world frame) of the external force of the link |
+
+## Muscles
+
+`control.muscles` maps each joint to its two oscillators:
+
+```yaml
+muscles:
+  - joint_name: joint_1
+    osc1: osc_body_0_L
+    osc2: osc_body_0_R
+    alpha: 0.5     # Active gain
+    beta: 1.0      # Stiffness
+    gamma: 0.1     # Passive stiffness ratio
+    delta: 0.001   # Damping
+    epsilon: 0     # Friction
+```
+
+`position_muscle` and `position_phase` use `osc1` and `osc2`; the
+coefficients are only used by the `ekeberg_muscle` equations.
+
+## Defaults from the convention
+
+`AmphibiousOptions.from_options()` (options built in Python) can generate
+the oscillators, drives and couplings from the morphology
+(`n_joints_body`, `n_legs`, `n_dof_legs`) with `AmphibiousConvention`.
+
+!!! warning "Known issue"
+    When no oscillator is given, `AmphibiousNetworkOptions.defaults_from_convention()`
+    creates them with `frequency_saturation` and `amplitude_saturation`
+    keys, while the oscillator options use `*_saturation_low` and
+    `*_saturation_high`. Write the oscillators explicitly, as the Zbot
+    configuration does.
+
+## Integration
+
+`NetworkODE` (`farms_amphibious/control/network.py`) integrates the network
+with SciPy's `dopri5` at every environment step. Its `modulo` option
+integrates only every `modulo` iterations. See
+[ODE Internals](../internals/ode-internals.md).
 
 ## See also
 
-- [CPG Control Architecture](../explanation/cpg-architecture.md): design rationale
-- [Configure an Experiment YAML](configure-yaml.md): overall YAML structure
-- [farms_amphibious Reference](../reference/amphibious/farms-amphibious.md): full API
+- [CPG Control Architecture](../explanation/cpg-architecture.md)
+- [Configure an Experiment YAML](configure-yaml.md)
+- [farms_amphibious Reference](../reference/amphibious/farms-amphibious.md)

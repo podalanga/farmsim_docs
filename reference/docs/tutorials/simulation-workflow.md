@@ -155,10 +155,11 @@ for extension in self.extensions:
     if full_step or extension.substep:
         extension.before_step(task=self, action=action, physics=physics)
         if isinstance(extension, AnimatController):
-            # Write controller outputs to MuJoCo actuators
+            # Write controller outputs to MuJoCo, for the control types
+            # the controller has joints (or muscles) for
             positions = extension.positions(iteration, time, timestep)
             velocities = extension.velocities(iteration, time, timestep)
-            torques = extension.torques(iteration, time, timestep)
+            torques = extension.torques(iteration, time, timestep)  # + spring/damping
             excitations = extension.excitations(iteration, time, timestep)
 ```
 

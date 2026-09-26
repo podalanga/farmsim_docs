@@ -235,8 +235,7 @@ extensions:
 ##### Visual debugging extensions
 
 These draw non-physical markers (no mass, no collision, not part of the
-MJCF): in the interactive viewer, and also in `CameraRecording` videos (set
-`show_on_camera: false` to hide them from the video).
+MJCF): in the interactive viewer, and also in `CameraRecording` videos.
 
 ```yaml
 extensions:
@@ -249,15 +248,13 @@ extensions:
     config:
       animat_id: 0
       width: 5
-      rgba: [1.0, 0.3, 0.0, 0.7]
-      spacing: 10                 # A new trail segment every 10 iterations
+      rgba: [1.0, 0.3, 0.0, 0.7]  # A new trail segment every 10 iterations
   - loader: farms_mujoco.simulation.extensions.TrailLinkViewer
     config:
       animat_id: 0
       link: TailSegment           # Must be a sensed link (control.sensors.links)
       width: 5
       rgba: [1.0, 0.3, 0.0, 0.7]
-      spacing: 10
   - loader: farms_mujoco.simulation.extensions.ArrowViewer
     config:
       animat_id: 0
@@ -275,7 +272,9 @@ extensions:
 
 !!! warning "Marker capacity"
     Trails are never cleared, and MuJoCo scenes hold a limited number of
-    geoms: for long runs, increase `spacing`.
+    geoms. The trail `width`, the spacing (10 iterations) and
+    `show_on_camera` are not read from YAML (see
+    [Use Built-in Extensions](../how-to/use-extensions.md#viewer-markers)).
 
 ##### Sensors You Can Add
 

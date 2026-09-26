@@ -5,7 +5,7 @@ available, how to declare them in YAML, and how to access sensor data in code.
 
 ## Sensor types
 
-FARMS defines seven sensor categories, each storing data as a NumPy array in
+FARMS defines eight sensor categories, each storing data as a NumPy array in
 `AnimatData.sensors`. The categories are defined in `SensorsOptions`
 (`farms_core/model/options.py`); the exact per-sensor column layout for each
 category is defined by the `sc` (sensor convention) Cython enum in
@@ -21,6 +21,7 @@ category is defined by the `sc` (sensor convention) Cython enum in
 | Muscles | `muscles` | `muscle_size` = 17 | excitation/activation + tendon/fiber length, velocity, force fields + Ia/II/Ib feedback (see `sensor_convention.pyx`) | `(n_iters, n_muscles, 17)` |
 | Adhesions | `adhesions` | `adhesion_size` = 1 | `force` | `(n_iters, n_adhesions, 1)` |
 | Visuals | `visuals` | `visual_size` = 8 | `color_r/g/b/a` (4) + `emission_r/g/b/i` (4) | `(n_iters, n_visuals, 8)` |
+| Rays | `rays` | `ray_size` = 8 | `distance` + `origin_x/y/z` (3) + `direction_x/y/z` (3) + `hit_x` | `(n_iters, n_rays, 8)` |
 
 ## Declaring sensors in YAML
 
@@ -29,25 +30,23 @@ Sensors are declared in `animat_config.yaml` under `control.sensors`:
 ```yaml
 control:
   sensors:
-    links:
-      - link_head
-      - link_body_0
-      - link_body_1
-    joints:
-      - joint_head_yaw
-      - joint_0
-      - joint_1
-    contacts:
-      - link_head
-      - link_tail
-    xfrc:
-      - link_head
-      - link_body_0
-      - link_body_1
+    links: [Head, Segment1, Segment2]
+    joints: [joint_1, joint_2]
+    contacts: [Head, TailSegment]
+    xfrc: [Head, Segment1, Segment2]
     muscles: []
     adhesions: []
     visuals: []
+    rays:
+      - name: head_range
+        link_name: Head
+        pos: [0, 0, 0]
+        quat: [0.7071, 0, 0.7071, 0]  # Rotates the site z axis onto the link x axis
+        cutoff: 2.0                   # [m], null for no limit
 ```
+
+`rays` also accepts a list of link names. A ray is a MuJoCo rangefinder
+cast along the local z axis of its site (`RaySensorOptions`).
 
 Each entry is a list of link or joint names. The names must match the SDF/MJCF
 model definition.
@@ -72,99 +71,115 @@ derived/decomposed fields beyond the raw physical quantities).
 
 ## Amphibious sensor defaults
 
-When using `AmphibiousOptions` (`farms_amphibious/model/options.py`), sensors
-can be auto-populated from the morphology convention via
-`AmphibiousSensorsOptions.defaults_from_convention()`:
-
-| Sensor | Default if not specified |
-|--------|------------------------|
-| `links` | All link names from convention |
-| `joints` | All joint names from convention |
-| `contacts` | Feet link names from convention |
-| `xfrc` | All link names from convention |
-
-To override, specify the names explicitly in the YAML.
+`AmphibiousOptions.from_options()` (options built in Python from a
+morphology convention, not from YAML) fills the sensors from the
+convention with `AmphibiousSensorsOptions.defaults_from_convention()`:
+all links for `links` and `xfrc`, all joints for `joints`, and the feet
+for `contacts`, unless `sensors_links`, `sensors_joints`,
+`sensors_contacts` or `sensors_xfrc` are given. A YAML file must list the
+sensors explicitly.
 
 ## Accessing sensor data in code
 
-Sensor data is stored in `AnimatData.sensors`, accessible from any extension
-or controller:
+An `AnimatExtension` receives its `AnimatData` in `from_options()`: keep a
+reference to it. The arrays are ring buffers of `runtime.buffer_size`
+iterations, indexed with `task.iteration % task.buffer_size`:
 
 ```python
+from farms_core.model.extensions import AnimatExtension
+from farms_core.sensors.sensor_convention import sc
+
+
 class MyExtension(AnimatExtension):
+
+    def __init__(self, animat_data):
+        super().__init__()
+        self.animat_data = animat_data
+
+    @classmethod
+    def from_options(cls, config, experiment_options, animat_i,
+                     animat_data, animat_options):
+        return cls(animat_data=animat_data)
+
     def before_step(self, task, action, physics):
-        iteration = task.iteration
-
-        # Access joint sensor data
-        joint_positions = self.animat_data.sensors.joints.array[iteration, :, 0]
-        joint_velocities = self.animat_data.sensors.joints.array[iteration, :, 1]
-        joint_torques = self.animat_data.sensors.joints.array[iteration, :, 2]
-
-        # Access link sensor data
-        link_positions = self.animat_data.sensors.links.array[iteration, :, :3]
-
-        # Access contact forces
-        contact_forces = self.animat_data.sensors.contacts.array[iteration, :, :3]
-
-        # Access xfrc (external forces)
-        xfrc = self.animat_data.sensors.xfrc.array[iteration, :, :3]
+        index = task.iteration % task.buffer_size
+        sensors = self.animat_data.sensors
+        joint_positions = sensors.joints.array[index, :, sc.joint_position]
+        joint_velocities = sensors.joints.array[index, :, sc.joint_velocity]
+        com = sensors.links.array[index, :, sc.link_com_position_x:sc.link_com_position_z+1]
+        contact_forces = sensors.contacts.array[index, :, sc.contact_total_x:sc.contact_total_z+1]
+        fluid_forces = sensors.xfrc.array[index, :, sc.xfrc_force_x:sc.xfrc_force_z+1]
 ```
 
-### Sensor name lookup
+In an `AnimatController`, the `iteration` argument of `positions()` and
+the other command methods is already this index. Other extensions can
+reach the data through `task.data.animats[animat_i]`.
 
-Each sensor array has a `.names` list for index lookup:
+Each category has a `.names` list, in the order of the YAML list:
 
 ```python
-joint_names = self.animat_data.sensors.joints.names
-joint_i = joint_names.index('joint_0')
-joint_position = self.animat_data.sensors.joints.array[iteration, joint_i, 0]
+joint_i = sensors.joints.names.index('joint_1')
 ```
+
+The arrays also have accessors, for example
+`sensors.links.global_com_position(iteration)` or
+`sensors.joints.position(iteration, joint_i)`.
 
 ## How sensors are updated
 
-Sensor data is updated every step in `ExperimentTask.update_sensors()` (in
-`farms_mujoco/simulation/task.py`). This method reads from the MuJoCo physics
-state and writes into the pre-allocated arrays. It is called at the beginning
-of each `before_step()`, before any extension code runs.
+`ExperimentTask.update_sensors()` (`farms_mujoco/simulation/task.py`)
+copies the MuJoCo state into the arrays at the start of each environment
+step, before the extensions run (only the links on the substeps). It uses
+maps built at the start of the episode between the MuJoCo sensors and
+arrays and the sensor arrays (`farms_mujoco/simulation/physics.py`, see
+[Physics Sensor Mapping](../internals/physics-sensor-mapping.md)):
 
-The update reads from:
+- links: MuJoCo frame sensors and body poses, CoM velocities;
+- joints: joint positions and velocities, actuator forces, joint force
+  and torque sensors;
+- contacts: MuJoCo contacts involving the listed links
+  (`farms_mujoco/sensors/sensors.pyx`);
+- muscles: MuJoCo muscle actuators;
+- xfrc: not read from MuJoCo, but written by the extensions that apply
+  external forces (`SwimmingExtension` writes the fluid wrench).
 
-- `physics.data.qpos`: joint positions
-- `physics.data.qvel`: joint velocities
-- `physics.data.actuator_force`: joint torques (applied)
-- `physics.data.xpos` / `physics.data.xquat`, link positions/orientations
-- `physics.data.collision`: contact data
-- `physics.data.xfrc_applied`: external forces (e.g., from SwimmingExtension)
+## Adding a custom quantity
 
-## Adding a custom sensor type
-
-FARMS does not provide a plugin mechanism for new sensor array types. If you
-need custom sensor data, the recommended approach is to store it in an
-`AnimatExtension`:
+There is no plugin mechanism for new sensor categories. Store custom data
+in an extension, allocated in `from_options()`:
 
 ```python
-class MySensorExtension(AnimatExtension):
+import numpy as np
+
+
+class PowerLogger(AnimatExtension):
+    """Mechanical power of each joint at each iteration"""
+
+    def __init__(self, animat_data, n_iterations):
+        super().__init__()
+        self.animat_data = animat_data
+        n_joints = len(animat_data.sensors.joints.names)
+        self.power = np.zeros((n_iterations, n_joints))
+
     @classmethod
     def from_options(cls, config, experiment_options, animat_i,
-                    animat_data, animat_options):
+                     animat_data, animat_options):
         n_iterations = experiment_options.simulation.runtime.n_iterations
-        extension = cls(
-            animat_i=animat_i,
-            animat_data=animat_data,
-            animat_options=animat_options,
-        )
-        # Pre-allocate custom sensor array
-        extension.custom_data = np.zeros((n_iterations, n_sensors, data_dim))
-        return extension
+        return cls(animat_data=animat_data, n_iterations=n_iterations)
 
-    def after_step(self, task, action, physics):
-        # Record custom sensor data
-        self.custom_data[task.iteration] = compute_sensor_reading(physics)
+    def after_step(self, task, physics):
+        index = (task.iteration - 1) % task.buffer_size  # Iteration just completed
+        joints = np.asarray(self.animat_data.sensors.joints.array)
+        self.power[task.iteration - 1] = (
+            joints[index, :, sc.joint_torque]*joints[index, :, sc.joint_velocity]
+        )
+
+    def end_episode(self, task, physics):
+        np.save('Output/power.npy', self.power)
 ```
 
 ## See also
 
-- [YAML Configuration Schema](../reference/env/yaml-schema.md): complete sensor
-  option keys
+- [Configuration Parameter Reference](../reference/env/configuration-reference.md): sensor option keys
 - [Data Flow and Data Model](../explanation/data-flow.md): the sensor arrays
 - [Write an AnimatExtension](write-extension.md): extension lifecycle

@@ -1,221 +1,168 @@
 # Write an AnimatExtension
 
-This guide shows how to write a custom `AnimatExtension`, a plugin that runs
-code at specific lifecycle points during a simulation.
+How to write an extension: code that runs at given points of the
+simulation, for example to apply a force, log a quantity or change the
+environment. The design is explained in
+[Extension and Controller Design](../explanation/extension-design.md).
 
-## What is an extension?
-
-Extensions are the primary extension point in FARMS. They hook into the
-simulation lifecycle:
+## The lifecycle
 
 | Method | When called | Typical use |
 |--------|-------------|-------------|
-| `initialize_episode()` | Once at start | Set up data structures, maps |
-| `before_step()` | Every physics step | Read sensors, compute forces, advance dynamics |
-| `after_step()` | Every physics step | Log data, update counters |
-| `end_episode()` | At simulation end | Save files, cleanup |
+| `from_options()` | Once, when the task is created | Read the `config:`, allocate arrays |
+| `initialize_episode(task, physics)` | Start of an episode | Resolve MuJoCo indices, reset state |
+| `before_step(task, action, physics)` | Before the MuJoCo step: once per iteration, or every environment step with `substep=True` | Read sensors, apply forces, advance dynamics |
+| `after_step(task, physics)` | Once per iteration, after its last step | Read the result of the step |
+| `end_episode(task, physics)` | End of the simulation | Save files |
 
-Extensions come in two flavors:
+Two base classes:
 
-- **`TaskExtension`** (`farms_core/simulation/extensions.py`): simulation-level,
-  created from `simulation_config.yaml` `extensions:` list
-- **`AnimatExtension`** (`farms_core/model/extensions.py`): animat-level,
-  created from `animat_config.yaml` `extensions:` list, has access to
-  `animat_data` and `animat_options`
+- **`TaskExtension`** (`farms_core/simulation/extensions.py`): a
+  simulation extension, listed in the `extensions:` of the simulation
+  file, created with `from_options(config, experiment_options)`.
+- **`AnimatExtension`** (`farms_core/model/extensions.py`): attached to
+  an animat, listed in the `extensions:` of an animat file, created with
+  `from_options(config, experiment_options, animat_i, animat_data, animat_options)`.
 
-## Step 1: Choose the base class
+To control joints, subclass `AnimatController` instead (see
+[Write a Controller](write-controller.md)).
 
-| If you need... | Use |
-|----------------|-----|
-| Access to animat data and options | `AnimatExtension` |
-| Only physics/simulation state | `TaskExtension` |
-| To control joint targets | `AnimatController` (which extends `AnimatExtension`) |
+## Step 1: Implement the extension
 
-## Step 2: Implement the extension
+A lateral force on a link, and a log of the total external force on the
+animat:
 
 ```python
 import numpy as np
 from farms_core.model.extensions import AnimatExtension
-from farms_core.model.data import AnimatData
-from farms_core.model.options import AnimatOptions
-from farms_core.experiment.options import ExperimentOptions
+from farms_core.sensors.sensor_convention import sc
+from farms_mujoco.simulation.mjcf import get_prefix
 
-class ForceLogger(AnimatExtension):
-    """Log total external force on the animat at each step."""
+
+class SideForce(AnimatExtension):
+    """Constant force on one link, and log of the total external force"""
+
+    def __init__(self, animat_i, animat_data, link, force, n_iterations):
+        super().__init__(substep=True)  # Apply the force at every environment step
+        self.prefix = get_prefix(animat_i)  # MuJoCo names are prefixed: 'a0_'
+        self.animat_data = animat_data
+        self.link = link
+        self.force = np.array(force, dtype=float)  # [N]
+        self.body_id = None
+        self.total_force = np.zeros(n_iterations)
 
     @classmethod
     def from_options(cls, config, experiment_options, animat_i,
-                    animat_data, animat_options):
-        """Factory method, called by ExperimentTask during setup."""
-        extension = cls(
+                     animat_data, animat_options):
+        return cls(
             animat_i=animat_i,
             animat_data=animat_data,
-            animat_options=animat_options,
+            link=config['link'],
+            force=config.get('force', [0, 0.1, 0]),
+            n_iterations=experiment_options.simulation.runtime.n_iterations,
         )
-        n_iterations = experiment_options.simulation.runtime.n_iterations
-        extension.force_log = np.zeros(n_iterations)
-        return extension
 
     def initialize_episode(self, task, physics):
-        """Called once before the first step."""
-        pass
+        # Resolve the MuJoCo body index once, not at every step
+        self.body_id = physics.model.name2id(self.prefix + self.link, 'body')
 
     def before_step(self, task, action, physics):
-        """Called before each physics step."""
-        # Read xfrc sensor data (set by SwimmingExtension, if present)
-        iteration = task.iteration
-        xfrc = self.animat_data.sensors.xfrc.array[iteration, :, :3]
-        self.force_log[iteration] = np.linalg.norm(np.sum(xfrc, axis=0))
+        # xfrc_applied is in simulation units, world frame, at the body CoM
+        physics.data.xfrc_applied[self.body_id, :3] += self.force*task.units.newtons
 
-    def after_step(self, task, action, physics):
-        """Called after each physics step."""
-        pass
+    def after_step(self, task, physics):
+        iteration = task.iteration - 1  # The iteration that just ended
+        xfrc = np.asarray(self.animat_data.sensors.xfrc.array)
+        forces = xfrc[iteration % task.buffer_size, :, sc.xfrc_force_x:sc.xfrc_force_z+1]
+        self.total_force[iteration] = np.linalg.norm(forces.sum(axis=0))
 
     def end_episode(self, task, physics):
-        """Called at simulation end."""
-        np.save('total_force.npy', self.force_log)
+        np.save('Output/total_force.npy', self.total_force)
 ```
 
-## Step 3: Register in YAML
+Points to note:
 
-Add your extension to the `extensions:` list in `animat_config.yaml`:
+- MuJoCo never clears `xfrc_applied`. `SwimmingExtension` sets (`=`) the
+  wrench of its links at every step, so an extension listed after it can
+  add to it (`+=`), as here. For a body that no other extension writes,
+  set the value (`=`) instead, or the force would grow at every step.
+- The `xfrc` sensors hold the forces written by the extensions that log
+  them (the fluid forces), not your force.
+- Convert to simulation units with `task.units` (`newtons`, `torques`,
+  `meters`, `seconds`). With the default units, all factors are 1.
+
+## Step 2: Register it in YAML
+
+In `animat_config.yaml`, after the swimming extension:
 
 ```yaml
 extensions:
-  - loader: my_package.force_logger.ForceLogger
+  - loader: controller.zbot_controller.ZbotCPGController
     config:
-      # Any config values you read in from_options()
-      output_file: total_force.npy
+      # ... controller options ...
+  - loader: farms_mujoco.swimming.extension.SwimmingExtension
+    config: {}
+  - loader: side_force.SideForce
+    config:
+      link: TailSegment
+      force: [0, 0.1, 0]
 ```
 
-The `loader` is a dotted Python path. The module must be importable, either
-in the Python path or in the experiment directory (which the experiment's
-own `run_sim.py` adds to `sys.path` itself, before calling
-`farms_sim._bootstrap.main()`: `_bootstrap.main()` takes no arguments and
-does not touch `sys.path`; see `reference/farms-sim.md`).
+`loader` is the dotted path of the class. The module must be importable:
+put it in the experiment folder, which `run_sim.py` adds to `sys.path`.
 
 ## Extension ordering
 
-Extensions are called in the order they appear in the YAML `extensions:` list.
-Within each step:
+Extensions run in the order of the files: simulation extensions first,
+then the extensions of each animat, in the order of `extensions:`. In
+each environment step:
 
-```
+```text
 before_step:
-  1. ExperimentTask.update_sensors()   # gated by `full_step or self.substeps_links`,
-                                        # not unconditional, see note below
-  2. Extension 1 before_step()
-  3. Extension 2 before_step()
-  4. ...
-  5. Controller before_step()           # if controller is an extension
-  6. Controller outputs applied to physics.data.ctrl
-
-after_step:
-  1. Extension 1 after_step()
-  2. Extension 2 after_step()
-  3. ...
+  1. ExperimentTask.update_sensors()      (links only on the substeps)
+  2. Extension 1 before_step()            (if first substep, or substep=True)
+  3. Controller before_step(), then its commands written to MuJoCo
+  4. Extension 3 before_step()
+MuJoCo step(s)
+after_step (at the end of an iteration only):
+  Extension 1, 2, 3 after_step()
 ```
 
-!!! note "`update_sensors()` is not unconditional"
-    In `ExperimentTask.before_step()` (`farms_mujoco/simulation/task.py`),
-    sensors are only refreshed when `full_step or self.substeps_links` is
-    true; `full_step` is true on the first iteration or every `cb_sub_steps`
-    substeps. On a skipped substep, `update_sensors(links_only=not
-    full_step)` may still run but restricted to links-only data. Likewise,
-    each extension's own `before_step()` only runs when `full_step or
-    extension.substep`, an extension with `substep=True` runs on every
-    physics substep, others only on full steps. If your extension needs
-    fresh sensor data every call, check `task.iteration`/`full_step`
-    semantics rather than assuming a fixed per-physics-step cadence.
+If extension B reads data that extension A writes in `before_step()`,
+list A before B.
 
-!!! warning "Extension order matters"
-    If extension B depends on data computed by extension A in `before_step()`,
-    list A before B in the YAML. For example, `SwimmingExtension` must run
-    before any extension that reads xfrc data.
+## Accessing the physics
 
-## The `from_options()` contract
-
-```python
-@classmethod
-def from_options(cls, config, experiment_options, animat_i,
-                animat_data, animat_options):
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `config` | dict | The `config` dict from the YAML extension entry |
-| `experiment_options` | ExperimentOptions | Full experiment configuration |
-| `animat_i` | int | Index of this animat (0-based) |
-| `animat_data` | AnimatData | Pre-allocated data arrays for this animat |
-| `animat_options` | AnimatOptions | Options for this animat |
-
-The method must return an instance of the extension class.
-
-## Accessing the physics engine
-
-In `before_step()` and `after_step()`, you receive a `physics` object (dm_control
-`Physics`):
+`physics` is the dm_control `Physics`:
 
 ```python
 def before_step(self, task, action, physics):
-    # Read MuJoCo state
     qpos = physics.data.qpos.copy()
-    qvel = physics.data.qvel.copy()
-
-    # Apply external force to a link, by name, via dm_control's named accessor
-    physics.named.data.xfrc_applied['link_head'] = [fx, fy, fz, tx, ty, tz]
-
-    # Read time
-    sim_time = physics.time() / task.units.seconds
-    dt = physics.timestep() / task.units.seconds
+    sim_time = physics.time()/task.units.seconds
+    dt = physics.timestep()/task.units.seconds  # MuJoCo step [s]
+    # Name based access (slower, convenient outside the loop)
+    head = physics.named.data.xpos[self.prefix + 'Head']
 ```
 
-!!! note "Prefer `physics.named.*` for name-based lookups, precompute indices for hot loops"
-    `physics.named.data.<field>['link_name']` (dm_control's named-axis
-    accessor) is the idiomatic way to read/write MuJoCo arrays by name, used
-    throughout `farms_mujoco/simulation/physics.py` for building every
-    sensor map. It's convenient but does a name lookup every call, so
-    `farms_mujoco`'s own hot-path code (`SwimmingExtension.before_step()`,
-    `swimming/extension.py`) never calls it inside the step loop: instead it
-    resolves `physics.named.data.xfrc_applied.axes.row` **once**, at
-    `initialize_episode()`, into a plain integer index array, then indexes
-    the raw `physics.data.xfrc_applied[indices, :]` array directly every
-    step. Follow the same pattern if your extension's `before_step()` needs
-    to touch many links/joints every physics step, resolve names to
-    indices once, not every call.
+Resolve names to indices in `initialize_episode()` for code that runs
+at every step, as `SwimmingHandler` does with the body ids of its links.
 
-## Common patterns
-
-### Applying a force
-
-```python
-def before_step(self, task, action, physics):
-    physics.named.data.xfrc_applied['link_tail', :3] = [0.0, 1.0, 0.0]  # force
-    physics.named.data.xfrc_applied['link_tail', 3:] = [0.0, 0.0, 0.0]  # torque
-```
-
-### Reading another extension's data
-
-Extensions share the same `AnimatData` object. Data written by one extension
-into `animat_data.sensors` arrays is visible to all others.
-
-### Accessing experiment options
+## Accessing the options
 
 ```python
 @classmethod
 def from_options(cls, config, experiment_options, animat_i,
-                animat_data, animat_options):
+                 animat_data, animat_options):
     sim_options = experiment_options.simulation
-    n_iterations = sim_options.runtime.n_iterations   # int, not a duration
-    timestep = sim_options.physics.timestep           # seconds per physics step
-    duration = sim_options.duration()                 # method, not an attribute:
-                                                        # physics.timestep * (n_iterations - 1)
-    # ...
+    n_iterations = sim_options.runtime.n_iterations
+    timestep = sim_options.physics.timestep   # Iteration duration [s]
+    duration = sim_options.duration()         # timestep*(n_iterations - 1)
+    water = experiment_options.arenas[0].water
 ```
 
 ## See also
 
-- [Extension and Controller Design](../explanation/extension-design.md): full class reference
-- [Write a Controller](write-controller.md): controllers are a special case
-  of extensions
-- [Extension and Controller Design](../explanation/extension-design.md): 
-  design rationale
+- [Extension and Controller Design](../explanation/extension-design.md)
+- [Write a Controller](write-controller.md)
+- [Use Built-in Extensions](use-extensions.md)
+- [Controller and extension API](../reference/core/core-control.md)

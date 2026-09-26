@@ -1,200 +1,157 @@
 # Save, Load, and Inspect Data
 
-This guide explains how FARMS persists simulation data and how to load and
-analyze it after a run.
+How FARMS saves the simulation data, and how to load and analyse it after
+a run. The data classes are described in
+[Data Flow and Data Model](../explanation/data-flow.md).
 
-## Data persistence format
+## Saving
 
-FARMS saves simulation data as HDF5 files via the `ExperimentData` class
-(`farms_core/experiment/data.py`). The `ExperimentLogger` extension triggers
-the save at episode end.
+Two simulation extensions save a run (in `simulation_config.yaml`):
 
-### HDF5 structure
-
+```yaml
+extensions:
+  - loader: farms_core.simulation.extensions.ExperimentOptionsLogger
+    config:
+      log_path: Output   # simulation_options.yaml, animat_0_options.yaml, arena_0_options.yaml
+  - loader: farms_core.simulation.extensions.ExperimentLogger
+    config:
+      log_path: Output   # simulation.hdf5, written at the end of the simulation
+      skip: 1
+  - loader: farms_mujoco.simulation.extensions.MjcfSaver
+    config:
+      path: Output/simulation_mjcf.xml
 ```
+
+`ExperimentLogger` writes the arrays held in memory, that is the last
+`runtime.buffer_size` iterations. Keep `buffer_size` equal to
+`n_iterations` (the default) to save the whole run.
+
+From Python, `ExperimentData.to_file('simulation.hdf5')` saves the data.
+
+## HDF5 structure
+
+The file mirrors `ExperimentData.to_dict()`. Lists are stored as groups
+whose name starts with `FARMSLIST`:
+
+```text
 simulation.hdf5
-├── times              # (n_iterations,), simulation time at each step
-├── timestep           # scalar, physics timestep
-├── simulation/        # SimulationData (units, etc.)
-│   ├── units/
-│   │   ├── length
-│   │   ├── angle
-│   │   ├── seconds
-│   │   └── ...
-│   └── ...
-├── animat_0/          # AnimatData for first animat
-│   ├── state/         # CPG network state (phases, amplitudes)
-│   ├── network/       # Network logs (drives, connectivity)
-│   ├── sensors/
-│   │   ├── links/     # (n_iterations, n_links, 19), link state
-│   │   ├── joints/    # (n_iterations, n_joints, 3), joint state
-│   │   ├── contacts/  # (n_iterations, n_contacts, 7), contact forces
-│   │   ├── xfrc/      # (n_iterations, n_links, 6), external forces
-│   │   ├── muscles/   # muscle activations (if applicable)
-│   │   ├── adhesions/ # adhesion forces (if applicable)
-│   │   └── visuals/   # visual sensor data (if applicable)
-│   └── ...
-├── animat_1/          # Second animat (if multi-animat)
-└── ...
+├── times                          (n_iterations,)
+├── timestep                       ()
+├── simulation/
+│   ├── ncon                       (n_iterations,) number of contacts
+│   ├── niter                      (n_iterations,) solver iterations
+│   └── energy                     (n_iterations, 2)
+└── FARMSLISTanimats/
+    └── 0/
+        ├── sensors/
+        │   ├── links/array        (buffer_size, n_links, 20), names, masses
+        │   ├── joints/array       (buffer_size, n_joints, 17), names
+        │   ├── contacts/array     (buffer_size, n_contacts, 12), names
+        │   ├── xfrc/array         (buffer_size, n_xfrc, 6), names
+        │   ├── muscles/, adhesions/, visuals/, rays/
+        ├── state                  AmphibiousData only: CPG state
+        └── network/               AmphibiousData only: drives, connectivity
 ```
 
-## Loading data
-
-### From Python
-
-```python
-from farms_core.experiment.data import ExperimentData
-
-# Load the full experiment data
-data = ExperimentData.from_file('simulation.hdf5')
-
-# Access simulation metadata
-print(f"Duration: {data.times[-1]:.2f} s")
-print(f"Timestep: {data.timestep:.4f} s")
-print(f"N iterations: {len(data.times)}")
-
-# Access first animat's data
-animat = data.animats[0]
-joint_positions = animat.sensors.joints.array[:, :, 0]  # (n_iters, n_joints)
-link_positions = animat.sensors.links.array[:, :, :3]    # (n_iters, n_links, 3)
-```
-
-### Accessing specific sensors
-
-```python
-# Joint data
-joints = animat.sensors.joints
-joint_names = joints.names  # list of joint name strings
-positions = joints.array[:, :, 0]   # all iterations, all joints, position
-velocities = joints.array[:, :, 1] # all iterations, all joints, velocity
-torques = joints.array[:, :, 2]     # all iterations, all joints, torque
-
-# Link data (19 columns: 3 pos + 4 quat + 3 lin_vel + 3 ang_vel + 3 lin_acc + 3 ang_acc)
-links = animat.sensors.links
-link_names = links.names
-positions = links.array[:, :, :3]       # x, y, z position
-quaternions = links.array[:, :, 3:7]     # w, x, y, z quaternion
-linear_vel = links.array[:, :, 7:10]    # linear velocity
-angular_vel = links.array[:, :, 10:13]  # angular velocity
-
-# Contact forces (7 columns: 3 force + 3 torque + 1 normal)
-contacts = animat.sensors.contacts
-contact_names = contacts.names
-forces = contacts.array[:, :, :3]
-
-# External forces (6 columns: 3 force + 3 torque)
-xfrc = animat.sensors.xfrc
-xfrc_names = xfrc.names
-forces = xfrc.array[:, :, :3]
-```
-
-### Network state data
-
-If the CPG network was active, state data is available:
-
-```python
-# CPG oscillator states (phases and amplitudes interleaved)
-state = animat.state.array  # (n_iterations, n_states)
-phases = state[:, :n_oscillators]
-amplitudes = state[:, n_oscillators:2*n_oscillators]
-
-# Network drives
-drives = animat.network.drives.array  # (n_iterations, n_drives)
-```
-
-## Saving data programmatically
-
-```python
-from farms_core.experiment.data import ExperimentData
-
-# Save to HDF5
-data.to_file('output.hdf5')
-
-# Load from HDF5
-data = ExperimentData.from_file('output.hdf5')
-```
-
-## Loading saved options
-
-The `ExperimentOptionsLogger` extension saves copies of all YAML configuration
-files. These can be reloaded:
-
-```python
-from farms_core.experiment.options import ExperimentOptions
-
-options = ExperimentOptions.load('options/experiment_config.yaml')
-print(options.simulation.duration())  # method, not `.run.duration`, see note below
-```
-
-## Analysis tips
-
-### Computing forward velocity
+## Loading
 
 ```python
 import numpy as np
+from farms_core.experiment.data import ExperimentData
+from farms_core.sensors.sensor_convention import sc
 
-# Get head link position over time
-head_idx = link_names.index('link_head')
-head_positions = links.array[:, head_idx, :3]
+data = ExperimentData.from_file('Output/simulation.hdf5')
+print(f'{len(data.times)} iterations, timestep {data.timestep} s')
 
-# Forward velocity (x-direction)
-forward_velocity = np.gradient(head_positions[:, 0], data.times)
+animat = data.animats[0]
+joints = animat.sensors.joints
+links = animat.sensors.links
+xfrc = animat.sensors.xfrc
 ```
 
-### Computing tail beat frequency
+The columns are given by the sensor convention `sc`:
 
 ```python
-# Get tail joint angle over time
-tail_idx = joint_names.index('joint_10')  # adjust to your robot
-tail_angle = joints.array[:, tail_idx, 0]
+# Joints: (n_iterations, n_joints)
+positions = np.asarray(joints.array)[:, :, sc.joint_position]      # [rad]
+velocities = np.asarray(joints.array)[:, :, sc.joint_velocity]     # [rad/s]
+commands = np.asarray(joints.array)[:, :, sc.joint_cmd_position]   # [rad]
+print(joints.names)
 
-# FFT to find dominant frequency
-from scipy.fft import fft, fftfreq
-dt = data.timestep
-yf = np.abs(fft(tail_angle))
-xf = fftfreq(len(tail_angle), dt)
-dominant_freq = xf[np.argmax(yf[:len(yf)//2])]
+# Links: CoM position (n_iterations, n_links, 3) and velocity
+com = np.asarray(links.array)[:, :, sc.link_com_position_x:sc.link_com_position_z+1]
+com_velocity = np.asarray(links.array)[:, :, sc.link_com_velocity_lin_x:sc.link_com_velocity_lin_z+1]
+print(links.names)
+
+# Centre of mass of the whole animat at an iteration
+print(links.global_com_position(iteration=len(data.times) - 1))
+
+# External forces, including the fluid forces: (n_iterations, n_links, 3)
+forces = np.asarray(xfrc.array)[:, :, sc.xfrc_force_x:sc.xfrc_force_z+1]
 ```
 
-## The ExperimentData class
+### CPG state
 
-`ExperimentData` (`farms_core/experiment/data.py`) is the top-level container:
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `times` | np.ndarray | Time at each iteration [s] |
-| `timestep` | float | Physics timestep [s] |
-| `simulation` | SimulationData | Simulation-level data (units, etc.) |
-| `animats` | list[AnimatData] | One per animat |
-
-### AnimatData
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `sensors` | SensorsData | All sensor arrays |
-| `state` | StateData | CPG network state (if applicable) |
-| `network` | NetworkLog | Network logs (if applicable) |
-
-### SimulationUnitScaling
-
-Unit scaling is stored in `SimulationData.units` and provides conversion factors
-between simulation units and SI units:
-
-| Attribute | Description |
-|-----------|-------------|
-| `length` | Meters per simulation length unit |
-| `angle` | Radians per simulation angle unit |
-| `seconds` | Seconds per simulation time unit |
-
-Access via `task.units` in extensions:
+`ExperimentData.from_file()` loads the animats as `AnimatData`, without the
+CPG state. Read it from the file directly:
 
 ```python
-sim_time = physics.time() / task.units.seconds
-dt = physics.timestep() / task.units.seconds
+from farms_core.io.hdf5 import hdf5_to_dict
+
+raw = hdf5_to_dict('Output/simulation.hdf5')
+state = np.asarray(raw['animats'][0]['state'])  # (n_iterations, 2*n_osc + n_joints)
+n_osc = 12                                      # The Zbot has 12 oscillators
+phases = state[:, :n_osc]
+amplitudes = state[:, n_osc:2*n_osc]
+offsets = state[:, 2*n_osc:]
 ```
+
+!!! note
+    `AmphibiousData.from_dict()` cannot load this dictionary (it expects an
+    `n_oscillators` entry that `to_dict()` does not write).
+
+## Loading the options
+
+The options saved by `ExperimentOptionsLogger` can be loaded with their
+classes:
+
+```python
+from farms_core.simulation.options import SimulationOptions
+from farms_amphibious.model.options import AmphibiousOptions
+
+sim_options = SimulationOptions.load('Output/simulation_options.yaml')
+animat_options = AmphibiousOptions.load('Output/animat_0_options.yaml')
+print(sim_options.duration(), sim_options.physics.timestep)
+```
+
+## Analysis examples
+
+### Forward speed
+
+```python
+head = links.names.index('Head')
+head_xy = com[:, head, :2]
+speed = np.linalg.norm(np.gradient(head_xy, data.times, axis=0), axis=1)
+print(f'Mean speed: {speed[len(speed)//2:].mean():.3f} m/s')
+```
+
+### Tail beat frequency
+
+```python
+from scipy.fft import rfft, rfftfreq
+
+tail = joints.names.index('joint_6')
+angle = positions[:, tail] - positions[:, tail].mean()
+spectrum = np.abs(rfft(angle))
+frequencies = rfftfreq(len(angle), data.timestep)
+print(f'Dominant frequency: {frequencies[np.argmax(spectrum[1:]) + 1]:.2f} Hz')
+```
+
+`experiments/zbot_swimming/analysis.py` plots the joint positions,
+velocities and torques of a run.
 
 ## See also
 
-- [Data Flow and Data Model](../explanation/data-flow.md): the data classes
-- [Use Built-in Extensions](use-extensions.md): configuring ExperimentLogger
-- [Data Flow and Persistence](../explanation/data-flow.md): design rationale
+- [Data Flow and Data Model](../explanation/data-flow.md)
+- [Add and Configure Sensors](configure-sensors.md)
+- [Use Built-in Extensions](use-extensions.md)

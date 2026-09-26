@@ -132,9 +132,11 @@ configs that rely on convention-based defaults.
 naming and indexing based on morphology parameters:
 
 - `n_joints_body`, `n_legs`, `n_dof_legs` → oscillator count, names, connectivity
-- Body oscillators: `osc_body_L_0`, `osc_body_R_0`, `osc_body_L_1`, ...
-- Leg oscillators: `osc_leg_LF_0`, `osc_leg_RF_0`, ...
-- Drive names: derived from oscillator names (`osc` → `drv`)
+- Body oscillators: `osc_body_0_L`, `osc_body_0_R`, `osc_body_1_L`, ...
+  (`osc_body_0`, ... with `single_osc_body`)
+- Leg oscillators: `osc_leg_<leg>_<L|R>_<joint>_<side>`
+- Drives: `drive_brain_L`, `drive_brain_R`, `drive_body_<joint>_<L|R>`,
+  `drive_leg_...`
 
 The `defaults_from_convention()` methods on options classes use this convention
 to auto-generate:
@@ -149,10 +151,13 @@ and get a fully configured CPG network.
 
 ## The assertion pattern
 
-All `__init__` methods end with:
+The `__init__` methods end with a check that every key was used:
 
 ```python
 assert not kwargs, f'Unknown kwargs: {kwargs}'
+# or, in farms_core, skippable with Options.load(filename, strict=False):
+if kwargs.pop('strict', True) and kwargs:
+    raise Exception(f'Unknown kwargs: {kwargs}')
 ```
 
 This is a design choice for fail-fast validation. If a YAML file contains an
@@ -161,14 +166,18 @@ catches typos and config errors at load time rather than at runtime.
 
 ## Serialization fidelity
 
-`pyobject2yaml()` serializes `Options` objects back to YAML. The round-trip
-(YAML → object → YAML) is designed to be lossless for fully-specified configs.
+`pyobject2yaml()` serializes `Options` objects back to YAML
+(`ExperimentOptionsLogger` uses it to write the options of a run). The
+round trip (YAML to object to YAML) is meant to be lossless for
+fully-specified configs; a subclass that does not accept every key its
+parent writes breaks it (this was the case of `buoyancy_center` in
+`AmphibiousLinkOptions`, now fixed).
 However, convention-based defaults are expanded during `from_options()`, so a
 minimal config loaded and then saved will produce a larger file with all
 defaults explicitly written.
 
 ## See also
 
-- [YAML Configuration Schema](../reference/env/yaml-schema.md): complete key reference
+- [Configuration Parameter Reference](../reference/env/configuration-reference.md): every key (generated)
 - [Configure an Experiment YAML](../how-to/configure-yaml.md): practical guide
 - [farms_core Reference](../reference/core/farms-core.md): Options class API

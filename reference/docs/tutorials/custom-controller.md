@@ -12,9 +12,10 @@ animat's `extensions:`. At each control step:
 
 1. `before_step(task, action, physics)` advances the controller's internal
    dynamics.
-2. `positions()`, `velocities()`, `torques()` (and for spring-damper joints
-   `springrefs()`, `springcoefs()`, `dampingcoefs()`, or `excitations()` for
-   muscles) return the targets as `dict[str, float]` (joint name to value).
+2. `positions()`, `velocities()`, `torques()` (and, with torque joints,
+   `springrefs()`, `springcoefs()`, `dampingcoefs()`) return the targets as
+   `dict[str, float]` (joint name to value). `excitations()` returns an
+   array of muscle excitations, ordered like `muscles_names`.
 3. `ExperimentTask` writes them to the MuJoCo actuators
    (`physics.data.ctrl`) of the joints.
 

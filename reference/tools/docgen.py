@@ -160,10 +160,35 @@ def code_option_keys():
     return keys
 
 
+def signature_option_keys():
+    """Named __init__ parameters of every Options subclass"""
+    from farms_core.options import Options
+    keys = set()
+    for package in PACKAGES:
+        for name in iter_modules(package):
+            module, _ = import_module(name)
+            if module is None:
+                continue
+            for _, cls in inspect.getmembers(module, inspect.isclass):
+                if not issubclass(cls, Options) or cls.__init__ is Options.__init__:
+                    continue
+                try:
+                    parameters = inspect.signature(cls.__init__).parameters
+                except (TypeError, ValueError):
+                    continue
+                keys.update(
+                    name for name, parameter in parameters.items()
+                    if name != 'self' and parameter.kind in (
+                        parameter.POSITIONAL_OR_KEYWORD, parameter.KEYWORD_ONLY,
+                    )
+                )
+    return keys
+
+
 def known_option_keys(extra_yaml_files=()):
     """Every key that is valid somewhere in the configuration files"""
     import yaml
-    keys = set(code_option_keys())
+    keys = set(code_option_keys()) | signature_option_keys()
     for doc in option_classes().values():
         keys.update(child.name for child in doc.children)
     keys.update(name for name, *_ in fluid_options_fields())

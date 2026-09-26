@@ -32,8 +32,9 @@ See [Write an AnimatExtension](write-extension.md) for full details.
 torques) at each step.
 
 **How:** Subclass `AnimatController`, implement `from_options()`,
-`before_step()`, and `positions()` / `velocities()` / `torques()`. Register
-via `controller_loader` in `animat_config.yaml`.
+`before_step()`, and `positions()` / `velocities()` / `torques()`. List it
+in the `extensions:` of `animat_config.yaml` (`control.controller_loader`
+is not used).
 
 See [Write a Controller](write-controller.md) for full details.
 
@@ -41,25 +42,27 @@ See [Write a Controller](write-controller.md) for full details.
 
 **When to use:** You need to add custom configuration parameters to YAML.
 
-**How:** Subclass `Options` and register it as an animat loader in the
-`loaders:` block of `experiment_config.yaml`.
+**How:** Subclass the options class of the file and register it in the
+`loaders:` block of `experiment_config.yaml`. An animat options class must
+keep everything the engine reads (`sdf`, `spawn`, `morphology`,
+`control`, `extensions`), so subclass `AnimatOptions` (or
+`AmphibiousOptions`) and pop your extra keys before calling the parent:
 
 ```python
-from farms_core.options import Options
+from farms_amphibious.model.options import AmphibiousOptions
 
-class MyRobotOptions(Options):
-    """Custom options for my robot."""
+
+class MyRobotOptions(AmphibiousOptions):
+    """Zbot options with an extra parameter"""
 
     def __init__(self, **kwargs):
-        super().__init__()
-        self.sdf = kwargs.pop('sdf')
-        self.custom_param = kwargs.pop('custom_param', 42)
-        assert not kwargs, f'Unknown kwargs: {kwargs}'
+        custom_param = kwargs.pop('custom_param', 42)
+        super().__init__(**kwargs)
+        self.custom_param = custom_param
 ```
 
-Register in `experiment_config.yaml`: `animats` stays a list of filenames,
-and `loaders.animats_options` (same index) names the class that parses each
-one.
+`animats` stays a list of file names, and `loaders.animats_options` (same
+index) names the class that reads each one:
 
 ```yaml
 animats:
@@ -70,11 +73,15 @@ loaders:
   # ...plus simulation_options, arenas_options, experiment_data, animats_data
 ```
 
+Extensions and controllers read the value from `animat_options.custom_param`.
+A parameter used by only one extension is simpler to put in its
+`config:`.
+
 !!! note "Don't confuse this with extension `loader:`/`config:` pairs"
     This top-level `loaders:` mechanism (resolved by
     `ExperimentOptions.load()`) is separate from the inline
-    `loader:`/`config:` pair used inside an `extensions:` list (resolved by
-    `ExtensionOptions`/`import_item()` when the task builds extensions). See
+    `loader:`/`config:` pair used inside an `extensions:` list (imported
+    with `import_item()` when the task creates the extensions). See
     [Options and YAML Design](../explanation/options-yaml-design.md) for
     both, side by side.
 
@@ -88,14 +95,12 @@ for details.
 **When to use:** You want CPG-based locomotion with the built-in oscillator
 network.
 
-**How:** Use `AmphibiousOptions` as your animat options loader and configure
-the `control.network` section. Set `controller_loader` to
-`AmphibiousController`: the concrete, ready-to-use controller.
+**How:** Use `AmphibiousOptions` as the animat options loader, configure
+`control.network` and `control.muscles`, and list `AmphibiousController`
+in the animat's `extensions:`, as `experiments/zbot_swimming` does:
 
 ```yaml
 # experiment_config.yaml
-animats:
-  - animat_config.yaml
 loaders:
   animats_options:
     - farms_amphibious.model.options.AmphibiousOptions
@@ -104,67 +109,48 @@ loaders:
 ```yaml
 # animat_config.yaml
 control:
-  controller_loader: farms_amphibious.control.amphibious.AmphibiousController
+  motors:
+    - joint_name: joint_1
+      control_types: [position]
+      equation: position_muscle
+      # ...
   network:
-    oscillators:
-      - name: osc_0
-        initial_phase: 0.0
-        initial_amplitude: 0.0
-        # ... (see Configure CPG Network Parameters)
-    drives:
-      - name: drv_0
-        initial_value: 1.0
-        kind: spine_left
-        contacts: []
-    # ...
+    drive_loader: ''
+    drive_config: ''
+    drives: [...]
+    oscillators: [...]
+    osc2osc: [...]
+    drive2osc: [...]
+  muscles: [...]
+extensions:
+  - loader: farms_amphibious.control.amphibious.AmphibiousController
+    config: {}
+  - loader: farms_mujoco.swimming.extension.SwimmingExtension
+    config: {}
 ```
 
-`AmphibiousController`: not the shared base `JointMuscleController`
-(`farms_amphibious/control/amphibious.py`), is what every real FARMS
-experiment uses for `controller_loader`, confirmed in both
-`experiments/zbot_swimming/animat_config.yaml` and
-`experiments/zbot_bout_glide/animat_config.yaml`. `AmphibiousController`
-subclasses `JointMuscleController` and, in its own `__init__`, does the
-actual muscle-map wiring (`PositionMuscleCy`/`PositionPhaseCy`
-construction, joint-index lookup) needed for `equation:
-position_muscle`/`position_phase` motors to work. Reach for
-`JointMuscleController` directly only if you're implementing a new
-controller class and want to extend that shared base yourself, not as a
-`controller_loader` value in a working experiment.
-
-See [Configure CPG Network Parameters](configure-cpg-network.md) for the full
-network schema.
+`AmphibiousController` is the concrete controller. It extends
+`JointMuscleController`, the shared base, which is not meant to be used
+directly. See [Configure CPG Network Parameters](configure-cpg-network.md).
 
 ## Integration pattern 5: Custom fluid dynamics
 
 **When to use:** You want a different hydrodynamic force model.
 
-**How:** The `SwimmingExtension` computes drag and buoyancy and applies them
-via `physics.data.xfrc_applied`. You can either:
+**How:** First check the options of the built-in model: exact or lookup
+table buoyancy, legacy or ellipsoid drag, added mass (see
+[farms_mujoco.swimming](../reference/mujoco/mujoco-swimming.md)). For
+another model, either:
 
-1. Write a new `AnimatExtension` that computes and applies forces differently
-2. Subclass `SwimmingExtension` and override the force computation
+1. write an `AnimatExtension` listed after `SwimmingExtension` that adds
+   its forces to `physics.data.xfrc_applied` (see
+   [Write an AnimatExtension](write-extension.md));
+2. or extend the C loop of `SwimmingHandler`
+   (`farms_mujoco/swimming/hydrodynamics.pyx`), see
+   [Hydrodynamics Internals](../internals/hydrodynamics-internals.md#how-to-extend).
 
-```python
-from farms_mujoco.swimming.extension import SwimmingExtension
-
-class CustomFluidModel(SwimmingExtension):
-    @classmethod
-    def from_options(cls, config, experiment_options, animat_i,
-                    animat_data, animat_options):
-        extension = super().from_options(
-            config, experiment_options, animat_i,
-            animat_data, animat_options,
-        )
-        # Add custom parameters
-        extension.custom_drag_coeff = config.get('custom_drag', 0.5)
-        return extension
-
-    def before_step(self, task, action, physics):
-        # Call parent for standard forces, then add custom forces
-        super().before_step(task, action, physics)
-        # Apply additional custom forces...
-```
+Option 1 is simpler; option 2 keeps everything in one allocation-free C
+loop, which matters when many robots run in parallel.
 
 ## Integration pattern 6: Custom MuJoCo task behavior
 
