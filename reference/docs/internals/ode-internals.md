@@ -7,8 +7,8 @@ This page documents the Cython ODE functions (`farms_amphibious/control/ode.pyx`
 | File | Lines | Purpose |
 |---|---|---|
 | `farms_amphibious/control/ode.pyx` | 320 | Cython ODE functions: phase, amplitude, joint, sensory feedback |
-| `farms_amphibious/control/network.py` | 121 | `AnimatNetwork` (ABC), `NetworkODE` — scipy.integrate.ode wrapper |
-| `farms_amphibious/data/data_cy.pyx` | — | `ConnectionType` enum, `AmphibiousDataCy` cdef class |
+| `farms_amphibious/control/network.py` | 121 | `AnimatNetwork` (ABC), `NetworkODE`, scipy.integrate.ode wrapper |
+| `farms_amphibious/data/data_cy.pyx` | n/a | `ConnectionType` enum, `AmphibiousDataCy` cdef class |
 
 ## Call graph / entry points
 
@@ -19,12 +19,12 @@ Simulation.run()
             └─ network.step(iteration, time, timestep)
                  └─ solver.integrate(time + timestep)
                       └─ ode_oscillators_sparse(time, state, dstate, iteration, data)
-                           ├─ ode_dphase()       — phase derivatives
-                           ├─ ode_damplitude()   — amplitude derivatives
-                           ├─ ode_joints()       — joint offset derivatives
-                           ├─ ode_stretch()      — proprioceptive feedback (if nosfb==0)
-                           ├─ ode_contacts()     — tactile feedback (if nosfb==0)
-                           └─ ode_xfrc()         — external force feedback (if nosfb==0)
+                           ├─ ode_dphase(), phase derivatives
+                           ├─ ode_damplitude(), amplitude derivatives
+                           ├─ ode_joints(), joint offset derivatives
+                           ├─ ode_stretch(), proprioceptive feedback (if nosfb==0)
+                           ├─ ode_contacts(), tactile feedback (if nosfb==0)
+                           └─ ode_xfrc(), external force feedback (if nosfb==0)
 ```
 
 ## State vector layout
@@ -39,7 +39,7 @@ The state vector is a 1D array of doubles (Cython type `DTYPEv1`, which is a typ
 
 Total length: `2 * n_oscillators + n_joints_active` (see [AmphibiousConvention](amphibious-convention.md) for how these are computed).
 
-The derivative vector (`dstate`) has the same layout. It is zeroed before each call to `ode_oscillators_sparse` — actually, it is NOT zeroed by the ODE function itself. The `dstate` array is allocated once in `NetworkODE.__init__` and reused. The scipy integrator calls `ode_oscillators_sparse` which writes into `dstate`. The `dstate` is passed via `set_f_params`.
+The derivative vector (`dstate`) has the same layout. It is zeroed before each call to `ode_oscillators_sparse`, actually, it is NOT zeroed by the ODE function itself. The `dstate` array is allocated once in `NetworkODE.__init__` and reused. The scipy integrator calls `ode_oscillators_sparse` which writes into `dstate`. The `dstate` is passed via `set_f_params`.
 
 ### Inline accessors
 
@@ -159,7 +159,7 @@ for i in range(connectivity.n_connections):
 
 - `i1 = connectivity.connections.array[i, 1]`: The oscillator that PROVIDES the coupling signal.
 
-- `state[n_oscillators + i1]`: The **amplitude** of the target oscillator `i1`. The coupling is amplitude-weighted — oscillators with larger amplitudes have stronger influence.
+- `state[n_oscillators + i1]`: The **amplitude** of the target oscillator `i1`. The coupling is amplitude-weighted, oscillators with larger amplitudes have stronger influence.
 
 - `connectivity.c_weight(i)`: The connection weight for connection `i`.
 
@@ -197,7 +197,7 @@ for i in range(n_oscillators):
     )
 ```
 
-This is a first-order linear approach to the nominal amplitude. The `rate` parameter controls how fast the amplitude converges. The nominal amplitude is drive-dependent — it is computed via `c_nominal_amplitude(iteration, i, drives)` which applies the same piecewise-linear drive-dependent function as the frequency.
+This is a first-order linear approach to the nominal amplitude. The `rate` parameter controls how fast the amplitude converges. The nominal amplitude is drive-dependent, it is computed via `c_nominal_amplitude(iteration, i, drives)` which applies the same piecewise-linear drive-dependent function as the frequency.
 
 The amplitude is stored at `state[n_oscillators + i]` and its derivative at `dstate[n_oscillators + i]`.
 
@@ -302,9 +302,9 @@ Each connection in `joints2osc_map.connections.array` is a 3-column row: `[oscil
 | `STRETCH2FREQTEGOTAE` | Phase derivative | `dstate[i0] += w * joint_pos * sin(phase)` | Phase-dependent stretch → frequency (Tegotae) |
 | `STRETCH2AMPTEGOTAE` | Amplitude derivative | `dstate[n_osc+i0] += w * joint_pos * sin(phase)` | Phase-dependent stretch → amplitude (Tegotae) |
 
-**Tegotae feedback**: The Tegotae variants multiply by `sin(state[i0])` (the current phase of the receiving oscillator). This implements a biologically inspired feedback rule where the effect of sensory input depends on the current phase of the oscillator. The name "Tegotae" comes from the Japanese for "disagreeability" — the feedback is strongest when it opposes the current oscillator state, creating self-stabilizing dynamics.
+**Tegotae feedback**: The Tegotae variants multiply by `sin(state[i0])` (the current phase of the receiving oscillator). This implements a biologically inspired feedback rule where the effect of sensory input depends on the current phase of the oscillator. The name "Tegotae" comes from the Japanese for "disagreeability", the feedback is strongest when it opposes the current oscillator state, creating self-stabilizing dynamics.
 
-**Error handling**: If the connection type is not one of the four valid types, a `printf` message is printed to stderr, but execution continues without modifying `dstate`. This is a silent error in `nogil` mode — it cannot raise a Python exception.
+**Error handling**: If the connection type is not one of the four valid types, a `printf` message is printed to stderr, but execution continues without modifying `dstate`. This is a silent error in `nogil` mode, it cannot raise a Python exception.
 
 **`joints.position_cy(iteration, i1)`**: This is a `cdef` method on `JointSensorArrayCy` that returns the joint position at the given iteration. It reads from the pre-filled sensor data array (filled by `ExperimentTask.update_sensors()` from the physics simulation).
 
@@ -349,7 +349,7 @@ for i in range(contacts2osc_map.n_connections):
 
 The contact reaction is the **magnitude** (L2 norm) of the total contact force vector at the contact sensor. This is computed inline using `sqrt` from `libc.math` (imported at the top of the file: `from libc.math cimport M_PI, sin, cos, fabs, fmax, fmod, sqrt`).
 
-Note that the code manually computes `x*x + y*y + z*z` instead of using a dot product function — this is for performance in `nogil` mode.
+Note that the code manually computes `x*x + y*y + z*z` instead of using a dot product function, this is for performance in `nogil` mode.
 
 ### Connection types
 
@@ -358,7 +358,7 @@ Note that the code manually computes `x*x + y*y + z*z` instead of using a dot pr
 | `REACTION2FREQ` | Phase derivative | `dstate[i0] += w * contact_reaction` |
 | `REACTION2FREQTEGOTAE` | Phase derivative | `dstate[i0] += w * contact_reaction * sin(phase)` |
 
-**Note**: There is NO `REACTION2AMP` or `REACTION2AMPTEGOTAE` — contact feedback only affects phase/frequency, not amplitude. This is a design choice: contacts primarily modulate gait timing, not amplitude.
+**Note**: There is NO `REACTION2AMP` or `REACTION2AMPTEGOTAE`, contact feedback only affects phase/frequency, not amplitude. This is a design choice: contacts primarily modulate gait timing, not amplitude.
 
 **No error handling**: Unlike `ode_stretch` and `ode_xfrc`, `ode_contacts` does NOT have an `else` branch for invalid connection types. If an invalid type is encountered, it is silently ignored.
 
@@ -402,7 +402,7 @@ for i in range(xfrc2osc_map.n_connections):
 
 ### Key observations
 
-1. **Only the y-component** of the external force is used (`xfrc.c_force_y()`). This is because `ode_xfrc` is designed for **lateral** perturbations — forces perpendicular to the direction of motion. The x and z components are ignored.
+1. **Only the y-component** of the external force is used (`xfrc.c_force_y()`). This is because `ode_xfrc` is designed for **lateral** perturbations, forces perpendicular to the direction of motion. The x and z components are ignored.
 
 2. **`fabs` (absolute value)** is used, not the raw signed value. This means the feedback is always positive regardless of the direction of the lateral force.
 
@@ -482,7 +482,7 @@ def initialize_episode(self):
 - Creates a **new** scipy ODE solver instance (the old one is discarded).
 - Sets the integrator with its kwargs.
 - Sets the initial state to `data.state.array[0, :]` (the first row of the pre-allocated state array, which was loaded from YAML initial conditions).
-- **Zeroes all future state rows** (`array[1:, :] = 0`). This is important — if you stored custom initial conditions in later rows, they will be erased.
+- **Zeroes all future state rows** (`array[1:, :] = 0`). This is important, if you stored custom initial conditions in later rows, they will be erased.
 - Zeroes the derivative vector.
 
 ### `copy_next_drive(iteration)`
@@ -493,13 +493,13 @@ def copy_next_drive(self, iteration):
     array[iteration + 1] = array[iteration]
 ```
 
-Copies the drive value from the current iteration to the next. This makes drives "sticky" — if no new drive is computed by `DescendingDrive.step()`, the previous iteration's drive persists. This is called at the end of every `step()`.
+Copies the drive value from the current iteration to the next. This makes drives "sticky", if no new drive is computed by `DescendingDrive.step()`, the previous iteration's drive persists. This is called at the end of every `step()`.
 
-### `step()` — complete walkthrough
+### `step()`, complete walkthrough
 
 ```python
 def step(self, iteration, time, timestep, checks=False, strict=False):
-    # Phase 0: Iteration 0 — just copy drive, no integration
+    # Phase 0: Iteration 0, just copy drive, no integration
     if iteration == 0:
         self.copy_next_drive(iteration)
         return
@@ -512,10 +512,10 @@ def step(self, iteration, time, timestep, checks=False, strict=False):
         ), (...)
 ```
 
-**Phase 0**: On the very first iteration, no integration happens. The drive is simply copied forward. This is because the solver was already initialized with `data.state.array[0, :]` in `initialize_episode()`, so there's nothing to integrate yet — the physics hasn't produced any sensor data to feed back.
+**Phase 0**: On the very first iteration, no integration happens. The drive is simply copied forward. This is because the solver was already initialized with `data.state.array[0, :]` in `initialize_episode()`, so there's nothing to integrate yet, the physics hasn't produced any sensor data to feed back.
 
 ```python
-    # Phase 2: Modulo skip — copy previous state if not integrating this step
+    # Phase 2: Modulo skip, copy previous state if not integrating this step
     if iteration % self.modulo:
         self.data.state.array[iteration, :] = (
             self.data.state.array[iteration - 1, :]
@@ -536,7 +536,7 @@ def step(self, iteration, time, timestep, checks=False, strict=False):
 
 **Phase 3**: The actual integration. `set_f_params` passes `(self.dstate, iteration, self.data)` as extra arguments to the ODE function. These become the `dstate`, `iteration`, and `data` parameters of `ode_oscillators_sparse`.
 
-The `while` loop handles sub-stepping — the integrator may need multiple internal steps to reach `time + timestep`. The condition `self.solver.t < time + 0.99 * timestep` uses `0.99` as a tolerance factor to avoid floating-point comparison issues. The loop continues until the solver has reached the target time or fails.
+The `while` loop handles sub-stepping, the integrator may need multiple internal steps to reach `time + timestep`. The condition `self.solver.t < time + 0.99 * timestep` uses `0.99` as a tolerance factor to avoid floating-point comparison issues. The loop continues until the solver has reached the target time or fails.
 
 ```python
         # Phase 4: Error handling
@@ -555,7 +555,7 @@ The `while` loop handles sub-stepping — the integrator may need multiple inter
 
 **Phase 4**: If integration failed:
 - If `strict=True`: raises `IntegrationException` with detailed diagnostic info (current solver time, target time, return code, state vector).
-- If `strict=False` (default): logs a warning and resets the solver to its current state (not the target state). This is a best-effort recovery — the simulation continues but the state may be inaccurate.
+- If `strict=False` (default): logs a warning and resets the solver to its current state (not the target state). This is a best-effort recovery, the simulation continues but the state may be inaccurate.
 
 ```python
     # Phase 5: Drive propagation
@@ -676,7 +676,7 @@ The state array is pre-allocated as `data.state.array[n_iterations, n_states]`. 
 
 ### 4. `dstate` not zeroed between calls
 
-The `dstate` array is allocated once and reused. The ODE functions use `+=` to add to `dstate`. If `dstate` is not zeroed between solver calls, residual values from previous calls will accumulate. However, scipy's `ode.integrate()` calls the RHS function fresh each time, and the `dstate` is passed as an extra argument — scipy does NOT zero it.
+The `dstate` array is allocated once and reused. The ODE functions use `+=` to add to `dstate`. If `dstate` is not zeroed between solver calls, residual values from previous calls will accumulate. However, scipy's `ode.integrate()` calls the RHS function fresh each time, and the `dstate` is passed as an extra argument, scipy does NOT zero it.
 
 **In practice**: This is handled correctly because `ode_oscillators_sparse` is called by scipy's internal integration loop, and the `dstate` is written (not accumulated) by the first three functions (`ode_dphase`, `ode_damplitude`, `ode_joints`) using `=` assignment, and only the sensory feedback functions use `+=`. But if you add a new core dynamics function that uses `+=` without the core functions first using `=`, you will get incorrect results.
 
@@ -690,7 +690,7 @@ On iteration 0, `step()` returns immediately after copying the drive. This means
 
 ## What NOT to assume
 
-1. **`nogil` does not mean thread-safe.** It means the function releases the GIL, allowing other Python threads to run. But the ODE functions are not designed for parallel execution — they share the `dstate` and `state` arrays.
+1. **`nogil` does not mean thread-safe.** It means the function releases the GIL, allowing other Python threads to run. But the ODE functions are not designed for parallel execution, they share the `dstate` and `state` arrays.
 
 2. **The `dstate` is NOT zeroed by `ode_oscillators_sparse`.** The function assumes `dstate` has been properly initialized. In practice, scipy's integrator handles this, but if you call the function directly, you must zero `dstate` first.
 

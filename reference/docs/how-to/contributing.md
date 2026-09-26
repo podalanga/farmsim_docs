@@ -1,650 +1,286 @@
-# Contributing — Development guide and coding standards
+# Contributing, Development guide and coding standards
 
-This guide covers everything you need to know to contribute to the FARMS framework — from setting up your development environment and understanding the build system, to coding conventions, adding new features, and submitting your changes.
-
-!!! note "Source Files"
-    - `farms_core/setup.py` — Cython build configuration
-    - `farms_mujoco/setup.py` — Cython build configuration
-    - `farms_amphibious/setup.py` — Cython build configuration
-    - `farms_sim/setup.py` — Python package setup
+How to set up a development environment, where the code lives, the coding
+conventions, how to test a change, and how the documentation is built and
+kept up to date.
 
 ---
 
-## Before You Start
+## The repositories
 
-FARMS is a research framework developed at the [BioRob Lab, EPFL](https://www.epfl.ch/labs/biorob/). It is composed of four separate Git repositories, each an independent Python package:
+FARMS is made of four Python packages, each in its own repository, checked
+out as submodules in the `farms/` folder of `farms_zbot`:
 
-| Repository | Purpose |
-|------------|---------|
-| `farms_core` | Data structures, base interfaces, I/O utilities |
-| `farms_mujoco` | MuJoCo physics backend and simulation loop |
-| `farms_sim` | CLI entry point and simulation orchestrator |
-| `farms_amphibious` | CPG networks, controllers, and domain-specific physics |
+| Package | Purpose |
+|---------|---------|
+| `farms_core` | Options, data arrays, sensors, extension base classes, I/O |
+| `farms_mujoco` | MuJoCo engine: MJCF builder, simulation loop, fluid forces, viewer extensions |
+| `farms_sim` | Entry point: command line and simulation setup |
+| `farms_amphibious` | CPG networks, controllers, amphibious options and data |
 
-All four repositories live as submodules inside the `farms/` directory of the `farms_zbot` project.
+The documentation is a separate repository, `farmsim_docs`.
 
 ---
 
-## Part 1 — Development Environment Setup
+## Development environment
 
-### Requirements
+### Installing
 
-You must work **inside the Docker container** to have all dependencies available. See the [Installation Guide](../tutorials/install-and-run.md) for setup. Inside the container, the following are pre-installed:
-
-- Python 3.12+
-- Cython (with a GCC/Clang C compiler)
-- NumPy, SciPy, h5py, PyYAML, matplotlib, dm-control, MuJoCo
-
-### Installing in Development (Editable) Mode
-
-The packages must be installed in dependency order. `farms_amphibious` depends on `farms_core`, so `farms_core` must be installed first.
+The packages need Python 3.11 or newer, a C compiler and Cython. From the
+root of `farms_zbot`:
 
 ```bash
-# Inside the container, from /app
-pip install -e ./farms/farms_core
-pip install -e ./farms/farms_mujoco
-pip install -e ./farms/farms_sim
-pip install -e ./farms/farms_amphibious
+git submodule update --init --recursive
+cd farms
+python setup_farms.py
 ```
 
-The `-e` (editable) flag installs the package in-place. Changes to **pure Python** (`.py`) files take effect immediately without reinstalling. Changes to **Cython** (`.pyx`) files require a rebuild (see below).
+`setup_farms.py` installs the dependencies of each package, then installs
+the four packages in editable mode, in dependency order (`farms_core`
+first: the other packages `cimport` its `.pxd` files). The Docker setup of
+[Install and Run](../tutorials/install-and-run.md) does this for you.
 
-### Rebuilding Cython Extensions
-
-FARMS uses Cython for performance-critical inner loops. After editing any `.pyx` file, you must recompile the extension:
+Changes to `.py` files take effect immediately. Changes to `.pyx` or
+`.pxd` files need a rebuild of the package:
 
 ```bash
-# Rebuild a single package
-pip install -e ./farms/farms_core --no-build-isolation
-
-# Or rebuild all packages
-pip install -e ./farms/farms_core --no-build-isolation && \
-pip install -e ./farms/farms_amphibious --no-build-isolation
+cd farms/farms_mujoco
+python setup.py build_ext --inplace
 ```
 
-!!! tip "Fast Iteration on Cython Code"
-    Set `DEBUG = True` at the top of the relevant `setup.py` to enable Cython's `boundscheck`, `nonecheck`, and `wraparound` guards. This catches array index errors and None-dereferences at the cost of performance. Switch back to `DEBUG = False` before benchmarking.
+### The DEBUG flag
 
-### Verifying Your Installation
+Each `setup.py` has `DEBUG = False` at the top. With `DEBUG = True`, the
+Cython modules are compiled with `boundscheck`, `nonecheck`,
+`initializedcheck`, `overflowcheck` and line tracing, which catches index
+errors at the cost of speed. Set it back to `False` before benchmarking or
+committing.
 
-Run a reference experiment to confirm everything works end-to-end:
+### Checking the installation
 
 ```bash
-cd /app/experiments/zbot_swimming
-farmsim --experiment_config experiment_config.yaml --headless
+cd experiments/zbot_bout_glide
+python run_sim.py --experiment_config experiment_config.yaml
 ```
 
-If the simulation runs to completion without error, your environment is correctly set up.
+Set `runtime.headless: true` in `simulation_config.yaml` to run without the
+viewer.
 
 ---
 
-## Part 2 — Repository Structure
+## Where the code lives
 
-Understanding where code lives is essential before making any changes.
+```text
+farms_core/farms_core/
+├── array/            # Typed Cython arrays
+├── sensors/          # Sensor arrays (data.py, data_cy.pyx) and column conventions (sensor_convention.pxd)
+├── model/            # AnimatOptions (options.py), AnimatData (data.py), AnimatController (control.py), AnimatExtension (extensions.py)
+├── experiment/       # ExperimentOptions, ExperimentData
+├── simulation/       # SimulationOptions, TaskExtension and the loggers (extensions.py)
+├── io/               # SDF, HDF5 and YAML
+└── units.py          # SimulationUnitScaling
 
-### `farms_core`
+farms_mujoco/farms_mujoco/
+├── simulation/       # Simulation, ExperimentTask, MJCF builder, viewer extensions
+├── sensors/          # Sensor copy kernels, CameraRecording
+└── swimming/         # Fluid forces (see farms_mujoco.swimming)
 
-```
-farms_core/
-├── array/          # Low-level C-typed Cython array wrappers (NDARRAY types)
-├── sensors/        # Sensor data containers (positions, velocities, forces)
-├── model/
-│   ├── control.py  # AnimatController, TaskExtension, ControlType — base interfaces
-│   ├── data.py     # AnimatData, ExperimentData — telemetry containers
-│   └── options.py  # AnimatOptions, SimulationOptions, etc. — YAML schemas
-├── simulation/
-│   ├── options.py  # RuntimeSimulationOptions, PhysicsSimulationOptions
-│   └── extensions.py # ExperimentLogger, ExperimentOptionsLogger
-├── io/
-│   ├── hdf5.py     # HDF5 read/write utilities
-│   └── yaml.py     # YAML read/write utilities
-└── utils/          # Geometry, rotation, and general math utilities
-```
+farms_amphibious/farms_amphibious/
+├── control/          # AmphibiousController, network (NetworkODE), ode.pyx, joint equations, drives
+├── data/             # AmphibiousData, network data
+└── model/            # AmphibiousOptions, AmphibiousConvention
 
-### `farms_amphibious`
-
-```
-farms_amphibious/
-├── control/
-│   ├── amphibious.py          # AmphibiousController — main CPG controller
-│   ├── ode.pyx                # CPG phase/amplitude ODEs (Cython, hot path)
-│   ├── ekeberg.pyx            # Ekeberg muscle model (Cython, hot path)
-│   ├── joints_control_cy.pyx  # Joint actuation logic (Cython)
-│   ├── network.py             # NetworkODE — scipy ODE integrator wrapper
-│   └── drive.py               # Drive signal computation
-├── data/
-│   └── data.pyx               # AmphibiousData telemetry (Cython arrays)
-└── model/
-    └── options.py             # AmphibiousOptions, OscillatorOptions, etc.
-```
-
-### `farms_mujoco`
-
-```
-farms_mujoco/
-├── simulation/
-│   ├── simulation.py   # MuJoCoSimulation — main physics class
-│   ├── task.py         # ExperimentTask — dm_control Task implementation
-│   └── extensions.py   # MjcfSaver, CameraFollower, etc.
-└── swimming/
-    ├── drag.pyx         # Hydrodynamic drag/buoyancy (Cython, hot path)
-    └── extension.py     # SwimmingExtension — injects hydrodynamic forces
+farms_sim/farms_sim/
+├── farmsim.py        # main(), profile_simulation()
+├── simulation.py     # setup_from_clargs(), simulation_setup(), run_simulation()
+└── utils/parse_args.py
 ```
 
 ---
 
-## Part 3 — Coding Conventions
+## Coding conventions
 
-### Python Style
+### Python
 
-- Follow **PEP 8** for all Python files.
-- Use **type hints** for all public function signatures.
-- All public classes and functions must have **docstrings**.
-- Maximum line length: **99 characters**.
+- PEP 8, type hints on public functions, a docstring on every public class
+  and function (the [API reference](../reference/api/farms_core/index.md)
+  is generated from them).
+- Configuration options go in the `Options` class of their file, with a
+  `ChildDoc` entry in its `doc()` method: the
+  [configuration reference](../reference/env/configuration-reference.md) is
+  generated from it.
+- YAML keys are `snake_case`, and values in SI units unless stated.
+
+### Cython
+
+- Declare C types for loop variables and arrays, and use typed
+  memoryviews (`double[::1]`) in hot paths.
+- Mark functions that do not touch Python objects `noexcept nogil`.
+- Do not raise exceptions inside `cdef` functions: validate the inputs in
+  Python before the loop.
+- Add a `.pxd` file for modules that other Cython modules `cimport`.
+- Do not allocate in the simulation loop: allocate when the object is
+  created, as `SwimmingHandler` does.
+
+### Commit messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+`feat(swimming): ...`, `fix(control): ...`, `perf(cob): ...`,
+`docs(tutorial): ...`.
+
+---
+
+## Extending FARMS
+
+| To add | See |
+|--------|-----|
+| A robot model | [The Zbot Model](../tutorials/zbot-model.md) and [Configure an Experiment YAML](configure-yaml.md) |
+| A controller | [Write a Custom Controller](../tutorials/custom-controller.md) and [Write a Controller](write-controller.md) |
+| A force or other per-step behaviour | [Write an AnimatExtension](write-extension.md) |
+| A fluid model feature | [Hydrodynamics Internals](../internals/hydrodynamics-internals.md#how-to-extend) |
+| A CPG topology | [Configure CPG Network Parameters](configure-cpg-network.md) |
+| A logged quantity | [Save, Load, and Inspect Data](save-load-data.md) |
+
+When several extensions apply forces, accumulate into
+`physics.data.xfrc_applied` (`+=`) rather than overwrite it, unless the
+extension is the only one writing to those bodies (`SwimmingExtension`
+writes the fluid wrench of its links).
+
+---
+
+## Testing
+
+### Unit tests
+
+`farms_core/tests` and `farms_mujoco/tests` contain pytest tests (for
+example the centre of buoyancy kernels, lookup tables and ellipsoid model
+in `farms_mujoco/tests`):
+
+```bash
+cd farms/farms_mujoco
+python -m pytest tests
+```
+
+If a ROS installation sets `PYTHONPATH`, run
+`env -u PYTHONPATH PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests`.
+
+### Simulation check
+
+Run a reference experiment headless and check the output for NaN values:
 
 ```python
-# Good
-def compute_drag_force(velocity: np.ndarray, coefficients: list[float]) -> np.ndarray:
-    """Compute translational drag force given a relative velocity vector.
-
-    Args:
-        velocity: Relative velocity in the URDF frame [x, y, z], shape (3,).
-        coefficients: Drag coefficients [cx, cy, cz].
-
-    Returns:
-        Drag force vector in the URDF frame, shape (3,).
-    """
-    ...
-
-# Bad — no type hints, no docstring
-def drag(v, c):
-    ...
-```
-
-### Cython (`.pyx`) Style
-
-Cython files are used for the innermost loops that run thousands of times per simulation second. Follow these rules:
-
-- **Always declare C types** for all loop variables and arrays. Untyped variables default to Python objects and are slow.
-- **Use memoryviews** (`DTYPE_t[::1]`) instead of NumPy arrays as function arguments in hot paths.
-- **Declare `nogil`** for functions that do not touch Python objects — this is mandatory for any future parallelism.
-- **Never** use Python exceptions (`raise`) inside `cdef` functions — use C-style return codes or pre-validate in Python.
-
-```cython
-# Good — typed, uses memoryviews
-cdef void step_oscillators(
-    double[::1] phases,
-    double[::1] frequencies,
-    double dt,
-    int n_osc,
-) nogil:
-    cdef int i
-    for i in range(n_osc):
-        phases[i] += frequencies[i] * dt
-
-# Bad — untyped, slow
-def step_oscillators(phases, frequencies, dt):
-    for i in range(len(phases)):
-        phases[i] += frequencies[i] * dt
-```
-
-- Add a `.pxd` declaration file for any `.pyx` module that will be `cimport`ed by other Cython modules. Without `.pxd` files, cross-module C-level calls fall back to Python-level calls and lose all performance gains.
-
-### YAML Configuration
-
-- All new configurable parameters must be added to the relevant `Options` class in Python **and** documented in the [Configuration Reference](../reference/env/yaml-schema.md).
-- YAML keys must use `snake_case`.
-- Units must be SI. Document units explicitly in the `Options` class docstring.
-
-### Commit Messages
-
-Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
-
-```
-<type>(<scope>): <short description>
-
-[optional body]
-```
-
-| Type | When to use |
-|------|-------------|
-| `feat` | New feature or behaviour |
-| `fix` | Bug fix |
-| `perf` | Performance improvement (e.g., Cython optimization) |
-| `refactor` | Code restructuring with no behaviour change |
-| `docs` | Documentation only |
-| `test` | Adding or updating tests |
-| `chore` | Build scripts, CI changes, dependency updates |
-
-**Examples:**
-
-```
-feat(control): add Tegotae sensory feedback to CPG phase ODE
-fix(swimming): prevent negative buoyancy for fully submerged links
-perf(ode): replace Python loop with Cython nogil inner loop in phase stepping
-docs(tutorial): add section on custom controller creation
-```
-
----
-
-## Part 4 — Extension Recipes
-
-FARMS is built around a plugin architecture. You rarely need to modify core files — instead, you extend the framework through well-defined interfaces.
-
-### Recipe A — Adding a New Robot Model
-
-To simulate a new robot, you only need a model file and YAML configuration. No Python code is required for the physics.
-
-**Step 1**: Create your robot model as an SDF or MJCF file:
-
-```xml
-<!-- models/my_robot/sdf/my_robot.sdf -->
-<sdf version="1.6">
-  <model name="my_robot">
-    <link name="base">
-      <inertial>...</inertial>
-      <visual>...</visual>
-      <collision>...</collision>
-    </link>
-    <link name="segment_1">...</link>
-    <joint name="joint_1" type="revolute">
-      <parent>base</parent>
-      <child>segment_1</child>
-      <axis><xyz>0 0 1</xyz></axis>
-    </joint>
-  </model>
-</sdf>
-```
-
-!!! important
-    Joint and link names in the SDF **must exactly match** the names used in `animat_config.yaml`. A mismatch will cause a `KeyError` at simulation startup.
-
-**Step 2**: Create `animat_config.yaml` using the Zbot config as a template. Key sections to modify:
-
-```yaml
-sdf: ../../models/my_robot/sdf/my_robot.sdf
-morphology:
-  links:
-    - name: base
-      collisions: true
-      fluid_interaction: false      # Set true if submerged
-      density: 1200.0              # kg/m³
-      drag_coefficients:
-        - [0, 0, 0]                # Translational drag [x, y, z]
-        - [0, 0, 0]                # Rotational drag
-  joints:
-    - name: joint_1
-      initial: [0, 0]              # [position (rad), velocity (rad/s)]
-      stiffness: 0
-      damping: 0.01
-control:
-  controller_loader: my_package.MyController
-  motors:
-    - joint_name: joint_1
-      control_types: [position]
-      limits_torque: [-5.0, 5.0]
-      gains: [2.0, 0.005, 0]       # [Kp, Kd, Ki]
-```
-
-### Recipe B — Adding a New Controller
-
-Inherit from `AnimatController` and implement the actuation methods. See the [Zbot tutorial](../tutorials/zbot-overview.md) for a full worked example.
-
-```python
-from farms_core.model.control import AnimatController, ControlType
 import numpy as np
+from farms_core.experiment.data import ExperimentData
+from farms_core.sensors.sensor_convention import sc
 
-class MyController(AnimatController):
-
-    @classmethod
-    def from_options(cls, config, experiment_options, animat_i, animat_data, animat_options):
-        """Required factory method — called by farms_sim at startup."""
-        return cls(
-            animat_i=animat_i,
-            joints_names=animat_data.joints.names,
-            muscles_names=(),
-            max_torques=animat_data.joints.max_torques,
-        )
-
-    def positions(self, iteration: int, time: float, timestep: float) -> dict:
-        """Return {joint_name: target_position_rad} for position-controlled joints."""
-        return {
-            joint: 0.3 * np.sin(2 * np.pi * time)
-            for joint in self.joints_names[ControlType.POSITION]
-        }
-
-    def torques(self, iteration: int, time: float, timestep: float) -> dict:
-        """Return {joint_name: torque_Nm} for torque-controlled joints."""
-        return {}
+data = ExperimentData.from_file('Output/simulation.hdf5')
+joints = data.animats[0].sensors.joints
+positions = np.asarray(joints.array)[:, :, sc.joint_position]
+assert np.all(np.isfinite(positions)), 'Non-finite joint positions'
+print(f'Max joint position: {np.max(np.abs(positions)):.4f} rad')
 ```
 
-Point `controller_loader` in `animat_config.yaml` to your class:
-
-```yaml
-control:
-  controller_loader: my_package.my_module.MyController
-```
-
-### Recipe C — Adding a New Physics Extension (Force Model)
-
-If you want to inject custom forces (aerodynamics, tethers, magnetic fields), subclass `TaskExtension`.
-
-```python
-from farms_core.simulation.extensions import TaskExtension
-import numpy as np
-
-class WindForceExtension(TaskExtension):
-    """Applies a constant wind force to all body links of animat 0."""
-
-    def __init__(self, wind_vector: list[float], link_indices: list[int]):
-        super().__init__(substep=True)
-        self.wind_vector = np.array(wind_vector, dtype=float)
-        self.link_indices = link_indices
-
-    @classmethod
-    def from_options(cls, config: dict, experiment_options) -> 'WindForceExtension':
-        return cls(
-            wind_vector=config.get('wind_vector', [0.5, 0.0, 0.0]),
-            link_indices=config.get('link_indices', [0]),
-        )
-
-    def initialize_episode(self, task, physics):
-        """Called once at simulation start. Cache xfrc row indices here."""
-        # Pre-cache xfrc_applied row indices for efficient per-step access —
-        # this is the same pattern used by SwimmingExtension
-        # (farms_mujoco/swimming/extension.py) to resolve link names once
-        # instead of doing a named lookup every step.
-        row = physics.named.data.xfrc_applied.axes.row
-        self._body_ids = [
-            row.index(name)
-            for name in task.data.animats[0].sensors.links.names
-        ]
-
-    def before_step(self, task, action, physics):
-        """Called every substep. Apply forces to physics.data.xfrc_applied."""
-        force_torque = np.concatenate([self.wind_vector, [0, 0, 0]])  # [Fx,Fy,Fz,Tx,Ty,Tz]
-        for link_idx in self.link_indices:
-            # IMPORTANT: Use += to accumulate with other active extensions
-            physics.data.xfrc_applied[self._body_ids[link_idx]] += force_torque
-```
-
-Register it in `simulation_config.yaml`:
-
-```yaml
-extensions:
-  - loader: my_package.WindForceExtension
-    config:
-      wind_vector: [0.5, 0.0, 0.0]
-      link_indices: [0, 1, 2]
-```
-
-!!! warning "Extension Accumulation"
-    Always use `+=` when writing to `physics.data.xfrc_applied`, never `=`. Overwriting with `=` will erase forces applied by other extensions (e.g., `SwimmingExtension`).
-
-### Recipe D — Adding a New Logged Data Channel
-
-If you need to record a custom quantity (e.g., muscle power, joint work, custom state), you must extend the data structures.
-
-**Step 1**: Create a new data class in your package:
-
-```python
-# my_package/data.py
-import numpy as np
-from farms_core.model.data import Data
-
-class PowerData(Data):
-    """Records instantaneous mechanical power per joint."""
-
-    def __init__(self, n_joints: int, n_iterations: int):
-        super().__init__()
-        # Allocate a ring buffer: shape = (n_iterations, n_joints)
-        self.power = np.zeros((n_iterations, n_joints), dtype=float)
-
-    def update(self, iteration: int, torques: np.ndarray, velocities: np.ndarray):
-        idx = iteration % self.power.shape[0]
-        self.power[idx] = torques * velocities  # P = τ · ω
-```
-
-**Step 2**: Write to it from a controller or extension during `before_step()`:
-
-```python
-def before_step(self, task, action, physics):
-    idx = task.iteration % self.buffer_size
-    torques = task.data.animats[0].sensors.joints.active_torques[idx]
-    velocities = task.data.animats[0].sensors.joints.velocities[idx]
-    self.power_data.update(task.iteration, torques, velocities)
-```
-
-**Step 3**: Save it manually after the simulation:
-
-```python
-from farms_core.io.hdf5 import dict_to_hdf5
-
-# After sim.run() completes
-dict_to_hdf5('Output/power.hdf5', {'power': my_power_data.power})
-```
-
-### Recipe E — Adding a New CPG Network Topology
-
-Extend the CPG network structure by modifying the `osc2osc` coupling list in `animat_config.yaml`. Add bidirectional connections between oscillators:
-
-```yaml
-network:
-  osc2osc:
-    # Anti-phase coupling between left and right oscillators (undulation)
-    - in: osc_body_0_R
-      out: osc_body_0_L
-      type: OSC2OSC
-      weight: 30.0
-      phase_bias: 3.14159   # π = anti-phase
-
-    # Forward coupling between adjacent body segments (travelling wave)
-    - in: osc_body_1_L
-      out: osc_body_0_L
-      type: OSC2OSC
-      weight: 30.0
-      phase_bias: 1.0472    # π/3 = 60° inter-segment phase lag
-```
-
-The `phase_bias` value controls the spatial wavelength of the travelling wave. For a Zbot with 6 joints, a bias of `π/3` creates one full wavelength across the body.
+`farms_mujoco/benchmarks/bench_fluid.py` measures the cost of the fluid
+forces and `inspect_buoyancy.py` the buoyancy budget of a model.
 
 ---
 
-## Part 5 — Cython Development Guide
+## Documentation
 
-Cython is the most performance-sensitive part of FARMS. This section gives practical guidance for working with `.pyx` files safely.
+The documentation is a MkDocs Material site in `farmsim_docs/reference`.
 
-### File Types
+### What is generated
 
-| Extension | Purpose |
-|-----------|---------|
-| `.pyx` | Cython source — compiled to C then to a `.so`/`.pyd` shared library |
-| `.pxd` | Cython declaration file — like a C header, allows `cimport` |
-| `.c` | Generated C code — **do not edit manually** |
-| `.pyd` / `.so` | Compiled binary extension — **do not commit to Git** |
+These pages are generated from the installed code at every build (by
+`tools/gen_pages.py`, a `mkdocs-gen-files` script) and must not be edited
+by hand:
 
-### The `DEBUG` Flag
+| Page | Source |
+|------|--------|
+| `reference/api/**` | The docstrings of every public module (`mkdocstrings`) |
+| [Configuration Parameter Reference](../reference/env/configuration-reference.md) | The `doc()` methods of the options classes, and `FluidOptions` |
+| [CLI Reference](../reference/env/cli.md) | The `farms_sim` argument parser |
 
-Each `setup.py` has a `DEBUG = False` constant at the top. Set it to `True` when developing:
+Hand-written pages can include generated signatures with a
+`::: module.Class` block.
 
-```python
-# setup.py
-DEBUG = True   # Enable during development
-```
+### The drift guard
 
-This activates the following Cython compiler directives:
+`tools/check_docs.py` checks the hand-written pages against the installed
+code, and fails on:
 
-| Directive | Effect |
-|-----------|--------|
-| `boundscheck` | Raises `IndexError` on out-of-bounds array access |
-| `nonecheck` | Raises `UnboundLocalError` on access to None typed variables |
-| `wraparound` | Raises `IndexError` on negative index access |
-| `initializedcheck` | Raises `RuntimeError` if C++ objects are not initialized |
+1. a dotted reference (`farms_mujoco.swimming.extension.SwimmingExtension`)
+   that does not import;
+2. a source path (`farms_mujoco/swimming/cob.pyx`) that does not exist;
+3. a command line option, on a `run_sim.py` or `farmsim` command line,
+   that the parser does not have;
+4. an unknown key in a YAML example (a block whose first line is
+   `# check-docs: skip` is not checked);
+5. an em dash.
 
-Always set `DEBUG = False` before submitting a merge request. Production builds use `-O3` optimisation and disabled bounds checking for maximum speed.
+### Building locally
 
-### Understanding the `.pxd` Import Chain
-
-`farms_amphibious` depends on Cython type definitions from `farms_core` at compile time. This is resolved through `cimport` in `.pyx` files and `.pxd` declaration files:
-
-```cython
-# farms_amphibious/control/ekeberg.pyx
-from farms_core.array.array cimport DoubleArray2D  # cimport = C-level import
-```
-
-This is why `farms_core` **must be installed before** `farms_amphibious` can be compiled. The `setup.py` for `farms_amphibious` calls `from farms_core import get_include_paths()` to locate the installed `.pxd` files.
-
-If you add a new `.pxd` file to `farms_core`, you must add its folder to the `package_data` list in `farms_core/setup.py`:
-
-```python
-package_data={'farms_core': [
-    f'{folder}*.pxd'
-    for folder in ['', 'array/', 'sensors/', 'model/', 'utils/', 'my_new_folder/']
-]},
-```
-
----
-
-## Part 6 — Testing and Validation
-
-### Current Test Status
-
-There is currently no automated `pytest` suite. All validation is done by running reference simulations manually and inspecting outputs.
-
-### Manual Validation Procedure
-
-After making any change, run the following:
-
-**1. Run the reference simulation:**
+With the FARMS packages installed in the environment:
 
 ```bash
-cd /app/experiments/zbot_swimming
-farmsim --experiment_config experiment_config.yaml --headless
+cd farmsim_docs/reference
+pip install -r requirements.txt
+make check    # Drift guard
+make build    # Drift guard, then mkdocs build --strict
+make serve    # Live preview on http://127.0.0.1:8000
 ```
 
-Expected outcome: simulation completes all 5001 iterations without error or numerical divergence (NaN/Inf).
+### Automatic updates
 
-**2. Check the output data:**
+The workflow `.github/workflows/deploy-docs.yml` of `farmsim_docs` checks
+out `farms_zbot` with its submodules (the pinned FARMS commits), installs
+the packages, runs the drift guard and `mkdocs build --strict`, and
+deploys to GitHub Pages. It runs:
 
-```python
-import h5py
-import numpy as np
+- on a push to `main` of `farmsim_docs` (and checks pull requests without
+  deploying);
+- every night, to pick up code changes;
+- manually (`workflow_dispatch`, with an optional `farms_zbot` ref);
+- when a code repository sends a `code-updated` event.
 
-with h5py.File('Output/simulation.hdf5', 'r') as f:
-    positions = f['animats/0/joints/positions'][:]
-    assert not np.any(np.isnan(positions)), "NaN detected in joint positions!"
-    assert not np.any(np.isinf(positions)), "Inf detected in joint positions!"
-    print(f"Max joint position: {np.max(np.abs(positions)):.4f} rad")
-```
+To send that event on every push of `farms_zbot` (or of a FARMS
+repository), copy `templates/notify-docs.yml` to its
+`.github/workflows/`, and add a repository secret `DOCS_DISPATCH_TOKEN`:
+a fine-grained personal access token with "Contents: read and write"
+access to `farmsim_docs`.
 
-**3. Run the analysis script:**
+When a code change renames an option, a class or a flag, the generated
+pages follow automatically, and the drift guard fails the build until the
+hand-written pages are updated.
 
-```bash
-python analysis.py
-```
+### Writing pages
 
-Inspect the generated plots for physically plausible joint trajectories, stable oscillation amplitudes, and smooth undulation patterns. Any sudden jumps, flat lines, or diverging amplitudes indicate a bug.
-
-### Adding a Simple Regression Test
-
-Until a formal test suite exists, you can add a minimal smoke test script alongside your experiment:
-
-```python
-# test_my_change.py
-import sys
-from farms_sim.simulation import setup_from_clargs, run_simulation
-import numpy as np
-
-sys.argv = ['farmsim', '--experiment_config', 'experiment_config.yaml']
-clargs, exp_options, simulator = setup_from_clargs()
-
-# Override to run for fewer iterations
-exp_options.simulation.runtime.n_iterations = 100
-exp_options.simulation.runtime.headless = True
-
-sim = run_simulation(exp_options, simulator=simulator)
-
-# Validate output
-positions = sim.data.animats[0].sensors.joints.positions.array
-assert not np.any(np.isnan(positions[:100])), "NaN in output!"
-print("✓ Smoke test passed")
-```
-
----
-
-## Part 7 — CI/CD Pipeline
-
-The `.gitlab-ci.yml` in each repository is currently configured **only** to build Sphinx documentation and deploy it to GitLab Pages. It runs manually (not on every push):
+- Specify the language of code blocks (`python`, `yaml`, `bash`).
+- Use admonitions (`!!! note`, `!!! warning`) for callouts, and a
+  `## See also` section at the end.
+- Do not use em dashes.
+- Add new pages to the `nav` of `mkdocs.yml`. When a page is moved or
+  removed, add a redirect in the `redirects` plugin.
 
 ```yaml
-rules:
-  - when: manual
-```
-
-It does **not** run integration tests. When contributing changes that affect simulation behaviour, you must validate manually as described in Part 6.
-
-Future CI work areas (contributions welcome):
-
-- A headless smoke-test job that runs the Zbot swimming experiment for 100 iterations
-- A Cython build check job to catch compilation errors early
-- A numerical regression job comparing key outputs against reference HDF5 files
-
----
-
-## Part 8 — Documentation
-
-Documentation is written in **Markdown** and built with **MkDocs** using the Material theme. Math equations are rendered with MathJax.
-
-### Building the Docs Locally
-
-```bash
-cd /app/reference
-pip install mkdocs mkdocs-material
-mkdocs serve
-```
-
-The site is available at `http://127.0.0.1:8000`.
-
-### Documentation Standards
-
-Follow these conventions when writing or editing documentation:
-
-- **"Where" clauses**: Every equation must be followed by a `Where:` block defining each symbol. Each definition must be on its own line (blank line between items).
-- **Code blocks**: Always specify the language for syntax highlighting (` ```python `, ` ```yaml `, ` ```bash `).
-- **Admonitions**: Use `!!! note`, `!!! tip`, `!!! warning`, `!!! important` for callouts. Never use `!!! tip "See also"` for See Also sections — use `## See Also` instead.
-- **See Also sections**: Use a `## See Also` heading at the bottom of every API page, not an admonition block.
-- **File links**: Use descriptive link text, not full paths.
-
-### Adding a New Doc Page
-
-1. Create your `.md` file under `reference/docs/`.
-2. Add it to `reference/mkdocs.yml` under the appropriate `nav` section:
-
-```yaml
+# check-docs: skip
 nav:
-  - API Reference:
-    - My New Page: api/my_new_page.md
+  - How-to Guides:
+    - My New Page: how-to/my-new-page.md
 ```
 
 ---
 
-## Summary Checklist
+## Checklist
 
-Before submitting a contribution, verify:
+- [ ] Docstrings on new public classes and functions, `ChildDoc` entries for new options
+- [ ] Cython hot paths typed and allocation free, `DEBUG = False`
+- [ ] Unit tests pass, a reference simulation runs without NaN
+- [ ] `make build` passes in `farmsim_docs`
+- [ ] Commit messages follow Conventional Commits
 
-- [ ] Code follows PEP 8 and has docstrings on all public functions and classes
-- [ ] Cython `.pyx` files use typed memoryviews and C types for all hot-path variables
-- [ ] `DEBUG = False` in all `setup.py` files
-- [ ] New YAML parameters are documented in [Configuration Reference](../reference/env/yaml-schema.md)
-- [ ] Reference simulation runs to completion without NaN/Inf
-- [ ] `analysis.py` plots look physically plausible
-- [ ] New doc pages are added to `mkdocs.yml`
-- [ ] Commit messages follow Conventional Commits format
+## See also
 
-## See Also
-
-- [Architecture & Data Flow](../explanation/architecture.md) — understand module boundaries before making changes
-- [Zbot tutorial](../tutorials/zbot-overview.md) — end-to-end example of the system working together
-- [Configuration Reference](../reference/env/yaml-schema.md) — all YAML parameters
-- [Mathematical Models](../explanation/mathematical-models.md) — CPG and muscle model equations
-- [`farms_core.model.control`](../reference/core/core-control.md) — controller base class API
+- [System Architecture](../explanation/architecture.md)
+- [Extension and Controller Design](../explanation/extension-design.md)
+- [Configuration Parameter Reference](../reference/env/configuration-reference.md)

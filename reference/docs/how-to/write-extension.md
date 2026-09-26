@@ -1,6 +1,6 @@
 # Write an AnimatExtension
 
-This guide shows how to write a custom `AnimatExtension` — a plugin that runs
+This guide shows how to write a custom `AnimatExtension`, a plugin that runs
 code at specific lifecycle points during a simulation.
 
 ## What is an extension?
@@ -17,9 +17,9 @@ simulation lifecycle:
 
 Extensions come in two flavors:
 
-- **`TaskExtension`** (`farms_core/simulation/extensions.py`) — simulation-level,
+- **`TaskExtension`** (`farms_core/simulation/extensions.py`): simulation-level,
   created from `simulation_config.yaml` `extensions:` list
-- **`AnimatExtension`** (`farms_core/model/extensions.py`) — animat-level,
+- **`AnimatExtension`** (`farms_core/model/extensions.py`): animat-level,
   created from `animat_config.yaml` `extensions:` list, has access to
   `animat_data` and `animat_options`
 
@@ -46,7 +46,7 @@ class ForceLogger(AnimatExtension):
     @classmethod
     def from_options(cls, config, experiment_options, animat_i,
                     animat_data, animat_options):
-        """Factory method — called by ExperimentTask during setup."""
+        """Factory method, called by ExperimentTask during setup."""
         extension = cls(
             animat_i=animat_i,
             animat_data=animat_data,
@@ -88,10 +88,10 @@ extensions:
       output_file: total_force.npy
 ```
 
-The `loader` is a dotted Python path. The module must be importable — either
+The `loader` is a dotted Python path. The module must be importable, either
 in the Python path or in the experiment directory (which the experiment's
 own `run_sim.py` adds to `sys.path` itself, before calling
-`farms_sim._bootstrap.main()` — `_bootstrap.main()` takes no arguments and
+`farms_sim._bootstrap.main()`: `_bootstrap.main()` takes no arguments and
 does not touch `sys.path`; see `reference/farms-sim.md`).
 
 ## Extension ordering
@@ -102,7 +102,7 @@ Within each step:
 ```
 before_step:
   1. ExperimentTask.update_sensors()   # gated by `full_step or self.substeps_links`,
-                                        # not unconditional — see note below
+                                        # not unconditional, see note below
   2. Extension 1 before_step()
   3. Extension 2 before_step()
   4. ...
@@ -122,7 +122,7 @@ after_step:
     substeps. On a skipped substep, `update_sensors(links_only=not
     full_step)` may still run but restricted to links-only data. Likewise,
     each extension's own `before_step()` only runs when `full_step or
-    extension.substep` — an extension with `substep=True` runs on every
+    extension.substep`, an extension with `substep=True` runs on every
     physics substep, others only on full steps. If your extension needs
     fresh sensor data every call, check `task.iteration`/`full_step`
     semantics rather than assuming a fixed per-physics-step cadence.
@@ -171,7 +171,7 @@ def before_step(self, task, action, physics):
 
 !!! note "Prefer `physics.named.*` for name-based lookups, precompute indices for hot loops"
     `physics.named.data.<field>['link_name']` (dm_control's named-axis
-    accessor) is the idiomatic way to read/write MuJoCo arrays by name — used
+    accessor) is the idiomatic way to read/write MuJoCo arrays by name, used
     throughout `farms_mujoco/simulation/physics.py` for building every
     sensor map. It's convenient but does a name lookup every call, so
     `farms_mujoco`'s own hot-path code (`SwimmingExtension.before_step()`,
@@ -180,7 +180,7 @@ def before_step(self, task, action, physics):
     `initialize_episode()`, into a plain integer index array, then indexes
     the raw `physics.data.xfrc_applied[indices, :]` array directly every
     step. Follow the same pattern if your extension's `before_step()` needs
-    to touch many links/joints every physics step — resolve names to
+    to touch many links/joints every physics step, resolve names to
     indices once, not every call.
 
 ## Common patterns
@@ -214,8 +214,8 @@ def from_options(cls, config, experiment_options, animat_i,
 
 ## See also
 
-- [Extension API](../reference/core/extension-api.md) — full class reference
-- [Write a Controller](write-controller.md) — controllers are a special case
+- [Extension and Controller Design](../explanation/extension-design.md): full class reference
+- [Write a Controller](write-controller.md): controllers are a special case
   of extensions
-- [Extension and Controller Design](../explanation/extension-design.md) —
+- [Extension and Controller Design](../explanation/extension-design.md): 
   design rationale

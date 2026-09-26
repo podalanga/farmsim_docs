@@ -1,151 +1,173 @@
 # Extension and Controller Design
 
-This document explains the design rationale behind FARMS' extension system and
-controller architecture.
+Extensions are how code plugs into a FARMS simulation: controllers, fluid
+forces, loggers, cameras and viewer markers are all extensions. This page
+explains the design, the lifecycle and the contracts of the base classes.
+The signatures are in the [API reference](../reference/core/core-control.md).
 
 ## Why extensions?
 
-Traditional robotics frameworks often use deep class hierarchies — you subclass
-the simulation class to add behavior. FARMS takes a different approach:
-composition via extensions.
+Instead of subclassing the simulation to add behaviour, FARMS composes
+independent extensions listed in the YAML files:
 
-### Problems with inheritance
+- **Composable**: any set of extensions can be combined without code
+  changes.
+- **Ordered**: they run in the order of the YAML lists.
+- **Reusable**: the same extension works with different robots.
+- **Isolated**: each extension keeps its own state.
 
-- **Fragile** — changes to the base class affect all subclasses
-- **Inflexible** — can only have one chain of behaviors
-- **Hard to share** — behavior is embedded in class hierarchy, not reusable
+## Class hierarchy
 
-### Extension benefits
-
-- **Composable** — mix any set of extensions without code changes
-- **Orderable** — extension order is controlled by YAML declaration
-- **Reusable** — the same extension works across different robots
-- **Isolated** — each extension manages its own state
-
-## The lifecycle design
-
-FARMS extensions follow a lifecycle that mirrors the simulation loop:
-
+```text
+TaskExtension (ABC)                   farms_core.simulation.extensions
+├── ExperimentLogger                  farms_core.simulation.extensions
+├── ExperimentOptionsLogger           farms_core.simulation.extensions
+├── MjcfSaver                         farms_mujoco.simulation.extensions
+├── CameraRecording                   farms_mujoco.sensors.camera
+├── AnimatViewerExtension             farms_mujoco.simulation.extensions
+│   ├── CameraFollower
+│   ├── CoMViewer, TrailCoMViewer, TrailLinkViewer, ArrowViewer
+│   └── SnakeGame
+└── AnimatExtension (ABC)             farms_core.model.extensions
+    ├── SwimmingExtension             farms_mujoco.swimming.extension
+    ├── Targets2Reach                 farms_mujoco.viewer
+    └── AnimatController              farms_core.model.control
+        ├── JointMuscleController     farms_amphibious.control.amphibious
+        │   └── AmphibiousController
+        └── ZbotCPGController         experiments/zbot_bout_glide/controller
 ```
-initialize_episode()  →  before_step()  →  [physics step]  →  after_step()  →  ...  →  end_episode()
-```
 
-This maps directly to the dm_control `Task` interface:
-
-| FARMS method | dm_control method | When |
-|--------------|-------------------|------|
-| `initialize_episode()` | `Task.initialize_episode()` | Once at start |
-| `before_step()` | `Task.before_step()` | Before each physics step |
-| `after_step()` | `Task.after_step()` | After each physics step |
-| `end_episode()` | `Task.after_episode()` | At simulation end |
-
-The key insight is that `before_step()` runs before physics, allowing
-extensions to set forces and controllers to set joint targets. `after_step()`
-runs after physics, allowing extensions to record the resulting state.
+The viewer extensions (`AnimatViewerExtension`) follow one animat
+(`animat_id`) but are simulation extensions: they are listed in the
+simulation file.
 
 ## Two extension levels
 
-FARMS distinguishes simulation-level and animat-level extensions:
+| | `TaskExtension` | `AnimatExtension` |
+|---|---|---|
+| Listed in | `extensions:` of the simulation file | `extensions:` of an animat file |
+| Created with | `from_options(config, experiment_options)` | `from_options(config, experiment_options, animat_i, animat_data, animat_options)` |
+| Examples | `ExperimentLogger`, `CameraRecording`, `CoMViewer` | `SwimmingExtension`, controllers |
 
-### TaskExtension (simulation-level)
+Each entry has a `loader` (the dotted path of the class) and a `config`
+(a free dictionary passed to `from_options()`):
 
-- Registered in `simulation_config.yaml`
-- Has access to `SimulationOptions` and `ExperimentData`
-- Example: `ExperimentLogger` (saves all data), `ExperimentOptionsLogger`
-  (saves configs)
-
-### AnimatExtension (animat-level)
-
-- Registered in `animat_config.yaml`
-- Has access to `animat_data`, `animat_options`, and `animat_i`
-- Example: `SwimmingExtension` (fluid forces), `CameraFollower` (visualization)
-
-This separation reflects the scoping of concerns — simulation-level extensions
-operate on the whole experiment, while animat-level extensions operate on a
-single robot.
-
-## Controllers as extensions
-
-`AnimatController` extends `AnimatExtension`. This is deliberate: a controller
-is just an extension that also produces joint targets. Verified against
-`ExperimentTask.before_step()` (`farms_mujoco/simulation/task.py`), the real
-sequencing is:
-
-1. `controller_loader` (and any other extension) is instantiated once, up
-   front, from the `extensions:` YAML list — controllers aren't created
-   through a separate mechanism from ordinary extensions.
-2. Every physics step, the task iterates its extensions **in YAML order**.
-   For each one, it calls `extension.before_step(...)`, and — **immediately
-   after that same call, still inside the same loop iteration** — checks
-   `isinstance(extension, AnimatController)` and, if so, dispatches
-   `positions()`/`velocities()`/`torques()` (whichever `ControlType`
-   buckets are non-empty for that controller) and writes the results into
-   `physics.data.ctrl` right there.
-3. This repeats for every extension in the list before `physics.step()`
-   actually advances the simulation.
-
-This design means a controller's internal dynamics (e.g., CPG integration)
-run at the same lifecycle point as other extensions, ensuring consistent
-ordering — and that YAML declaration order controls not just extension
-sequencing in general, but specifically whether an extension sees the
-controller's own step's ctrl output or not.
-
-## The from_options() contract
-
-Both `TaskExtension` and `AnimatExtension` define `from_options()` as the
-factory method — but they are **not** the same signature; `AnimatExtension`
-adds three animat-scoped parameters on top of `TaskExtension`'s two, verified
-against `farms_core/simulation/extensions.py` and
-`farms_core/model/extensions.py`:
-
-```python
-# TaskExtension (farms_core/simulation/extensions.py)
-@classmethod
-def from_options(cls, config: dict, experiment_options: ExperimentOptions):
-
-# AnimatExtension (farms_core/model/extensions.py) — extends TaskExtension
-@classmethod
-def from_options(cls, config, experiment_options, animat_i,
-                animat_data, animat_options):
+```yaml
+# simulation_config.yaml
+extensions:
+  - loader: farms_core.simulation.extensions.ExperimentLogger
+    config:
+      log_path: Output
+      skip: 1
 ```
 
-There is no separate `sim_options`/`experiment_data` parameter — a
-`TaskExtension` that needs simulation options reads them off
-`experiment_options.simulation`, and one that needs experiment data reads
-it from `task.data` inside a lifecycle hook instead (data isn't available
-yet at `from_options()` time — see `ExperimentLogger`, which stores
-`self.data = task.data` in `initialize_episode()`, not in `from_options()`).
+```yaml
+# animat_config.yaml
+extensions:
+  - loader: farms_mujoco.swimming.extension.SwimmingExtension
+    config: {}
+```
 
-The framework passes all necessary context to the extension at creation time.
-The extension stores what it needs and ignores the rest. This is a form of
-constructor injection — the extension declares what it needs by accepting
-these parameters.
+When the task is created, `ExperimentTask.extract_extensions()` imports
+each class (`farms_core.extensions.extensions.import_item`) and calls its
+`from_options()`: first the simulation extensions, then the extensions of
+each animat. The experiment data is not ready yet at that point: an
+extension that needs it takes it from `task.data` in
+`initialize_episode()` (as `ExperimentLogger` does).
 
-## Control types and joint mapping
+## The lifecycle
 
-The `ControlType` enum allows different joints to use different control modes
-within the same simulation. A robot might have position-controlled body joints
-and torque-controlled leg joints.
+| Method | Called by | When |
+|---|---|---|
+| `initialize_episode(task, physics)` | `ExperimentTask.initialize_episode()` | Start of an episode, after the reset |
+| `before_step(task, action, physics)` | `ExperimentTask.before_step()` | Before the MuJoCo step: once per iteration, or at every environment step with `substep=True` |
+| `after_step(task, physics)` | `ExperimentTask.after_step()` | Once per iteration, after its last environment step |
+| `end_episode(task, physics)` | `Simulation.end_extensions()` | End of the simulation |
 
-`AnimatController.joints_from_control_types()` groups joints by control type,
-producing a `tuple` of 7 lists — one per `ControlType`, in enum order
-(`joints_names[ControlType.POSITION]`, `joints_names[ControlType.VELOCITY]`,
-etc.), not a single flat list. Each per-`ControlType` sublist preserves the
-original joint ordering, filtered down to only the joints using that control
-type. This grouped-tuple shape is what every dispatch method
-(`positions()`, `velocities()`, ...) indexes into to know which joints it's
-responsible for.
+An iteration is `physics.cb_sub_steps` environment steps (see
+[Simulation Lifecycle](simulation-lifecycle.md)). In `before_step()`,
+extensions apply forces (`physics.data.xfrc_applied`) and controllers
+advance their dynamics. `after_step()` sees the state after the step. Only
+`from_options()` is abstract: the other methods do nothing by default.
 
-## The substep parameter
+`action_spec`, `step_spec`, `get_observation`, `get_reward`,
+`get_termination` and `observation_spec` let an extension provide the
+dm_control environment interface, for example for reinforcement learning.
 
-`AnimatController.__init__` takes `substep=True`. When enabled, the controller
-runs at the substep resolution of the MuJoCo physics engine. This is important
-for stiff systems (e.g., Ekeberg muscle model) where the control frequency must
-match the physics integration frequency.
+## Controllers are extensions
+
+`AnimatController` is an `AnimatExtension` that also produces joint
+commands. There is no separate mechanism to create controllers: a
+controller runs because it is listed in the animat's `extensions:`
+(`control.controller_loader` is parsed but not used).
+
+In `ExperimentTask.before_step()`, for each extension in order:
+
+1. `extension.before_step(task, action, physics)` is called;
+2. if the extension is an `AnimatController`, its commands are read right
+   away (`positions()`, `velocities()`, `torques()`, `springrefs()`,
+   `springcoefs()`, `dampingcoefs()` for the joints of each control type)
+   and written to MuJoCo (actuator controls, spring references, stiffness
+   and damping).
+
+All extensions run before the MuJoCo step, from the state at the start of
+the step, so their order only matters when one extension reads what
+another one wrote in the same step.
+
+### Control types and joint mapping
+
+`ControlType` lets joints of the same robot use different kinds of
+control. `joints_names` has one list of joints per `ControlType`, in enum
+order (`joints_names[ControlType.POSITION]`, ...), each keeping the order
+of the motors. `AnimatController.joints_from_control_types()` builds it
+from the motors' `control_types`, and `max_torques_from_control_types()`
+the matching torque limits. Each command method only returns the joints of
+its control type.
+
+### The substep parameter
+
+With `substep=True` (the default for controllers), `before_step()` runs at
+every environment step, and the commands are updated at that rate. This
+matters for stiff dynamics, such as the Ekeberg muscle model, and for
+forces that depend on the state, such as the fluid forces
+(`SwimmingExtension` also uses `substep=True`).
+
+## Contracts
+
+### TaskExtension and AnimatExtension
+
+- `from_options()` is the factory: the framework passes the context, and
+  the extension keeps what it needs.
+- The sensor arrays are ring buffers of `runtime.buffer_size` iterations:
+  index them with `task.iteration % task.buffer_size`. `AnimatController`
+  methods receive this index directly as `iteration`.
+- Arrays of MuJoCo (`physics.data.*`) are owned by MuJoCo: modify them in
+  place, in simulation units (`task.units`).
+- To add a force, write a world frame wrench to
+  `physics.data.xfrc_applied[body_id]` in `before_step()`. It is applied
+  at the body CoM. See [Hydrodynamics Internals](../internals/hydrodynamics-internals.md)
+  for an example.
+
+### AnimatController
+
+- `joints_names` must have one list per `ControlType` (7 lists).
+- The command methods take `(iteration, time, timestep)` and return a
+  `dict[str, float]` whose keys are joint names of that control type.
+- Keep the dynamics in `before_step()` and the command methods free of
+  side effects.
+
+### farms_amphibious networks and drives
+
+| Base class | Method to implement | Contract |
+|---|---|---|
+| `farms_amphibious.control.network.AnimatNetwork` | `step(iteration, time, timestep)` | Update the network state (`data.state.array`) at `iteration` (a buffer index), in place. `NetworkODE` integrates the CPG ODE |
+| `farms_amphibious.control.drive.DescendingDrive` | `step(iteration, time, timestep)` | Set the drives of the iteration with `set_left_drives()` / `set_right_drives()` |
+| `farms_amphibious.control.drive.PotentialMap` | `heading(pos)` | Desired heading at a 2D position, used by `OrientationFollower` |
 
 ## See also
 
-- [Extension API](../reference/core/extension-api.md) — full class reference
-- [Write an AnimatExtension](../how-to/write-extension.md) — practical guide
-- [Write a Controller](../how-to/write-controller.md) — controller patterns
-- [Simulation Lifecycle](simulation-lifecycle.md) — when methods are called
+- [Controller and extension API](../reference/core/core-control.md)
+- [Write an AnimatExtension](../how-to/write-extension.md)
+- [Write a Controller](../how-to/write-controller.md)
+- [Use Built-in Extensions](../how-to/use-extensions.md)
+- [Simulation Lifecycle](simulation-lifecycle.md)

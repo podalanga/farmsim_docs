@@ -25,7 +25,7 @@ class DriveKind(str, Enum):
 
 ## `AmphibiousOptions`
 
-Inherits from `AnimatOptions` — see [farms_core_options](../core/core-options.md). Core configuration for an amphibious animat, encompassing morphology, spawning, control, and physics extensions.
+Inherits from `AnimatOptions`, see [farms_core_options](../core/core-options.md). Core configuration for an amphibious animat, encompassing morphology, spawning, control, and physics extensions.
 
 ```python
 def __init__(self, sdf: str, **kwargs):
@@ -216,7 +216,7 @@ options = AmphibiousOptions.from_options({
 
 ## See Also
 
-- [`AmphibiousOptions`](amphibious-options.md) — Core amphibious animat configuration
-- [Configuration Reference](../env/yaml-schema.md) — All YAML parameter definitions
+- [`AmphibiousOptions`](amphibious-options.md): Core amphibious animat configuration
+- [Configuration Reference](../env/yaml-schema.md): All YAML parameter definitions
 
 Source: `farms_amphibious/model/options.py`

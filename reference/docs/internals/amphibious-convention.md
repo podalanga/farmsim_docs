@@ -20,10 +20,10 @@ AmphibiousOptions (YAML)
 
 The convention object is then passed to:
 
-- `AmphibiousData.from_options(convention, ...)` — to pre-allocate state arrays with correct sizes
-- `AmphibiousController(convention, ...)` — to map oscillator outputs to joint commands
-- `DescendingDrive` subclasses — to know where brain/spine indices are in the drive array
-- `ode_oscillators_sparse()` — indirectly, via the data containers that were sized by the convention
+- `AmphibiousData.from_options(convention, ...)`: to pre-allocate state arrays with correct sizes
+- `AmphibiousController(convention, ...)`: to map oscillator outputs to joint commands
+- `DescendingDrive` subclasses, to know where brain/spine indices are in the drive array
+- `ode_oscillators_sparse()`: indirectly, via the data containers that were sized by the convention
 
 ## Class hierarchy
 
@@ -82,19 +82,19 @@ def __init__(self, **kwargs):
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `n_joints_body` | int | Yes | — | Number of body (spine) joints |
+| `n_joints_body` | int | Yes | n/a | Number of body (spine) joints |
 | `n_links_body` | int | No | `n_joints_body + 1` | Number of body links (one more than joints) |
 | `single_osc_body` | bool | No | `False` | If `True`, one oscillator per body joint (no L/R pair) |
 | `single_osc_legs` | bool | No | `False` | If `True`, one oscillator per leg joint (no L/R pair) |
-| `n_dof_legs` | int | Yes | — | Degrees of freedom per leg |
-| `n_legs` | int | Yes | — | Total number of legs (both sides). Must be even. |
-| `n_joints_passive` | int | Yes | — | Number of passive joints (e.g., eyes) |
+| `n_dof_legs` | int | Yes | n/a | Degrees of freedom per leg |
+| `n_legs` | int | Yes | n/a | Total number of legs (both sides). Must be even. |
+| `n_joints_passive` | int | Yes | n/a | Number of passive joints (e.g., eyes) |
 | `links_names` | list | No | Generated | Custom link names. If `links` kwarg is present, extracted from `link['name']`. Otherwise auto-generated. |
 | `joints_names` | list | No | Generated | Custom joint names. Same fallback logic as `links_names`. |
 
 **Critical assertion at line 78**: `len(self.joints_names) >= n_joints_all()`. If you provide fewer names than the total joint count, construction fails with a detailed error message listing the body/legs/passive breakdown.
 
-**Critical assertion at line 86**: `assert not kwargs, kwargs`. Any unknown keyword argument causes construction failure. This is a strict constructor — typos in parameter names are caught immediately.
+**Critical assertion at line 86**: `assert not kwargs, kwargs`. Any unknown keyword argument causes construction failure. This is a strict constructor, typos in parameter names are caught immediately.
 
 ### Default joint name generation (lines 60–75)
 
@@ -248,7 +248,7 @@ Names follow the pattern `osc_body_{joint_i}_{L|R}`. When `single_osc_body=True`
 
 This method has two calling conventions:
 
-**Convention 1 — by flat joint index** (`index=` kwarg):
+**Convention 1, by flat joint index** (`index=` kwarg):
 
 ```python
 def leg_osc_indices(self, **kwargs):
@@ -262,7 +262,7 @@ def leg_osc_indices(self, **kwargs):
 
 The `index` here is a **joint** index (not an oscillator index). It must be >= `n_joints_body`. The offset into the oscillator array is computed as `n_osc_body() + leg_opj * (joint_index - n_joints_body)`.
 
-**Convention 2 — by leg/side/joint decomposition**:
+**Convention 2, by leg/side/joint decomposition**:
 
 ```python
     else:
@@ -282,7 +282,7 @@ The `index` here is a **joint** index (not an oscillator index). It must be >= `
         )
 ```
 
-**Important**: `leg_i` in the assertion checks `0 <= leg_i < n_legs` but the error message says `Leg must be < {n_legs//2}`. This is because `leg_i` is a **pair index** (0, 1, 2, ...) where each pair contains a Left and Right leg. The assertion uses `n_legs` (total) but the actual valid range is `0` to `n_legs//2 - 1`. The assertion is overly permissive — it would allow `leg_i = n_legs - 1` but the indexing math would produce an out-of-bounds oscillator index.
+**Important**: `leg_i` in the assertion checks `0 <= leg_i < n_legs` but the error message says `Leg must be < {n_legs//2}`. This is because `leg_i` is a **pair index** (0, 1, 2, ...) where each pair contains a Left and Right leg. The assertion uses `n_legs` (total) but the actual valid range is `0` to `n_legs//2 - 1`. The assertion is overly permissive, it would allow `leg_i = n_legs - 1` but the indexing math would produce an out-of-bounds oscillator index.
 
 ### `legosc2index(leg_i, side_i, joint_i, side=0)`
 
@@ -479,7 +479,7 @@ def feet_links_names(self):
     ]
 ```
 
-Returns the last link of each leg — the foot. Iterates over leg pairs then sides.
+Returns the last link of each leg, the foot. Iterates over leg pairs then sides.
 
 ## Contact indexing
 
@@ -490,7 +490,7 @@ def contactleglink2index(self, leg_i, side_i):
     return 2 * leg_i + side_i
 ```
 
-This is a **separate, simpler** indexing scheme for contact sensors. It does NOT correspond to the main link/joint index space. Contact sensors are indexed by leg pair and side only — there is one contact sensor per foot.
+This is a **separate, simpler** indexing scheme for contact sensors. It does NOT correspond to the main link/joint index space. Contact sensors are indexed by leg pair and side only, there is one contact sensor per foot.
 
 ### `contactleglink2name(leg_i, side_i)`
 
@@ -594,12 +594,12 @@ Configuration: `n_joints_body=11`, `n_legs=4`, `n_dof_legs=2`, `n_joints_passive
 | `n_joints_legs()` | 4 × 2 | 8 |
 | `n_joints_active()` | 11 + 8 | 19 |
 | `n_joints_all()` | 11 + 8 + 0 | 19 |
-| `n_opbj()` | — | 2 |
-| `n_oplj()` | — | 2 |
+| `n_opbj()` | n/a | 2 |
+| `n_oplj()` | n/a | 2 |
 | `n_osc_body()` | 2 × 11 | 22 |
 | `n_osc_legs()` | 2 × 8 | 16 |
 | `n_osc()` | 22 + 16 | 38 |
-| `n_drives_brain()` | — | 2 |
+| `n_drives_brain()` | n/a | 2 |
 | `n_drives()` | 2 + 38 | 40 |
 | `n_states()` | 38 + 38 + 19 | 95 |
 

@@ -90,7 +90,7 @@ network.
 
 **How:** Use `AmphibiousOptions` as your animat options loader and configure
 the `control.network` section. Set `controller_loader` to
-`AmphibiousController` — the concrete, ready-to-use controller.
+`AmphibiousController`: the concrete, ready-to-use controller.
 
 ```yaml
 # experiment_config.yaml
@@ -119,8 +119,8 @@ control:
     # ...
 ```
 
-`AmphibiousController` — not the shared base `JointMuscleController`
-(`farms_amphibious/control/amphibious.py`) — is what every real FARMS
+`AmphibiousController`: not the shared base `JointMuscleController`
+(`farms_amphibious/control/amphibious.py`), is what every real FARMS
 experiment uses for `controller_loader`, confirmed in both
 `experiments/zbot_swimming/animat_config.yaml` and
 `experiments/zbot_bout_glide/animat_config.yaml`. `AmphibiousController`
@@ -129,7 +129,7 @@ actual muscle-map wiring (`PositionMuscleCy`/`PositionPhaseCy`
 construction, joint-index lookup) needed for `equation:
 position_muscle`/`position_phase` motors to work. Reach for
 `JointMuscleController` directly only if you're implementing a new
-controller class and want to extend that shared base yourself — not as a
+controller class and want to extend that shared base yourself, not as a
 `controller_loader` value in a working experiment.
 
 See [Configure CPG Network Parameters](configure-cpg-network.md) for the full

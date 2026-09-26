@@ -1,6 +1,6 @@
 # farms_amphibious.control.amphibious
 
-Amphibious animat controller — wires CPG network, descending drive, and joint actuator models.
+Amphibious animat controller, wires CPG network, descending drive, and joint actuator models.
 
 **Overview**
 The amphibious controller bridges the neural network integration with the physics backend. It maps neural oscillator outputs to physical joint torques or positions using specialized actuator models.
@@ -118,7 +118,7 @@ def step(self, iteration: int, time: float, timestep: float) -> None
 !!! bug "Confirmed: double-steps the descending drive"
     `AmphibiousDriveController.step()` calls `self.drive.step(iteration, time,
     timestep)` directly, and then calls `super().step(iteration, time,
-    timestep)` — which is `AmphibiousController.step()`, and which
+    timestep)`, which is `AmphibiousController.step()`, and which
     *unconditionally* calls `self.drive.step(...)` again. The net effect is
     that `drive.step()` runs **twice per physics step** whenever a drive is
     configured on this subclass.
@@ -130,7 +130,7 @@ def step(self, iteration: int, time: float, timestep: float) -> None
     internal `simple_pid.PID` controller. Calling `step()` twice per physics
     tick applies the low-pass update and the PID update twice within one
     physics timestep, distorting the turn-rate and forward-speed response
-    compared to a single call — the steering and gait-switching behavior will
+    compared to a single call, the steering and gait-switching behavior will
     differ from what the configured PID/filter gains imply.
 
     **Status:** confirmed present in source, but dormant in this repository's
@@ -173,7 +173,7 @@ These mappings are populated dynamically during `initialize_episode`, rendering 
 
 **See also:**
 - [farms_amphibious.control.network](network-ode.md)
-- [Descending Drive](descending-drive.md) — see the double-step bug affecting `AmphibiousDriveController`
+- [Descending Drive](descending-drive.md): see the double-step bug affecting `AmphibiousDriveController`
 - [Ekeberg Muscle Actuator Models](ekeberg-muscle.md)
 - [Joint Controllers](joint-controllers.md)
 - [Core Control Module](../core/core-control.md)

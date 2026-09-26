@@ -1,11 +1,12 @@
-# Mathematical Models — CPG ODEs, hydrodynamics, and Ekeberg torque
+# Mathematical Models: CPG, muscles and hydrodynamics
 
 !!! note "Source Files"
-    - `farms_amphibious/farms_amphibious/control/ode.pyx` — CPG oscillator ODE integration
-    - `farms_amphibious/farms_amphibious/control/ekeberg.pyx` — Ekeberg muscle model
-    - `farms_mujoco/farms_mujoco/swimming/drag.pyx` — drag force/torque computation (`compute_drag_force`, `compute_drag_torque`, `compute_link_drag_fast`)
-    - `farms_mujoco/farms_mujoco/swimming/buoyancy_cy.pyx` — buoyancy force/torque computation (`compute_buoyancy_analytic_fast`, `compute_link_buoyancy_fast`)
-    - `farms_mujoco/farms_mujoco/swimming/hydrodynamics.pyx` — orchestration layer (`SwimmingHandler`, `WaterProperties*`, `link_swimming_info`, `compute_link_forces`, `apply_swimming_forces`) that combines drag + buoyancy per link and writes into the xfrc sensor array
+    - `farms_amphibious/farms_amphibious/control/ode.pyx`: CPG oscillator ODE integration
+    - `farms_amphibious/farms_amphibious/control/ekeberg.pyx`: Ekeberg muscle model
+    - `farms_mujoco/farms_mujoco/swimming/cob.pyx`: submerged volume and centre of buoyancy
+    - `farms_mujoco/farms_mujoco/swimming/drag.pyx`: legacy quadratic drag
+    - `farms_mujoco/farms_mujoco/swimming/ellipsoid_model.pyx`: ellipsoid drag and added mass
+    - `farms_mujoco/farms_mujoco/swimming/hydrodynamics.pyx`: `SwimmingHandler`, which combines them per link
 
 ## 1. CPG Oscillator Equations & Coupling Terms
 Implemented in `farms_amphibious/control/ode.pyx`.
@@ -70,249 +71,193 @@ Where:
 
 - $w$: Feedback coupling weight
 
-- $\theta_{joint}$: Measured joint position error
+- $\theta_{joint}$: Measured joint position
 
 - $F_{react}$: Ground reaction force
 
-- $F_{y}$: Lateral hydrodynamic force
+- $F_{y}$: Lateral external force of a link (`xfrc` sensors, which include the fluid forces)
 
-**Ekeberg Muscle Model (Output Coupling)**
-Implemented in `farms_amphibious/control/ekeberg.pyx`.
-Total Torque:
+### Joint equations
 
-$$
-\tau = \tau_{act} + \tau_{act\_stiff} + \tau_{pass\_stiff} + \tau_{damp} + \tau_{fric}
-$$
+The oscillator outputs are $M_i = A_i (1 + \cos\theta_i)$. Each joint is
+driven by two oscillators, $M_1$ and $M_2$ (`osc1` and `osc2` of the
+joint's entry in `control.muscles`, usually the left and the right one).
+The motor `equation` decides how they become a joint command. $k$ and $b$
+are the motor's `transform.gain` and `transform.bias`, which convert from
+the network convention to the joint of the model, and $\phi_{off}$ is the
+joint offset of the offset ODE above.
 
-Where:
-
-- $\tau_{act} = \alpha (M_L - M_R)$: Active torque, which is proportional to the difference between flexor ($M_L$) and extensor ($M_R$) activations (the net pull).
-
-- $\tau_{act\_stiff} = \beta (M_L + M_R)(\phi_{off} - \phi_{joint})$: Active stiffness, representing the spring-like resistance caused by muscle co-contraction (the sum of activations).
-
-- $\tau_{pass\_stiff} = \gamma \beta (\phi_{off} - \phi_{joint})$: Passive stiffness, acting as a baseline structural spring returning the joint to equilibrium.
-
-- $\tau_{damp} = -\delta \dot{\phi}_{joint}$: Viscous damping, providing resistance proportional to the joint's velocity.
-
-- $\tau_{fric} = -\epsilon \operatorname{sgn}(\dot{\phi}_{joint})$: Coulomb friction, providing constant resistance opposing the direction of motion.
-
-!!! warning "DISCREPANCY FLAG — $\tau_{act}$, $\tau_{act\_stiff}$, $\tau_{pass\_stiff}$ are missing a per-joint scaling factor"
-    `EkebergMuscleCy.step()` (`ekeberg.pyx`) multiplies `active_torque`,
-    `active_stiffness`, and `passive_stiffness` — but **not** `damping` or
-    `friction` — by `self.transform_gain[joint_data_i]`, the same per-joint
-    gain used to convert between the CPG's internal "amphibious convention"
-    joint space and SDF/URDF joint space. The code actually computes:
-
-    $$
-    \tau_{act} = \alpha (M_L - M_R) \, k_i
-    \qquad
-    \tau_{act\_stiff} = \beta (M_L + M_R) \, \Delta\phi_i \, k_i
-    \qquad
-    \tau_{pass\_stiff} = \gamma \beta \, \Delta\phi_i \, k_i
-    $$
-
-    where $k_i$ = `transform_gain[joint_data_i]` and $\Delta\phi_i$ =
-    `m_delta_phi`, itself
-    $\phi_{off, i} - (\phi_{joint, i} - b_i)/k_i$ — **not** the plain
-    $\phi_{off} - \phi_{joint}$ shown above — with $b_i$ =
-    `transform_bias[joint_data_i]`. $\tau_{damp}$ and $\tau_{fric}$ are
-    *not* scaled by $k_i$. The simplified forms above only hold when a
-    joint's SDF-to-amphibious transform is the identity ($k_i=1$, $b_i=0$).
-
-Definitions:
-
-- $M_L, M_R$: Neural output activations for left/flexor and right/extensor muscles
-
-- $\alpha$: Active torque gain
-
-- $\beta$: Stiffness coefficient
-
-- $\gamma$: Passive stiffness ratio
-
-- $\delta$: Viscous damping coefficient
-
-- $\epsilon$: Coulomb friction coefficient
-
-- $\phi_{off}$: Reference joint equilibrium position
-
-- $\phi_{joint}$: Current joint position
-
-- $\dot{\phi}_{joint}$: Current joint velocity
-
-- $k_i$: Per-joint SDF↔amphibious-convention transform gain (`transform_gain[joint_data_i]`) — scales $\tau_{act}$, $\tau_{act\_stiff}$, $\tau_{pass\_stiff}$ only
-
-- $b_i$: Per-joint SDF↔amphibious-convention transform bias (`transform_bias[joint_data_i]`) — offsets $\Delta\phi_i$ inside $\tau_{act\_stiff}$/$\tau_{pass\_stiff}$
-
-## 2. Hydrodynamic Force Models
-Implemented across `farms_mujoco/swimming/drag.pyx` (drag), `farms_mujoco/swimming/buoyancy_cy.pyx` (buoyancy), and `farms_mujoco/swimming/hydrodynamics.pyx` (orchestration: `SwimmingHandler` drives `compute_link_forces`/`apply_swimming_forces` per link per step).
-
-!!! warning "DISCREPANCY FLAG"
-    The documentation mentions "added mass, drag, lift". However, **added mass and lift are completely absent from the codebase.** The implementation only handles drag (`drag.pyx`) and buoyancy (`buoyancy_cy.pyx`), combined per link by `hydrodynamics.pyx`.
-
-**Translational Drag Force (in URDF frame):**
+**`position_muscle`** (`farms_amphibious/control/position_muscle_cy.pyx`),
+a position command:
 
 $$
-F_{drag, i} = C_{d, i} \cdot \mu \cdot v_{rel, i} |v_{rel, i}| + F_{buoyancy, i}
+\phi_{cmd} = k \left( \tfrac{1}{2}(M_2 - M_1) + \phi_{off} \right) + b
 $$
 
-*(Note on sign convention: The code computes $v|v|$. For this force to act as drag opposing motion, the configuration coefficients $C_d$ must be defined as negative values. If they are positive, this equation acts as thrust.)*
-
-**Rotational Drag Torque (in URDF frame, not CoM frame):**
-
-$$
-\tau_{drag, i} = C_{\tau, i} \cdot \omega_{rel, i} |\omega_{rel, i}|
-$$
-
-Unlike the translational force, torque has **no** $\mu$ (viscosity) factor —
-`compute_drag_torque` (`drag.pyx`) multiplies only by the coefficient, not
-by viscosity. This is easy to miss since the two functions look almost
-identical.
-
-Both $v_{rel,i}$ and $\omega_{rel,i}$ are computed in the link's **URDF
-frame** (the same frame the linear/angular velocity are rotated into by
-`link_swimming_info` via `global2urdf` — see §4 below), not the CoM frame.
-
-## 2a. Buoyancy: two independent methods, selected by `cob_method`
-
-`arena.water.cob` (or the flat `cob_*` fields — see `cob_options.py`)
-selects one of three `cob_method` values, resolved once at
-`SwimmingHandler.__init__` time into the `use_exact_cob`/`force_mesh` bints
-`compute_link_forces` branches on every link every step:
-
-| `cob_method` | Function used | What it computes |
-|---|---|---|
-| `'ramp'` | `compute_buoyancy_analytic_fast` (`buoyancy_cy.pyx`) | Single-point bounding-sphere linear ramp — O(1), approximate |
-| `'analytic'` | `compute_link_buoyancy` → `compute_buoyancy_mesh`, using each primitive's closed-form solution when available (currently spheres, `submerged_sphere_analytic_cy`) and mesh-clip otherwise | Exact submerged volume/centroid per primitive |
-| `'mesh'` | Same as `'analytic'` but `force_mesh=True` forces every primitive through the mesh-clip path, even spheres | Exact, no closed-form shortcuts (used to validate the analytic path) |
-
-### Ramp method
+**`ekeberg_muscle` / `ekeberg_muscle_explicit`**
+(`farms_amphibious/control/ekeberg.pyx`), a torque:
 
 $$
-F_{buoyancy, z} = -\rho_{water} \cdot \frac{m_{link} \cdot g}{\rho_{link}} \cdot \min\left( \frac{z_{surf} + r_{link} - z_{link}}{2 r_{link}}, 1 \right)
+\tau = \underbrace{\alpha (M_2 - M_1)\, k}_{\text{active}}
++ \underbrace{\beta (M_1 + M_2)\, \Delta\phi\, k}_{\text{active stiffness}}
++ \underbrace{\gamma \beta\, \Delta\phi\, k}_{\text{passive stiffness}}
+\underbrace{- \delta\, \dot\phi}_{\text{damping}}
+\underbrace{- \epsilon \operatorname{sgn}(\dot\phi)}_{\text{friction}}
 $$
 
-applied only when $z_{link} - r_{link} < z_{surf}$ and $m_{link} > 0$;
-otherwise $F_{buoyancy} = 0$.
+with $\Delta\phi = \phi_{off} - \frac{\phi - b}{k}$ the distance to the
+offset in the network convention, $\phi$ and $\dot\phi$ the joint position
+and velocity, and $\alpha$, $\beta$, $\gamma$, $\delta$, $\epsilon$ the
+coefficients of `control.muscles`. With $k = 1$ and $b = 0$, this is the
+usual Ekeberg model. The active term follows the difference of the two
+activations, the stiffness terms the co-contraction. In
+`ekeberg_muscle`, the stiffness and damping are applied through the MuJoCo
+joint (spring reference, stiffness and damping), and in
+`ekeberg_muscle_explicit` as a torque.
 
-!!! warning "Water density is a parameter, not a constant"
-    $\rho_{water}$ is `water_density` — sourced from `arena.water.density`
-    in the YAML config (or a spatially-varying callback if water maps are
-    used), **not** a hardcoded `1000`. `1000` only appears in the codebase
-    as `WaterProperties`'s *default*, used before a real value overrides it.
+## 2. Hydrodynamics
 
-!!! note "The sign works out because `gravity` is passed as `-9.81`"
-    `SwimmingHandler.step()` (`hydrodynamics.pyx`) hardcodes
-    `gravity=-9.81` when calling into buoyancy/drag (see §4 in the
-    hydrodynamics internals for why this is not configurable). The actual
-    code line is `buoyancy[2] = -water_density * mass * gravity / density *
-    min(...)` — substituting `gravity = -9.81` flips the sign, giving a
-    net **positive** (upward) force, which is what's shown above with
-    `g = +9.81` and the leading `-ρ` already accounting for it.
+The fluid wrench of each link with `fluid_interaction: true` is computed
+by `SwimmingHandler` (`farms_mujoco/swimming/hydrodynamics.pyx`) at every
+environment step, in the world frame and about the link centre of mass
+(CoM). It is the sum of the terms below. The implementation is described
+in [Hydrodynamics Internals](../internals/hydrodynamics-internals.md).
 
-$r_{link}$ (`bound_radius`) is the link's bounding-sphere radius
-(`physics.model.geom_rbound` — already a radius, not a diameter — from a
-geom in collision group 2), not a half-height.
+### 2.1 Buoyancy
 
-### Exact (analytic / mesh) methods
-
-For each of a link's collision primitives, `submerged_volume_and_centroid_fast`
-computes the exact submerged volume $V_j$ and centroid $\vec{c}_j$ (either
-via the sphere closed form or a per-triangle tetrahedron-decomposition clip
-against the water plane — see
-[Hydrodynamics Internals](../internals/hydrodynamics-internals.md) for the
-`buoyancy.py`/`buoyancy_cy.pyx` split). These are volume-weighted and
-combined into a single center of buoyancy for the link:
+With $V$ the submerged volume of the link and $c_b$ its centroid (the
+centre of buoyancy), $\rho$ the water density and $g$ the gravity vector
+of the MuJoCo model:
 
 $$
-V = \sum_j V_j \qquad \vec{c}_{CoB} = \frac{\sum_j V_j \vec{c}_j}{V}
+F_b = -\rho V g, \qquad \tau_b = (c_b - c_m) \times F_b
 $$
 
+where $c_m$ is the CoM. The torque is what rights (or capsizes) a floating
+body. $V$ and $c_b$ come from the link geoms (collision geoms by default,
+`cob_geom_group`), with `cob_method`:
+
+- `exact`: exact volume and first moment of each geom below the water
+  plane, summed over the geoms: $V = \sum_j V_j$,
+  $c_b = \frac{1}{V}\sum_j V_j c_j$. Spheres, ellipsoids, cylinders and
+  capsules are computed in closed form (or to 1e-10 for capsules), boxes
+  and meshes with the divergence theorem.
+- `lut`: interpolated from a per-link table of $V$ and $V c_b$ for all
+  water directions and depths (about 1 % of the link volume).
+- `ramp` (legacy): $V = \frac{m}{\rho_{\text{link}}} \min\left(\frac{h + r - z}{2r}, 1\right)$,
+  with $m$ the link mass, $\rho_{\text{link}}$ its `density`, $r$ its
+  bounding radius, $z$ its height and $h$ the surface height. The force
+  is applied at the CoM, without torque.
+
+### 2.2 Legacy drag (`fluid_model: legacy`)
+
+In the link frame, with $v$ and $\omega$ the linear and angular velocities
+of the link relative to the water, $\mu$ the water `viscosity` option and
+$c$, $c'$ the two rows of the link's `drag_coefficients`:
+
 $$
-\vec{F}_{buoyancy} = \begin{bmatrix} 0 \\ 0 \\ -\rho_{water} \, g \, V \end{bmatrix}
+F_i = \mu\, c_i\, v_i |v_i|, \qquad \tau_i = c'_i\, \omega_i |\omega_i|
+$$
+
+The coefficients are negative so that the drag opposes the motion.
+Different coefficients along the body axis and across it give the
+anisotropic drag that makes undulatory swimming possible. The torque has
+no $\mu$ factor. With `drag_implicit: true`, the force uses the velocity
+$v'$ at the end of the step, solution of
+$m (v' - v)/\Delta t = \mu c_i v' |v'| + f$ (backward Euler), which is
+stable for any timestep.
+
+### 2.3 Ellipsoid model (`fluid_model: ellipsoid`)
+
+Each link is approximated by an ellipsoid of semi-axes $r = (a, b, c)$,
+either the minimum volume ellipsoid enclosing its geoms (`mvee`) or the
+ellipsoid with its inertia (`inertia`). In the ellipsoid frame, with
+$C_{\text{form}}$, $C_{\text{visc}}$ and $C_{\text{rot}}$ the
+`ellipsoid_coefficients` and $\mu_d$ the `dynamic_viscosity`:
+
+$$
+F_{\text{form}} = -\tfrac{1}{2} \rho\, C_{\text{form}}\, A(v)\, |v|\, v,
 \qquad
-\vec{\tau}_{buoyancy} = (\vec{c}_{CoB} - \vec{c}_{CoM}) \times \vec{F}_{buoyancy}
+A(u) = \pi \sqrt{(bc\,u_x)^2 + (ac\,u_y)^2 + (ab\,u_z)^2}
 $$
 
-both computed in the **world frame** then rotated back to the URDF frame
-(`R_global2urdf @ ...`) before returning to `compute_link_forces`. Unlike
-the ramp method, this produces a genuine righting/capsizing torque whenever
-the center of buoyancy and center of mass don't coincide — the ramp method
-always returns zero buoyancy torque (`buoyancy_torque[i] = 0` for all `i`
-in `compute_link_buoyancy_fast`'s ramp branch).
+($A$ is the area of the ellipsoid projected along the unit vector $u$ of
+the velocity),
 
-If an exact method is requested but a link has no usable collision
-primitives (e.g. all geoms are of an unsupported type), it silently falls
-back to the ramp formula above for that link only
-(`compute_link_buoyancy`'s `if primitives: ... else: compute_buoyancy_analytic(...)`).
+$$
+F_{\text{visc}} = -6\pi \mu_d\, r_D\, C_{\text{visc}}\, v,
+\qquad
+\tau_{\text{visc}} = -8\pi \mu_d\, r_D^3\, C_{\text{visc}}\, \omega
+$$
+
+with $r_D$ the radius of the sphere of equal volume, and
+
+$$
+\tau_{\text{rot}, i} = -\rho\, C_{\text{rot}}\, I_{D,i}\, \omega_i |\omega|,
+\qquad
+I_{D,i} = \tfrac{8\pi}{15}\, r_i \max(r_j, r_k)^4
+$$
+
+The quadratic terms are scaled by the water `viscosity` option (1 by
+default), and every term by the submerged fraction $V/V_{\text{full}}$.
+
+### 2.4 Added mass (`added_mass`, ellipsoid model)
+
+A body accelerating in a fluid also accelerates fluid around it. For an
+ellipsoid, Lamb's coefficients give the added mass $m_A$ and inertia
+$I_A$ along the axes:
+
+$$
+\kappa_i = abc \int_0^\infty \frac{d\lambda}{(r_i^2 + \lambda)\sqrt{(a^2+\lambda)(b^2+\lambda)(c^2+\lambda)}},
+\qquad
+m_{A,i} = \rho V \frac{\kappa_i}{2 - \kappa_i}
+$$
+
+$$
+I_{A,i} = \frac{\rho V}{5} \frac{(r_j^2 - r_k^2)^2 (\kappa_k - \kappa_j)}{2 (r_j^2 - r_k^2) + (r_j^2 + r_k^2)(\kappa_j - \kappa_k)}
+$$
+
+The velocity dependent (Kirchhoff) terms are always applied, including
+the Munk moment that turns an elongated body across the flow:
+
+$$
+F_A = (m_A \circ v) \times \omega, \qquad
+\tau_A = (m_A \circ v) \times v + (I_A \circ \omega) \times \omega
+$$
+
+The acceleration terms $-m_A \circ \dot v$ and $-I_A \circ \dot \omega$
+depend on `added_mass`:
+
+- `implicit`: the added mass (mean of $m_A$, times the submerged fraction)
+  and the added inertia are added to the MuJoCo body mass and inertia, as
+  in Stonefish, and their weight is cancelled. MuJoCo then integrates them
+  implicitly, which is always stable.
+- `explicit`: they are applied as forces, with $\dot v$ and $\dot\omega$
+  from filtered finite differences. This is unstable when the added mass
+  exceeds about half of the link mass.
 
 ## 3. Integration Schemes
-Implemented in `farms_amphibious/control/network.py` via `scipy.integrate.ode`.
 
-- **Scheme:** `dopri5`
-- **Method:** Dormand-Prince Runge-Kutta 4(5).
-- **Details:** Explicit Runge-Kutta method with adaptive step sizing, chosen for its stability in integrating stiff non-linear equations like coupled CPG oscillators. Bounded in the integration loop to align with the physics time step.
+The CPG network (phases, amplitudes and joint offsets) is integrated by
+`farms_amphibious/control/network.py` with `scipy.integrate.ode` and the
+`dopri5` integrator (Dormand-Prince Runge-Kutta 4(5), explicit, with
+adaptive steps). At every environment step, the solver integrates up to
+the end of the MuJoCo step, and the state is stored in the network state
+array at the current iteration.
 
-## 4. Coordinate Frame Transforms
-Implemented in `farms_mujoco/swimming/hydrodynamics.pyx` (`link_swimming_info`). Uses quaternions (`quat_conj`, `quat_mult`, `quat_rot` from `farms_core.utils.transform`) for transforming vectors.
+MuJoCo integrates the mechanics with the integrator of the simulation
+file (`mujoco.integrator`, `implicitfast` for the Zbot). The fluid
+forces are explicit forces for MuJoCo, except the implicit added mass,
+which modifies the body masses and inertias.
 
-**Orientations computed by `link_swimming_info` every link, every step:**
+## 4. Frames
 
-$$
-q_{urdf \to global}, \ q_{com \to global} \quad \text{(read directly from sensor data)}
-$$
-
-$$
-q_{global \to urdf} = q_{urdf \to global}^* \qquad\text{(used downstream — see below)}
-$$
-
-$$
-q_{com \to urdf} = q_{global \to urdf} \cdot q_{com \to global}, \qquad q_{urdf \to com} = q_{com \to urdf}^* \qquad\text{(computed, but see warning below)}
-$$
-
-**Vector Rotations actually used in the hydrodynamics hot path:**
-
-$$
-v_{urdf} = q_{global \to urdf} \cdot v_{global} \cdot q_{global \to urdf}^*
-$$
-
-$$
-F_{global,\ final} = q_{urdf \to global} \cdot F_{urdf} \cdot q_{urdf \to global}^*
-$$
-
-Forces and torques stay in the **URDF frame** through the entire drag +
-buoyancy computation (`compute_drag_force`, `compute_drag_torque`,
-`compute_buoyancy_analytic_fast`) and are rotated **directly back to world
-frame** at the very end of `compute_link_forces`, via `urdf2global` — never
-via a CoM-frame intermediate.
-
-!!! warning "`q_com→urdf` / `q_urdf→com` are computed but never used for forces"
-    `link_swimming_info` also computes `com2global`, `com2urdf`
-    (`q_{global \to urdf} \cdot q_{com \to global}`), and `urdf2com` (its
-    conjugate) every call — but nothing downstream reads them.
-    `compute_link_forces` only ever passes `global2urdf`/`urdf2global`
-    onward to the drag/buoyancy functions. There is no `F_com = q_urdf→com
-    · F_urdf · q_urdf→com*` rotation anywhere in the codebase — an earlier
-    version of this page implied one existed; it doesn't. The only use of
-    the CoM frame in the exact-buoyancy path is reading
-    `com_position_cy()` directly (which already returns world-frame
-    coordinates, not a frame to rotate through) for the CoB-to-CoM torque
-    arm. See [Hydrodynamics Internals](../internals/hydrodynamics-internals.md#6-dead-computation-com2urdfurdf2comcom2global-are-computed-but-never-used)
-    for the full trace.
-
-Where:
-
-- $q_{global \to urdf}$: Quaternion representing rotation from the global world frame to the URDF link frame
-
-- $q_{urdf \to global}^*$: Complex conjugate (inverse) of the rotation from URDF to global frame
-
-- $v_{global}$: Velocity vector in the global coordinate frame
-
-- $v_{urdf}$: Velocity vector rotated into the local URDF coordinate frame
-
-- $F_{urdf}$: Combined drag+buoyancy force vector in the local URDF frame
-
-- $F_{global,\ final}$: Same force, rotated to world frame — this is what's
-  written into `data_xfrc.array`, and is already what `xfrc_applied`
-  expects (see the hydrodynamics internals page for the separate,
-  confirmed bug where `SwimmingExtension.before_step` rotates this a
-  second time)
+The link states come from the `links` sensors (world frame): CoM position,
+orientation of the link frame and CoM velocities. The fluid forces are
+computed in the world frame. The legacy drag rotates the relative
+velocities into the link frame with the link rotation matrix $R$
+($v_{\text{link}} = R^T v$), computes the drag there and rotates it back
+($F = R F_{\text{link}}$). The ellipsoid model does the same with the
+ellipsoid frame. The resulting wrench, about the CoM and in the world
+frame, is what MuJoCo's `xfrc_applied` expects, and it is also stored in
+the `xfrc` sensors.

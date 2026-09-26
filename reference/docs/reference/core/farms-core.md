@@ -1,6 +1,6 @@
 # farms_core Reference
 
-API reference for `farms_core` — the core library providing options, model
+API reference for `farms_core`, the core library providing options, model
 definitions, sensors, simulation infrastructure, I/O, and experiment management.
 
 ## Module structure
@@ -140,9 +140,9 @@ class LinkOptions(Options):
 
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `name` | str | — | Link name |
-| `collisions` | bool | — | Enable collisions |
-| `friction` | list[float] | — | [lateral, spinning, rolling] |
+| `name` | str | n/a | Link name |
+| `collisions` | bool | n/a | Enable collisions |
+| `friction` | list[float] | n/a | [lateral, spinning, rolling] |
 | `fluid_interaction` | bool | `False` | Enable fluid forces |
 | `density` | float | `1000` | Density [kg/m³] |
 | `drag_coefficients` | list[float] | `[0,0,0,0,0,0]` | 6 drag coefficients |
@@ -191,7 +191,7 @@ class SensorsOptions(Options):
         ...
 ```
 
-All attributes are `list[str]` — lists of sensor names.
+All attributes are `list[str]`, lists of sensor names.
 
 ### SpawnOptions
 

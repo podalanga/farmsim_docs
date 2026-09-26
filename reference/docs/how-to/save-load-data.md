@@ -13,8 +13,8 @@ the save at episode end.
 
 ```
 simulation.hdf5
-├── times              # (n_iterations,) — simulation time at each step
-├── timestep           # scalar — physics timestep
+├── times              # (n_iterations,), simulation time at each step
+├── timestep           # scalar, physics timestep
 ├── simulation/        # SimulationData (units, etc.)
 │   ├── units/
 │   │   ├── length
@@ -26,10 +26,10 @@ simulation.hdf5
 │   ├── state/         # CPG network state (phases, amplitudes)
 │   ├── network/       # Network logs (drives, connectivity)
 │   ├── sensors/
-│   │   ├── links/     # (n_iterations, n_links, 19) — link state
-│   │   ├── joints/    # (n_iterations, n_joints, 3) — joint state
-│   │   ├── contacts/  # (n_iterations, n_contacts, 7) — contact forces
-│   │   ├── xfrc/      # (n_iterations, n_links, 6) — external forces
+│   │   ├── links/     # (n_iterations, n_links, 19), link state
+│   │   ├── joints/    # (n_iterations, n_joints, 3), joint state
+│   │   ├── contacts/  # (n_iterations, n_contacts, 7), contact forces
+│   │   ├── xfrc/      # (n_iterations, n_links, 6), external forces
 │   │   ├── muscles/   # muscle activations (if applicable)
 │   │   ├── adhesions/ # adhesion forces (if applicable)
 │   │   └── visuals/   # visual sensor data (if applicable)
@@ -123,7 +123,7 @@ files. These can be reloaded:
 from farms_core.experiment.options import ExperimentOptions
 
 options = ExperimentOptions.load('options/experiment_config.yaml')
-print(options.simulation.duration())  # method, not `.run.duration` — see note below
+print(options.simulation.duration())  # method, not `.run.duration`, see note below
 ```
 
 ## Analysis tips
@@ -195,6 +195,6 @@ dt = physics.timestep() / task.units.seconds
 
 ## See also
 
-- [Data Model](../reference/env/data-model.md) — full class reference
-- [Use Built-in Extensions](use-extensions.md) — configuring ExperimentLogger
-- [Data Flow and Persistence](../explanation/data-flow.md) — design rationale
+- [Data Flow and Data Model](../explanation/data-flow.md): the data classes
+- [Use Built-in Extensions](use-extensions.md): configuring ExperimentLogger
+- [Data Flow and Persistence](../explanation/data-flow.md): design rationale

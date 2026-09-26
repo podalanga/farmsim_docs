@@ -7,8 +7,8 @@ This page documents the `DescendingDrive` system (`farms_amphibious/control/driv
 | File | Lines | Purpose |
 |---|---|---|
 | `farms_amphibious/control/drive.py` | 582 | `DescendingDrive` ABC, `OrientationFollower`, `DistributedOrientationFollower`, `PotentialMap` classes |
-| `farms_amphibious/data/network.py` | — | `DriveArray` with `spine_left_indices`, `brain_left_indices`, etc. |
-| `farms_amphibious/model/options.py` | — | `DriveKind` enum |
+| `farms_amphibious/data/network.py` | n/a | `DriveArray` with `spine_left_indices`, `brain_left_indices`, etc. |
+| `farms_amphibious/model/options.py` | n/a | `DriveKind` enum |
 
 ## Call graph / entry points
 
@@ -295,9 +295,9 @@ class OrientationFollower(DescendingDrive):
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `strategy` | `PotentialMap` | Yes | — | Navigation strategy (line, circle, ellipsoid) |
-| `animat_data` | `AmphibiousData` | Yes | — | Animat data container (for reading sensors) |
-| `timestep` | float | Yes | — | Simulation timestep [s] |
+| `strategy` | `PotentialMap` | Yes | n/a | Navigation strategy (line, circle, ellipsoid) |
+| `animat_data` | `AmphibiousData` | Yes | n/a | Animat data container (for reading sensors) |
+| `timestep` | float | Yes | n/a | Simulation timestep [s] |
 | `links_indices` | np.ndarray | No | `[0]` | Link indices used for heading computation |
 | `heading_offset` | float | No | 0 | Heading offset [rad] |
 | `contact_threshold` | float | No | 0 | Contact force threshold for gait switching |
@@ -337,7 +337,7 @@ self.drive_types = [
 
 This classifies every drive index as brain-left, brain-right, spine-left, spine-right, or None. Drives classified as None (e.g., leg drives) are not affected by the orientation follower.
 
-### `step()` — complete walkthrough
+### `step()`, complete walkthrough
 
 ```python
 def step(self, iteration: int, time: float, timestep: float):
@@ -522,7 +522,7 @@ def get_foward_control(self, iteration, timestep):
 3. Computes per-drive contact reactions using `self.drives.contacts_indices`, which maps each drive to relevant contact sensors.
 4. Adjusts individual drives based on local contact information: drives associated with contacts above the threshold get reduced to 2.9 (intermediate between walk=2 and swim=4), while drives without contacts get increased to 3.1.
 
-**Note**: `self.contacts_values` is used but NOT initialized in `__init__`. This is likely a bug — it should be initialized as `np.zeros(self.n_drives)` or similar. It relies on the parent class or external initialization.
+**Note**: `self.contacts_values` is used but NOT initialized in `__init__`. This is likely a bug, it should be initialized as `np.zeros(self.n_drives)` or similar. It relies on the parent class or external initialization.
 
 ## Factory function: `get_orientation_follower_kwargs()`
 
@@ -546,7 +546,7 @@ def get_orientation_follower_kwargs(drive_config, animat_data, simulation_option
 
 **Potential map types**: `line`, `circle`, `ellipsoid`, `disline` (alias for line), `discircle` (alias for circle). An unknown type raises a `KeyError`.
 
-**Mutates input**: `drive_config.pop('potential_map')` and `potential_config.pop('type')` modify the input dictionaries. This is a destructive operation — the `drive_config` dict will be missing `potential_map` after this call, and all remaining keys are unpacked as kwargs to the OrientationFollower constructor.
+**Mutates input**: `drive_config.pop('potential_map')` and `potential_config.pop('type')` modify the input dictionaries. This is a destructive operation, the `drive_config` dict will be missing `potential_map` after this call, and all remaining keys are unpacked as kwargs to the OrientationFollower constructor.
 
 ## How to integrate: creating a custom PotentialMap
 
@@ -622,7 +622,7 @@ If `contact_threshold` is too high, the animat never switches to walking gait ev
 
 ### 3. Drive values out of range
 
-The CPG oscillator parameters (frequency, amplitude) are functions of the drive value. Drive values outside the expected range (typically 0–5) may produce undefined behavior — frequencies may become zero or negative, amplitudes may saturate.
+The CPG oscillator parameters (frequency, amplitude) are functions of the drive value. Drive values outside the expected range (typically 0–5) may produce undefined behavior, frequencies may become zero or negative, amplitudes may saturate.
 
 **Fix**: Use `output_limits` on the PID to clamp the turn command. Check the drive-dependent function parameters in the YAML to ensure they cover the range of drive values you produce.
 

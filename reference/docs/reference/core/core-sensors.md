@@ -107,5 +107,5 @@ Logs collision events and reaction forces. It tracks normal forces, friction for
 
 ## See Also
 
-- [Controller Base Classes](core-control.md) — How sensor data is consumed
-- [Amphibious Data](../amphibious/amphibious-data.md) — Extended sensor data for amphibious animats
+- [Controller Base Classes](core-control.md): How sensor data is consumed
+- [Amphibious Data](../amphibious/amphibious-data.md): Extended sensor data for amphibious animats

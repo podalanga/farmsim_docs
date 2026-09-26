@@ -1,4 +1,4 @@
-# Zbot Model — SDF geometry and physical properties
+# Zbot Model, SDF geometry and physical properties
 
 The Zbot's physical description lives in the SDF file at:
 
@@ -17,18 +17,18 @@ models/
             └── tube_connector.stl
 ```
 
-The SDF is loaded by FARMS at runtime and converted to MuJoCo's MJCF format internally. You should **not** modify the SDF directly for physics tuning — instead use the `morphology` section of `animat_config.yaml`, which overrides the SDF at load time.
+The SDF is loaded by FARMS at runtime and converted to MuJoCo's MJCF format internally. Masses, inertias and geometry come from the SDF. The `morphology` section of `animat_config.yaml` adds the simulation properties of each link and joint (fluid interaction, density, drag coefficients, friction, `mass_multiplier`, joint limits, stiffness and damping).
 
 ---
 
 ## Link Anatomy
 
-The Zbot body is a serial chain of **8 links** connected by **6 revolute joints**. All joints rotate around the **Y-axis** (lateral bending), creating a planar undulation in the horizontal plane.
+The Zbot body is a serial chain of **8 links**: the Head and six segments are connected by **6 revolute joints**, and the TailSegment is rigidly fixed to Segment6. All joints rotate around the link **Y-axis** (lateral bending), creating a planar undulation.
 
 ```
                    ┌─────────┐
                    │  Head   │  mass = 1.9 kg
-                   │ (rigid) │  density = 950 kg/m³
+                   │ (rigid) │
                    └────┬────┘
                         │  joint_1  (revolute, Y-axis)
                    ┌────┴────┐
@@ -56,7 +56,7 @@ The Zbot body is a serial chain of **8 links** connected by **6 revolute joints*
                    └────┬────┘
                         (rigid, no joint)
                    ┌────┴────┐
-                   │  Tail   │  drag_coeff = -10.0 (higher thrust)
+                   │  Tail   │  drag coefficients -10.0 (x, y)
                    │ Segment │
                    └─────────┘
 ```
@@ -65,7 +65,7 @@ The Zbot body is a serial chain of **8 links** connected by **6 revolute joints*
 
 ## Link Physical Properties
 
-All values come directly from `models/zbot/sdf/zbot.sdf` and are overridden/annotated in `animat_config.yaml`.
+Masses, inertias and geometry come from `models/zbot/sdf/zbot.sdf`; densities and drag coefficients from the `morphology` section of the experiments' `animat_config.yaml` (the values below are those of `zbot_swimming` and `zbot_bout_glide`).
 
 ### Head
 
@@ -79,12 +79,12 @@ All values come directly from `models/zbot/sdf/zbot.sdf` and are overridden/anno
 | Izz | 0.002965 kg·m² |
 | Collision geometry | Cylinder (r=0.05 m, L=0.108 m) + Box (0.084×0.108×0.15 m) |
 | Visual meshes | `head_red.stl`, `head_white.stl`, `tube_connector.stl` |
-| Fluid density override | **950 kg/m³** (set in `animat_config.yaml`) |
-| Drag coefficients (trans.) | `[-4.0, -4.0, -0.1]` N·s/m |
-| Drag coefficients (rot.) | `[0, 0, 0]` |
+| Link `density` | 950 kg/m³ (`animat_config.yaml`) |
+| Drag coefficients (linear) | `[-4.0, -4.0, -0.1]` kg/m |
+| Drag coefficients (angular) | `[0, 0, 0]` (`zbot_swimming`), `[-0.0005, -0.0005, -0.0005]` (`zbot_bout_glide`) |
 
-!!! note "Density < Water"
-    The Head density of 950 kg/m³ is **less than water** (1000 kg/m³), so the robot is positively buoyant. The `SwimmingExtension` computes buoyancy forces at runtime based on link submersion depth.
+!!! note "Buoyancy comes from the geometry, not from `density`"
+    With the default `cob_method: exact`, buoyancy is `rho_water * g * V`, where `V` is the submerged volume of the link's collision geoms, so it depends on the geometry and on the link mass from the SDF. The link `density` is only used by the legacy `cob_method: ramp`. The collision geoms of a link overlap (for example the segments' cylinder and boxes), and `exact` counts the overlapping volume twice, which makes the zbot float. With the true union volume (`cob_method: lut` or `cob_overlap: scale`) the zbot is slightly heavier than the water it displaces. Use `farms/farms_mujoco/benchmarks/inspect_buoyancy.py` to print the buoyancy budget of each link. See [MuJoCo Swimming](../reference/mujoco/mujoco-swimming.md).
 
 ### Body Segments (Segment1 – Segment6)
 
@@ -93,22 +93,26 @@ All six body segments share identical inertia and drag properties.
 | Property | Value |
 |----------|-------|
 | Mass | **0.16 kg** |
-| SDF pose | Segment1 at `z=0.18 m`; each segment offset by ~0.065 m |
-| Collision geometry | Cylinder per segment |
-| Fluid density override | 950 kg/m³ |
-| Drag coefficients (trans.) | `[-4.0, -4.0, -0.1]` N·s/m |
-| Drag coefficients (rot.) | `[0, 0, 0]` |
+| SDF pose | Segment1 at `z=0.18 m`, Segment2 at `z=0.261 m`, then every 0.065 m |
+| Collision geometry | Cylinder (r=0.0175 m, L=0.0652 m) + boxes 0.035×0.065×0.045, 0.005×0.015×0.06 and 0.005×0.02×0.06 m |
+| Visual mesh | `segment.stl` |
+| Link `density` | 950 kg/m³ |
+| Drag coefficients (linear) | `[-4.0, -4.0, -0.1]` kg/m |
+| Drag coefficients (angular) | as the Head |
 
 ### TailSegment
 
 | Property | Value |
 |----------|-------|
 | Mass | **0.086 kg** (lighter than body segments) |
-| Drag coefficients (trans.) | **`[-10.0, -10.0, -0.1]`** N·s/m |
-| Drag coefficients (rot.) | `[0, 0, 0]` |
+| SDF pose | `z=0.606 m`, fixed to Segment6 |
+| Collision geometry | Boxes 0.008×0.085×0.05 and 0.003×0.085×0.05 m |
+| Visual meshes | `tail_connector.stl`, `tail_fin.stl` |
+| Drag coefficients (linear) | **`[-10.0, -10.0, -0.1]`** kg/m |
+| Drag coefficients (angular) | as the Head |
 
-!!! important "Why The Tail Has Higher Drag"
-    The tail magnitude `-10.0` is **2.5× larger** than the body segments. This generates greater reactive thrust when the tail undulates — mimicking the caudal-fin propulsion of real anguilliform swimmers. Increasing this value amplifies thrust; reducing it weakens it.
+!!! important "Why the tail has higher drag"
+    The legacy drag model is per axis: `F_i = viscosity * c_i * v_i * |v_i|` in the link frame. The tail's lateral coefficient (`-10.0`, 2.5 times the body segments) represents the caudal fin: the large lateral resistance of the tail is what generates reactive thrust when it undulates. Increasing it amplifies thrust, reducing it weakens it.
 
 ---
 
@@ -116,7 +120,7 @@ All six body segments share identical inertia and drag properties.
 
 All six revolute joints are **position-controlled** via a PD servo defined in `animat_config.yaml`. The SDF defines the joint axis and parent/child links; all gains live in the config YAML.
 
-| Joint | Connects | Axis | Initial pos | Torque limits |
+| Joint | Connects | Axis | Initial position | Torque limits (`limits_torque`) |
 |-------|----------|------|-------------|---------------|
 | `joint_1` | Head → Segment1 | Y | 0 rad | ±10 N·m |
 | `joint_2` | Segment1 → Segment2 | Y | 0 rad | ±10 N·m |
@@ -134,30 +138,30 @@ joints:
     limits:
       - [-inf, inf]           # position limits [min, max]
       - [-inf, inf]           # velocity limits [min, max]
-    stiffness: 0              # passive structural stiffness (overridden by motor gains)
-    springref: 0              # equilibrium angle for passive spring
-    damping: 0                # passive damping (overridden by motor gains)
+    stiffness: 0              # passive joint stiffness
+    springref: 0              # equilibrium angle of the passive spring
+    damping: 0                # passive joint damping
 ```
 
 !!! tip "Unlimited joint range"
-    `[-inf, inf]` means no hard stop is enforced by the physics engine. The Ekeberg muscle model's active stiffness term provides the effective soft limit in practice.
+    `[-inf, inf]` means no hard stop is enforced by the physics engine; the joint range is only limited by the actuators and the dynamics.
 
 ---
 
 ## Motor Control Configuration
 
-Each joint has a corresponding **motor** definition in `animat_config.yaml` that specifies how the CPG's output torque is computed:
+Each joint has a **motor** definition in `animat_config.yaml` (this excerpt is from `zbot_swimming`, which uses the built-in `AmphibiousController`):
 
 ```yaml
 motors:
   - joint_name: joint_1
-    control_types: [position]    # PD position servo
-    limits_torque: [-10.0, 10.0] # Saturation limits (Nm)
-    gains: [3.0, 0.01, 0]        # [Kp, Kd, Ki]
-    equation: position_muscle    # Uses Ekeberg muscle output as the position setpoint
+    control_types: [position]    # Driven by the controller's positions()
+    limits_torque: [-10.0, 10.0] # Actuator force range [N.m]
+    gains: [3.0, 0.01, 0]        # [kp, kv of the position actuator, kv of the velocity actuator]
+    equation: position_muscle    # AmphibiousController: position from the oscillator outputs
     transform:
-      gain: 1                    # Scales the CPG position command
-      bias: 0                    # Adds offset to the CPG position command
+      gain: 1                    # Scales the position command
+      bias: 0                    # Adds an offset to the position command
     offsets:
       gain: 0.05                 # Amplitude of the joint offset modulation
       bias: 0
@@ -173,31 +177,34 @@ motors:
       friction_coefficient: 0
 ```
 
-### `equation: position_muscle` — What This Means
+### `equation: position_muscle`, what this means
 
-When `equation: position_muscle` is set, the `AmphibiousController` does **not** command a raw position. Instead, it computes the **Ekeberg muscle torque** and feeds it through the PD servo. The flow is:
+`equation` selects how the `AmphibiousController` turns the CPG state into a joint command (`position_muscle`, `position_phase`, `ekeberg_muscle`, `ekeberg_muscle_explicit` or `passive`). With `position_muscle` (`farms_amphibious/control/position_muscle_cy.pyx`), the position command of the joint is computed from the outputs `n_L`, `n_R` of its two oscillators and the drive-dependent offset:
 
 ```
-CPG Phase (θ_L, θ_R)
-       ↓  Ekeberg:  τ = α(A_L sin θ_L - A_R sin θ_R) + β(co-contraction)(φ_off - φ) - δφ̇
-Desired position setpoint
-       ↓  PD servo: u = Kp·(φ_des - φ) + Kd·(φ̇_des - φ̇)
-Final torque sent to MuJoCo
+command = transform.gain * (0.5 * (n_R - n_L) + offset) + transform.bias
 ```
 
-### PD Gains Reference
+The MuJoCo position actuator then applies the torque
+`kp * (command - q) - kv * dq/dt`, saturated to `limits_torque`. The Ekeberg muscle model is a different equation (`ekeberg_muscle`), which computes a torque directly.
 
-| Gain | Symbol | Value | Effect |
-|------|--------|-------|--------|
-| `gains[0]` | Kp | **3.0** | Proportional — stiffness of position tracking |
-| `gains[1]` | Kd | **0.01** | Derivative — damping of velocity error |
-| `gains[2]` | Ki | **0** | Integral — not used |
+Custom controllers such as `ZbotCPGController` (`zbot_bout_glide`) ignore `equation` and compute their own position commands.
+
+### Actuator gains
+
+MuJoCo creates a position, a velocity and a torque actuator for every motor joint (`farms_mujoco/simulation/mjcf.py`):
+
+| Gain | Used as | Value | Effect |
+|------|---------|-------|--------|
+| `gains[0]` | `kp` of the position actuator | **3.0** | Stiffness of the position tracking |
+| `gains[1]` | `kv` of the position actuator | **0.01** | Damping on the joint velocity |
+| `gains[2]` | `kv` of the velocity actuator | **0** | Gain of velocity control (unused here) |
 
 ---
 
 ## Spawn Pose
 
-The robot spawns at a position slightly above ground (`z=0.01 m`) rotated into the correct swimming orientation:
+The robot spawns at the water surface (`z=0.01 m`, with `water.height: 0` and the ground at `ground_height: -1`), rotated into the swimming orientation:
 
 ```yaml
 spawn:
@@ -207,7 +214,7 @@ spawn:
 
 - **pitch = -π/2** rotates the robot so its long axis aligns with the X-axis (swimming forward).
 - **yaw = π** flips the head to face the positive-X direction.
-- **z = 0.01 m** spawns it just above the ground plane to avoid initial collision penetration.
+- **z = 0.01 m** places it at the water surface, 1 m above the ground.
 
 ---
 
@@ -218,16 +225,16 @@ The arena uses two additional SDF models:
 ```
 models/
 ├── arena_flat_v0/sdf/arena_flat.sdf    ← Ground plane with flat terrain
-└── arena_water_v0/sdf/arena_water.sdf  ← Water volume geometry for buoyancy
+└── arena_water_v0/sdf/arena_water.sdf  ← Visual water surface
 ```
 
-The `arena_water.sdf` provides the geometry that `SwimmingExtension` uses to determine which links are submerged. The water surface height is controlled by `water.height` in `arena_config.yaml`.
+`arena_water.sdf` only draws the water. The fluid forces use the water surface height `water.height` (and density, viscosity and velocity) of `arena_config.yaml`; the submerged part of each link is computed from its geoms (see [MuJoCo Swimming](../reference/mujoco/mujoco-swimming.md)).
 
 ---
 
 ## See Also
 
-- [Swimming Experiment](zbot-experiment.md) — YAML config walkthrough
-- [Custom CPG Controller](zbot-custom-controller.md) — write your own controller
-- [Mathematical Models](../explanation/mathematical-models.md) — drag and buoyancy equations
-- [`SwimmingExtension` API](../reference/mujoco/mujoco-swimming.md) — hydrodynamics implementation
+- [Swimming Experiment](zbot-experiment.md): YAML config walkthrough
+- [Custom CPG Controller](zbot-custom-controller.md): write your own controller
+- [Mathematical Models](../explanation/mathematical-models.md): drag and buoyancy equations
+- [`SwimmingExtension` API](../reference/mujoco/mujoco-swimming.md): hydrodynamics implementation

@@ -6,10 +6,10 @@ This page documents the data allocation and management system in detail. FARMS u
 
 | File | Lines | Purpose |
 |---|---|---|
-| `farms_core/model/data.py` | 140 | `AnimatData` — base animat data container |
+| `farms_core/model/data.py` | 140 | `AnimatData`, base animat data container |
 | `farms_core/sensors/data.py` | 2106 | `SensorsData`, `LinkSensorArray`, `JointSensorArray`, etc. |
-| `farms_core/experiment/data.py` | 155 | `ExperimentData` — top-level data container |
-| `farms_core/simulation/data.py` | — | `SimulationData` — simulation-level data |
+| `farms_core/experiment/data.py` | 155 | `ExperimentData`, top-level data container |
+| `farms_core/simulation/data.py` | n/a | `SimulationData`, simulation-level data |
 | `farms_core/io/hdf5.py` | 140 | HDF5 serialization (`hdf5_to_dict`, `dict_to_hdf5`) |
 | `farms_amphibious/data/data.py` | 319 | `AmphibiousData`, `AmphibiousExperimentData` |
 | `farms_amphibious/data/network.py` | 637 | `OscillatorNetworkState`, `NetworkParameters`, connectivity maps |
@@ -168,7 +168,7 @@ Each sensor array is 3D: `[buffer_size, n_sensors, n_fields]`
 | `adhesions` | force(3) | See `sc.adhesion_*` |
 | `visuals` | color(4), emission(4) | See `sc.visual_*` |
 
-### `from_dict()` — loading from HDF5
+### `from_dict()`, loading from HDF5
 
 ```python
 @classmethod
@@ -182,7 +182,7 @@ def from_dict(cls, dictionary):
     )
 ```
 
-Each sensor type is optional — if missing from the dictionary, an empty array is created. This allows loading partial data files.
+Each sensor type is optional, if missing from the dictionary, an empty array is created. This allows loading partial data files.
 
 ## `AmphibiousData` (farms_amphibious/data/data.py)
 
@@ -195,7 +195,7 @@ class AmphibiousData(AmphibiousDataCy, AnimatData):
         self.joints = joints
 ```
 
-### `from_options()` — complete walkthrough
+### `from_options()`, complete walkthrough
 
 ```python
 @classmethod
@@ -334,7 +334,7 @@ class AmphibiousExperimentData(ExperimentData):
         return cls.from_dict(data_experiment)
 ```
 
-When loading from file, `n_oscillators` is injected into each animat's data dictionary because it's not stored directly in HDF5 — it's inferred from the oscillator names list.
+When loading from file, `n_oscillators` is injected into each animat's data dictionary because it's not stored directly in HDF5, it's inferred from the oscillator names list.
 
 ## HDF5 serialization (farms_core/io/hdf5.py)
 
@@ -378,7 +378,7 @@ for attempt in range(max_attempts):
         time.sleep(attempt_delay)
 ```
 
-## `get_amphibious_data()` — factory function
+## `get_amphibious_data()`, factory function
 
 ```python
 def get_amphibious_data(animat_options, simulation_options):
@@ -436,9 +436,9 @@ class SensorsOptions(Options):
 
 ## How to integrate: adding a new data field to an existing sensor
 
-1. **Add the field index** to `farms_core/sensors/sensor_convention.py` (the `sc` object).
+1. **Add the column index**: a constant in `farms_core/sensors/sensor_convention.pxd` (for example `JOINT_MY_FIELD`, and increase `JOINT_SIZE`), and the matching entry of the `sc` enum in `farms_core/sensors/sensor_convention.pyx` (and its `.pyi` stub).
 
-2. **Increase the array width**: The `from_names` method creates arrays with a fixed width. Update the width to accommodate the new field.
+2. **Array width**: the arrays are created with the `*_SIZE` constants of the convention, so increasing the size in step 1 is enough. Rebuild farms_core and the packages that `cimport` the convention (farms_mujoco, farms_amphibious).
 
 3. **Add a transfer function** in `physics2data` to populate the field.
 
@@ -476,6 +476,6 @@ Lists of dicts are stored with a `FARMSLIST` prefix (e.g., `FARMSLISTlinks`). If
 
 4. **`from_dict` creates empty arrays for missing sensor types.** If a sensor type is not in the dictionary, `from_names(names=[], buffer_size=0)` is called, creating a `[0, 0, n_fields]` array.
 
-5. **The `drive2joint_map` uses `IntegerArray2D`, not a regular numpy array.** This is a Cython-compatible wrapper. Don't access it as `map[i][j]` — use `map.array[i, j]`.
+5. **The `drive2joint_map` uses `IntegerArray2D`, not a regular numpy array.** This is a Cython-compatible wrapper. Don't access it as `map[i][j]`, use `map.array[i, j]`.
 
 6. **`n_oscillators` is inferred from the oscillator names list, not stored directly.** This means the state array width (`n_oscillators * 3`) must be consistent with the number of oscillator names.

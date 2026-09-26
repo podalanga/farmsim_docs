@@ -1,32 +1,32 @@
 # Physics Sensor Mapping Internals
 
-This page documents how FARMS maps between MuJoCo's physics state and FARMS sensor data arrays (`farms_mujoco/simulation/physics.py`, 561 lines). This mapping is critical for performance — it is pre-computed once during initialization and then used as direct array index lookups during every simulation step.
+This page documents how FARMS maps between MuJoCo's physics state and FARMS sensor data arrays (`farms_mujoco/simulation/physics.py`). This mapping is critical for performance, it is pre-computed once during initialization and then used as direct array index lookups during every simulation step.
 
 ## Source files covered
 
 | File | Lines | Purpose |
 |---|---|---|
-| `farms_mujoco/simulation/physics.py` | 561 | `get_sensor_maps()`, `get_physics2data_maps()`, `physics2data()`, and helper functions |
-| `farms_mujoco/sensors/sensors.py` | — | `cycontacts2data()`, `cymusclesensors2data()` (Cython sensor transfer) |
-| `farms_core/sensors/sensor_convention.py` | — | `sc` (sensor convention constants for array column indices) |
+| `farms_mujoco/simulation/physics.py` | 560 | `get_sensor_maps()`, `get_physics2data_maps()`, `physics2data()`, and helper functions |
+| `farms_mujoco/sensors/sensors.pyx` | n/a | `cycontacts2data()`, `cymusclesensors2data()` (Cython sensor transfer) |
+| `farms_core/sensors/sensor_convention.pxd`, `sensor_convention.pyx` | n/a | Column index constants (`.pxd`, for Cython) and the `sc` enum (`.pyx`, for Python) |
 
 ## Call graph / entry points
 
 ```
 ExperimentTask.initialize_episode()
-  ├─ get_sensor_maps(physics)               — Build sensor type → index mapping
-  ├─ get_physics2data_maps(physics, ...)     — Build physics state → data array mapping
+  ├─ get_sensor_maps(physics), Build sensor type → index mapping
+  ├─ get_physics2data_maps(physics, ...), Build physics state → data array mapping
   └─ (stored in self.maps[animat_i])
 
 ExperimentTask.update_sensors()
   └─ physics2data(physics, iteration, data, maps, units)
-       ├─ physicslinks2data()               — Link positions/orientations
-       ├─ physicslinksvelsensors2data()      — Link velocities
-       ├─ physicsjointssensors2data()       — Joint forces/torques/limits
-       ├─ physicsjoints2data()              — Joint positions/velocities
-       ├─ physicsactuators2data()           — Actuator forces
-       ├─ cycontacts2data()                 — Contact forces (Cython)
-       └─ physics_muscles_sensors2data()    — Muscle sensor data
+       ├─ physicslinks2data(), Link positions/orientations
+       ├─ physicslinksvelsensors2data(), Link velocities
+       ├─ physicsjointssensors2data(), Joint forces/torques/limits
+       ├─ physicsjoints2data(), Joint positions/velocities
+       ├─ physicsactuators2data(), Actuator forces
+       ├─ cycontacts2data(), Contact forces (Cython)
+       └─ physics_muscles_sensors2data(), Muscle sensor data
 ```
 
 ## `get_sensor_maps(physics, verbose=True)`
@@ -294,7 +294,7 @@ def physics2data(physics, iteration, data, maps, units, links_only=False):
 
 When `links_only=True`, only link position and velocity data is transferred. This is used for pre-physics sensor updates (e.g., computing initial link positions before the first physics step).
 
-### `physicslinks2data()` — link positions and orientations
+### `physicslinks2data()`, link positions and orientations
 
 ```python
 def physicslinks2data(physics, iteration, data, sensor_maps, units):
@@ -317,12 +317,12 @@ def physicslinks2data(physics, iteration, data, sensor_maps, units):
 ```
 
 **Key details**:
-1. Uses `sc.link_urdf_position_x` through `sc.link_urdf_position_z` for column indices — these are constants from `farms_core.sensors.sensor_convention`.
+1. Uses `sc.link_urdf_position_x` through `sc.link_urdf_position_z` for column indices, these are constants from `farms_core.sensors.sensor_convention`.
 2. Quaternion reordering happens HERE (at data copy time), not at map build time. The map indices are NOT reordered, but the data is: `[:, [1, 2, 3, 0]]` swaps the w component to the end.
-3. Both URDF frame (xpos/xquat) and CoM frame (xipos/xquat) orientations use the SAME quaternion indices (`xquat2data`). The CoM orientation is the same as the URDF orientation — only the position differs.
+3. Both URDF frame (xpos/xquat) and CoM frame (xipos/xquat) orientations use the SAME quaternion indices (`xquat2data`). The CoM orientation is the same as the URDF orientation, only the position differs.
 4. Units are divided: `units.meters` converts from MuJoCo's internal units to the desired unit system.
 
-### `physicslinksvelsensors2data()` — link velocities from sensors
+### `physicslinksvelsensors2data()`, link velocities from sensors
 
 ```python
 def physicslinksvelsensors2data(physics, iteration, data, sensor_maps, units):
@@ -336,7 +336,7 @@ def physicslinksvelsensors2data(physics, iteration, data, sensor_maps, units):
 
 Uses MuJoCo frame velocity sensors (`framelinvel`, `frameangvel`). These are sensor-based velocities, not state-based.
 
-### `physicslinksvel2data()` — link velocities from state
+### `physicslinksvel2data()`, link velocities from state
 
 ```python
 def physicslinksvel2data(physics, iteration, data, sensor_maps, units):
@@ -352,7 +352,7 @@ Uses `physics.data.cvel` (center-of-mass velocity). The `cvel` array has 6 compo
 
 **Note**: This function is NOT called by `physics2data()`. It's an alternative velocity source that reads from the physics state directly rather than from sensors. It may be used in specific contexts where sensor-based velocities are not available.
 
-### `physicsjoints2data()` — joint positions and velocities
+### `physicsjoints2data()`, joint positions and velocities
 
 ```python
 def physicsjoints2data(physics, iteration, data, sensor_maps, units):
@@ -367,7 +367,7 @@ def physicsjoints2data(physics, iteration, data, sensor_maps, units):
 
 Reads joint positions from `qpos` and velocities from `qvel`. Note that position is NOT divided by any unit (assumed to be in radians already), while velocity is divided by `units.angular_velocity`.
 
-### `physicsactuators2data()` — actuator forces
+### `physicsactuators2data()`, actuator forces
 
 ```python
 def physicsactuators2data(physics, iteration, data, sensor_maps, units):
@@ -390,7 +390,7 @@ def physicsactuators2data(physics, iteration, data, sensor_maps, units):
 
 **Key detail**: The total torque is computed by ADDING three actuator force components: position-based, velocity-based, and motor-based. The array is zeroed first to prevent accumulation across iterations (since this function may be called multiple times per step in multi-substep scenarios).
 
-### `physics_muscles_sensors2data()` — muscle data
+### `physics_muscles_sensors2data()`, muscle data
 
 ```python
 def physics_muscles_sensors2data(physics, iteration, data, sensor_maps, units):
@@ -453,7 +453,7 @@ To add support for a new MuJoCo sensor type (e.g., `accelerometer`):
            )
    ```
 
-4. **Add the sensor convention constants** (`sc.link_acceleration_x`, etc.) in `farms_core/sensors/sensor_convention.py`.
+4. **Add the sensor convention constants** (for example `LINK_ACCELERATION_X` in `farms_core/sensors/sensor_convention.pxd`, increasing `LINK_SIZE`, and `sc.link_acceleration_x` in `farms_core/sensors/sensor_convention.pyx`). These columns do not exist yet.
 
 5. **Call the transfer function** from `physics2data()`.
 
@@ -477,7 +477,7 @@ sensor_maps['custom2data'] = np.array([
 
 If a sensor name in FARMS data doesn't match any MuJoCo sensor name, the map is set to `[]` (empty list). The corresponding data transfer is silently skipped. Symptoms: sensor arrays contain zeros for certain links/joints.
 
-**Fix**: Check that SDF sensor names match MuJoCo sensor names. The prefix is applied to all names — if the animat is spawned with a prefix, ensure the SDF names account for it.
+**Fix**: Check that SDF sensor names match MuJoCo sensor names. The prefix is applied to all names, if the animat is spawned with a prefix, ensure the SDF names account for it.
 
 ### 2. Quaternion convention mismatch
 
@@ -507,11 +507,11 @@ If the number of links/joints/muscles in FARMS data doesn't match the MuJoCo mod
 
 2. **The `actuator_moment` mapping is commented out.** Lines 346–360 contain commented-out code for `actuator_moment` mapping with a TODO comment: "actuator_moment is not a named axis anymore." This functionality is not available.
 
-3. **Quaternion reordering is done at TWO levels.** The index map `framequat2data` is reordered at build time, and the data is reordered again at copy time (`xquat2data` data with `[:, [1, 2, 3, 0]]`). The two reorderings are independent — one affects sensor data reads, the other affects state data reads.
+3. **Quaternion reordering is done at TWO levels.** The index map `framequat2data` is reordered at build time, and the data is reordered again at copy time (`xquat2data` data with `[:, [1, 2, 3, 0]]`). The two reorderings are independent, one affects sensor data reads, the other affects state data reads.
 
 4. **`physicslinksvel2data()` is NOT called by `physics2data()`.** It exists as an alternative to `physicslinksvelsensors2data()`. The standard path uses sensor-based velocities, not state-based.
 
-5. **Link CoM orientation uses the same quaternion indices as URDF orientation.** `xquat2data` is used for both `link_urdf_orientation` and `link_com_orientation`. This is because in MuJoCo, the body orientation quaternion is the same for both frames — only the position differs (xpos vs xipos).
+5. **Link CoM orientation uses the same quaternion indices as URDF orientation.** `xquat2data` is used for both `link_urdf_orientation` and `link_com_orientation`. This is because in MuJoCo, the body orientation quaternion is the same for both frames, only the position differs (xpos vs xipos).
 
 6. **The `prefix` parameter is applied to ALL names.** When an animat is spawned as a sub-model in MuJoCo, all its body, joint, and sensor names get a prefix. The mapping functions apply this prefix when looking up names. If the prefix is wrong, ALL mappings will fail silently (empty arrays).
 

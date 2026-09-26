@@ -13,10 +13,10 @@ experiment_config.yaml
 ```
 
 Each sub-config is referenced by filename in `simulation`/`animats`/`arenas`,
-with the parsing class named separately in a sibling `loaders:` block —
+with the parsing class named separately in a sibling `loaders:` block
 **not** as an inline `loader`/`config` pair per sub-config. (Inline
 `{loader, config}` pairs are a different, unrelated mechanism used only for
-`extensions:` list entries — see below.)
+`extensions:` list entries, see below.)
 
 ## experiment_config.yaml
 
@@ -27,7 +27,7 @@ Parsed by `ExperimentOptions` (`farms_core/experiment/options.py`).
 | `simulation` | str | Yes | Path to `simulation_config.yaml` |
 | `animats` | list[str] | Yes | Paths to animat config files |
 | `arenas` | list[str] | Yes | Paths to arena config files |
-| `loaders` | dict | Yes | `ExperimentLoadOptions` — see below |
+| `loaders` | dict | Yes | `ExperimentLoadOptions`, see below |
 | `loaders.simulation_options` | str | Yes | Dotted path to the `SimulationOptions` subclass |
 | `loaders.animats_options` | list[str] | Yes | Dotted paths, one per `animats` entry (same index) |
 | `loaders.arenas_options` | list[str] | Yes | Dotted paths, one per `arenas` entry (same index) |
@@ -86,7 +86,7 @@ Parsed by `SimulationOptions` (`farms_core/simulation/options.py`).
 !!! note "Top-level `meters`/`seconds`/`kilograms` also work"
     `SimulationOptions.__init__` accepts either a nested `units:` dict or
     flat `meters`/`seconds`/`kilograms` keys at the top level of
-    `simulation_config.yaml` — both populate the same
+    `simulation_config.yaml`: both populate the same
     `SimulationUnitScaling`.
 
 Each `extensions` entry:
@@ -101,7 +101,7 @@ Each `extensions` entry:
 These are the `TaskExtension` subclasses shipped with FARMS that go in
 `simulation_config.yaml`'s `extensions:` list. Every one of them takes an
 `animat_id` key even though it's registered at the simulation level, because
-none of them receive `animat_data` automatically — each reaches for
+none of them receive `animat_data` automatically, each reaches for
 `task.data.animats[self.animat_id]` itself in `initialize_episode()`.
 Full field-by-field detail, defaults, and known gotchas for each are in
 [Use Built-in Extensions](../../how-to/use-extensions.md); this table is the
@@ -124,7 +124,7 @@ quick-lookup index.
     are easy to confuse. `CameraFollower` only touches the live,
     interactive `mujoco.viewer` window and does nothing when
     `runtime.headless: true`. `CameraRecording` renders offscreen with its
-    own `mujoco.Renderer` and works identically headless or not — use it
+    own `mujoco.Renderer` and works identically headless or not, use it
     whenever you need an actual video file, not just a nicer live view.
 
 ### Built-in animat-level extension catalog
@@ -141,7 +141,7 @@ These extend `AnimatExtension` (`farms_core/model/extensions.py`) and go in
     Both simulation- and animat-level extensions execute in YAML declaration
     order every step. For the Zbot, `AmphibiousController` must run before
     `SwimmingExtension` so hydrodynamic forces are computed from
-    up-to-date joint torques rather than lagging by one step — see
+    up-to-date joint torques rather than lagging by one step, see
     [Extension ordering](../../how-to/use-extensions.md#extension-ordering).
 
 ## animat_config.yaml (AnimatOptions)
@@ -150,28 +150,28 @@ Parsed by `AnimatOptions` (`farms_core/model/options.py`).
 
 | Key | Type | Required | Default | Parsed by |
 |-----|------|----------|---------|-----------|
-| `sdf` | str | Yes | — | `ModelOptions` |
-| `spawn` | dict | Yes | — | `SpawnOptions` |
-| `morphology` | dict | Yes | — | `MorphologyOptions` |
-| `morphology.links` | list[dict] | Yes | — | `LinkOptions` |
-| `morphology.joints` | list[dict] | Yes | — | `JointOptions` |
-| `morphology.self_collisions` | list[list[str]] | Yes | — | `MorphologyOptions` |
-| `control` | dict | Yes | — | `ControlOptions` |
+| `sdf` | str | Yes | n/a | `ModelOptions` |
+| `spawn` | dict | Yes | n/a | `SpawnOptions` |
+| `morphology` | dict | Yes | n/a | `MorphologyOptions` |
+| `morphology.links` | list[dict] | Yes | n/a | `LinkOptions` |
+| `morphology.joints` | list[dict] | Yes | n/a | `JointOptions` |
+| `morphology.self_collisions` | list[list[str]] | Yes | n/a | `MorphologyOptions` |
+| `control` | dict | Yes | n/a | `ControlOptions` |
 | `extensions` | list[dict] | No | `[]` | `AnimatOptions` |
 
 ### SpawnOptions
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
-| `loader` | int (`SpawnLoader`) | Yes | — | `0` = FARMS loader (recommended), `1` = PyBullet loader |
+| `loader` | int (`SpawnLoader`) | Yes | n/a | `0` = FARMS loader (recommended), `1` = PyBullet loader |
 | `mode` | str (`SpawnMode`) | No | `free` | Spawn constraint mode |
-| `pose` | list[float] (6) | Yes | — | `[X, Y, Z, Rx, Ry, Rz]` — position [m] + Euler orientation [rad] |
-| `velocity` | list[float] (6) | Yes | — | `[Vx, Vy, Vz, Wx, Wy, Wz]` — initial linear + angular velocity |
+| `pose` | list[float] (6) | Yes | n/a | `[X, Y, Z, Rx, Ry, Rz]`, position [m] + Euler orientation [rad] |
+| `velocity` | list[float] (6) | Yes | n/a | `[Vx, Vy, Vz, Wx, Wy, Wz]`, initial linear + angular velocity |
 | `extras` | dict | No | `{}` | Deprecated extra options |
 
 !!! warning "Two unrelated meanings of `loader` in this file"
     `SpawnOptions.loader` is an integer `SpawnLoader` enum (0 or 1) chosen
-    from a fixed set of built-in loaders — it has nothing to do with the
+    from a fixed set of built-in loaders, it has nothing to do with the
     dotted-path `loader:` strings used elsewhere (`controller_loader`,
     `ExtensionOptions.loader`, `ExperimentLoadOptions`'s `*_options`
     fields). Don't assume every `loader` key is a Python import path.
@@ -184,12 +184,12 @@ SpawnMode values (`farms_core/model/options.py`): `free`, `fixed`, `rotx`,
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
-| `name` | str | Yes | — | Link name (must match SDF) |
-| `collisions` | bool | Yes | — | Enable collision detection |
-| `friction` | list[float] | Yes | — | [lateral, spinning, rolling] |
+| `name` | str | Yes | n/a | Link name (must match SDF) |
+| `collisions` | bool | Yes | n/a | Enable collision detection |
+| `friction` | list[float] | Yes | n/a | [lateral, spinning, rolling] |
 | `fluid_interaction` | bool | No | `False` | Enable fluid forces |
 | `density` | float | No | `1000` | Density [kg/m³] |
-| `drag_coefficients` | list[list[float]] | No | `[0,0,0,0,0,0]`\* | `[[Vx,Vy,Vz],[Wx,Wy,Wz]]` — linear/angular drag coefficients |
+| `drag_coefficients` | list[list[float]] | No | `[0,0,0,0,0,0]`\* | `[[Vx,Vy,Vz],[Wx,Wy,Wz]]`, linear/angular drag coefficients |
 | `sites` | list | No | `[]` | Site definitions |
 | `solref` | list | No | `None` | MuJoCo solref |
 | `solimp` | list | No | `None` | MuJoCo solimp |
@@ -197,7 +197,7 @@ SpawnMode values (`farms_core/model/options.py`): `free`, `fixed`, `rotx`,
 
 \* `LinkOptions.__init__`'s default value (`[0, 0, 0, 0, 0, 0]`, a flat
 6-list) doesn't match the nested `[[Vx,Vy,Vz],[Wx,Wy,Wz]]` shape documented
-for and used by real configs — a pre-existing inconsistency in
+for and used by real configs, a pre-existing inconsistency in
 `farms_core/model/options.py`, not a documentation error. Always supply
 `drag_coefficients` explicitly as two 3-lists.
 
@@ -205,12 +205,12 @@ for and used by real configs — a pre-existing inconsistency in
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
-| `name` | str | Yes | — | Joint name (must match SDF) |
-| `initial` | list[float] | Yes | — | [position, velocity] |
-| `limits` | list[list[float]] | Yes | — | [[pos_min, pos_max], [vel_min, vel_max]] |
-| `stiffness` | float | Yes | — | Joint stiffness |
-| `springref` | float | Yes | — | Spring reference |
-| `damping` | float | Yes | — | Joint damping |
+| `name` | str | Yes | n/a | Joint name (must match SDF) |
+| `initial` | list[float] | Yes | n/a | [position, velocity] |
+| `limits` | list[list[float]] | Yes | n/a | [[pos_min, pos_max], [vel_min, vel_max]] |
+| `stiffness` | float | Yes | n/a | Joint stiffness |
+| `springref` | float | Yes | n/a | Spring reference |
+| `damping` | float | Yes | n/a | Joint damping |
 | `extras` | dict | No | `{}` | Extra properties |
 
 ### ControlOptions
@@ -218,8 +218,8 @@ for and used by real configs — a pre-existing inconsistency in
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
 | `controller_loader` | str | No | `None` | Dotted path to controller class |
-| `sensors` | dict | Yes | — | `SensorsOptions` |
-| `motors` | list[dict] | Yes | — | List of `MotorOptions` |
+| `sensors` | dict | Yes | n/a | `SensorsOptions` |
+| `motors` | list[dict] | Yes | n/a | List of `MotorOptions` |
 | `hill_muscles` | list | No | `[]` | Hill muscle definitions |
 
 ### SensorsOptions
@@ -228,7 +228,7 @@ Declared under `control.sensors` in `animat_config.yaml`. Each field is a
 list of link/joint/etc. names to record; sensor data is written every step
 into fixed-shape NumPy arrays under `AnimatData.sensors`, with the exact
 per-category column layout defined by the `sc` (sensor convention) enum in
-`farms_core/sensors/sensor_convention.pyx` — see
+`farms_core/sensors/sensor_convention.pyx`: see
 [Add and Configure Sensors](../../how-to/configure-sensors.md#sensor-types)
 for the full column-by-column table (link/joint/contact/xfrc/muscle
 layouts) and code examples reading each array.
@@ -244,7 +244,7 @@ layouts) and code examples reading each array.
 | `visuals` | list[str] | Yes | Colour + emission RGBA, per named visual | `(n_iters, n_visuals, 8)` |
 
 !!! tip "Empty lists are the normal state for unused sensor categories"
-    The Zbot config sets `muscles: []`, `adhesions: []`, and `visuals: []` —
+    The Zbot config sets `muscles: []`, `adhesions: []`, and `visuals: []`
     this is expected, not a gap: those categories only apply to
     Hill-muscle-actuated or adhesion/visual-effector morphologies. Only
     `links`, `joints`, and `xfrc` are populated for a plain swimming
@@ -254,10 +254,10 @@ layouts) and code examples reading each array.
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
-| `joint_name` | str | Yes | — | Target joint name |
-| `control_types` | list[str] | Yes | — | Control type strings |
-| `limits_torque` | list[float] | Yes | — | [min_torque, max_torque] |
-| `gains` | list[float] | Yes | — | Motor gains |
+| `joint_name` | str | Yes | n/a | Target joint name |
+| `control_types` | list[str] | Yes | n/a | Control type strings |
+| `limits_torque` | list[float] | Yes | n/a | [min_torque, max_torque] |
+| `gains` | list[float] | Yes | n/a | Motor gains |
 
 ## animat_config.yaml (AmphibiousOptions)
 
@@ -280,7 +280,7 @@ Extends `MotorOptions` with:
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
-| `equation` | str | Yes | — | Motor equation type |
+| `equation` | str | Yes | n/a | Motor equation type |
 | `transform` | dict | No | `None` | `AmphibiousMotorTransformOptions` |
 | `offsets` | dict | No | `None` | `AmphibiousMotorOffsetOptions` |
 | `passive` | dict | No | `None` | `AmphibiousPassiveJointOptions` |
@@ -299,9 +299,9 @@ Parsed by `ArenaOptions` (`farms_core/model/options.py`).
 
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
-| `sdf` | str | Yes | — | Arena SDF file path |
-| `spawn` | dict | Yes | — | `SpawnOptions` |
-| `water` | dict | No | — | `WaterOptions` |
+| `sdf` | str | Yes | n/a | Arena SDF file path |
+| `spawn` | dict | Yes | n/a | `SpawnOptions` |
+| `water` | dict | No | n/a | `WaterOptions` |
 | `ground_height` | float | No | `0.0` | Ground plane height |
 
 ### WaterOptions
@@ -309,11 +309,11 @@ Parsed by `ArenaOptions` (`farms_core/model/options.py`).
 | Key | Type | Required | Default | Description |
 |-----|------|----------|---------|-------------|
 | `sdf` | str | No | `''` | Water visual/volume SDF |
-| `drag` | bool | Yes | — | Whether to apply hydrodynamic drag forces at all (not a coefficient list — the per-link coefficients live in each link's own `drag_coefficients`, see `LinkOptions` above) |
-| `buoyancy` | bool | Yes | — | Enable buoyancy forces |
-| `height` | float | Yes | — | Water surface height [m] |
+| `drag` | bool | Yes | n/a | Whether to apply hydrodynamic drag forces at all (not a coefficient list, the per-link coefficients live in each link's own `drag_coefficients`, see `LinkOptions` above) |
+| `buoyancy` | bool | Yes | n/a | Enable buoyancy forces |
+| `height` | float | Yes | n/a | Water surface height [m] |
 | `velocity` | list[float] (3) | No | `[0,0,0]` | Fluid current `[Vx, Vy, Vz]` [m/s] |
 | `viscosity` | float | No | `0.0` | Used as a drag multiplier by `SwimmingHandler` |
-| `density` | float | Yes | — | Fluid density [kg/m³], used for buoyancy |
+| `density` | float | Yes | n/a | Fluid density [kg/m³], used for buoyancy |
 | `maps` | list[str] | No | `['', '']` | Optional spatially-varying velocity/height callback references; empty strings disable spatial variation and use the uniform `velocity`/`height` values everywhere |
 

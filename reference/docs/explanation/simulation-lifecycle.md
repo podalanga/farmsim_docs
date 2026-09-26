@@ -7,7 +7,7 @@ startup to shutdown, showing which methods are called and in what order.
 
 ```
 run_sim.py                     # adds experiment dir to sys.path itself
-  → _bootstrap.main()          # NO ARGS — macOS/mjpython re-exec check only
+  → _bootstrap.main()          # NO ARGS, macOS/mjpython re-exec check only
     → farmsim.profile_simulation()
       → farmsim.main()
         → simulation.setup_from_clargs()
@@ -17,17 +17,17 @@ run_sim.py                     # adds experiment dir to sys.path itself
 See `reference/farms-sim.md` for the full entry-point chain. `farmsim.main()`
 performs:
 
-1. **Parse arguments and load options** — `setup_from_clargs()` calls
+1. **Parse arguments and load options**: `setup_from_clargs()` calls
    `sim_parse_args()` for the experiment config path and simulator type,
    then `ExperimentOptions.load(experiment_config_path)`, which reads the
    top-level YAML and resolves `simulation`/`animats`/`arenas` sub-configs
-   via the `loaders:` block (see `internals/options-yaml-internals.md`) —
+   via the `loaders:` block (see `internals/options-yaml-internals.md`)
    not a `{loader, config}` pair inline under each key.
-2. **Create data** — the experiment-data loader class named in
+2. **Create data**: the experiment-data loader class named in
    `exp_options.loaders.experiment_data` is resolved via `import_item()`
    and called as `.from_options(exp_options)`, pre-allocating the NumPy
    arrays based on simulation duration, timestep, and sensor counts.
-3. **Run** — `run_simulation(experiment_data=..., experiment_options=...,
+3. **Run**: `run_simulation(experiment_data=..., experiment_options=...,
    simulator=...)` calls `simulation_setup()` to create the backend
    (`MuJoCoSimulation.from_experiment()` for MuJoCo) and then `sim.run()`.
 
@@ -40,11 +40,11 @@ performs:
 `setup_mjcf_xml()` builds the MuJoCo model:
 
 1. Parse animat SDF files → extract links, joints, visuals, collisions
-2. Apply `AnimatOptions.morphology` — link densities, drag coefficients,
+2. Apply `AnimatOptions.morphology`, link densities, drag coefficients,
    friction, collision flags
-3. Apply `AnimatOptions.morphology.joints` — limits, stiffness, damping
+3. Apply `AnimatOptions.morphology.joints`, limits, stiffness, damping
 4. Parse arena SDF → ground plane, water visuals
-5. Apply `ArenaOptions.water` — water height, density (for swimming extension)
+5. Apply `ArenaOptions.water`, water height, density (for swimming extension)
 6. Create MJCF sensor elements from `SensorsOptions`
 7. Compile the MJCF into a dm_control `Physics` model
 
@@ -52,9 +52,9 @@ performs:
 
 `ExperimentTask` is created with references to:
 
-- `experiment_options` — all configuration
-- `experiment_data` — pre-allocated arrays
-- `physics` — the dm_control Physics object
+- `experiment_options`: all configuration
+- `experiment_data`: pre-allocated arrays
+- `physics`: the dm_control Physics object
 
 ### 2c. Environment creation
 
@@ -64,19 +64,19 @@ performs:
 
 `task.initialize_episode(physics)` is called once:
 
-1. **Build maps** — joint name → qpos/qvel indices, link name → body indices,
+1. **Build maps**: joint name → qpos/qvel indices, link name → body indices,
    sensor name → array indices
-2. **Create controllers** — import controller class via
+2. **Create controllers**: import controller class via
    `animat_options.control.controller_loader`, call `from_options()` with
    config, data, and options
-3. **Create extensions** — for each entry in `simulation_config.yaml` and
+3. **Create extensions**: for each entry in `simulation_config.yaml` and
    `animat_config.yaml` `extensions:` lists:
    - Import class via `import_item(loader)`
    - Call `from_options()` (signature depends on TaskExtension vs
      AnimatExtension)
-4. **Initialize extensions** — call `extension.initialize_episode(task, physics)`
+4. **Initialize extensions**: call `extension.initialize_episode(task, physics)`
    for each extension
-5. **Initialize sensor arrays** — set initial values from MuJoCo state
+5. **Initialize sensor arrays**: set initial values from MuJoCo state
 
 ## Phase 4: Main loop
 
@@ -104,7 +104,7 @@ ExperimentTask.before_step(physics)
 
 ### physics step
 
-dm_control calls `physics.step()` — MuJoCo advances the simulation by one
+dm_control calls `physics.step()`, MuJoCo advances the simulation by one
 timestep using the control inputs set in `before_step()`.
 
 ### after_step()
@@ -163,6 +163,6 @@ before any extension that reads xfrc sensor data.
 
 ## See also
 
-- [System Architecture](architecture.md) — high-level design
-- [Extension and Controller Design](extension-design.md) — lifecycle hooks
-- [Data Flow and Persistence](data-flow.md) — how data moves through the system
+- [System Architecture](architecture.md): high-level design
+- [Extension and Controller Design](extension-design.md): lifecycle hooks
+- [Data Flow and Persistence](data-flow.md): how data moves through the system

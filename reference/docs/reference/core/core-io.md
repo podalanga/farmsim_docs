@@ -145,5 +145,5 @@ print(loaded_data["joints"]["knee"])
 
 ## See Also
 
-- [Configuration Classes](core-options.md) — YAML dataclass schemas
-- [Simulation Walkthrough](../../explanation/simulation-lifecycle.md) — End-to-end lifecycle
+- [Configuration Classes](core-options.md): YAML dataclass schemas
+- [Simulation Walkthrough](../../explanation/simulation-lifecycle.md): End-to-end lifecycle

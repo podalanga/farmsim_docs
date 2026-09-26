@@ -1,9 +1,9 @@
 # farms_amphibious.control.ekeberg
 
 !!! note "Source Files"
-    - `farms_amphibious/control/ekeberg.pyx` — Cython implementation (compiled to `.pyd`)
-    - `farms_amphibious/control/ekeberg.pxd` — Cython declarations
-    - `farms_amphibious/control/amphibious.py` — `MusclesMap` constructor
+    - `farms_amphibious/control/ekeberg.pyx`: Cython implementation (compiled to `.pyd`)
+    - `farms_amphibious/control/ekeberg.pxd`: Cython declarations
+    - `farms_amphibious/control/amphibious.py`: `MusclesMap` constructor
 
 The **Ekeberg Muscle Model** is FARMS' primary actuator model for joints with CPG-driven, antagonistic muscle pairs. Based on Ekeberg (1993), it models each joint as having two opposing "muscles" (flexor and extensor), each driven by a separate oscillator's neural output.
 
@@ -13,11 +13,11 @@ The **Ekeberg Muscle Model** is FARMS' primary actuator model for joints with CP
 
 In vertebrate locomotion, joints are actuated by antagonistic muscle pairs. Each muscle is activated by motor neurons whose firing rate follows the CPG rhythm. Ekeberg's model captures three physical effects in a single torque equation:
 
-1. **Active torque** — proportional to the *difference* in neural activation (net muscle pull)
-2. **Active stiffness** — proportional to the *sum* of neural activations (co-contraction stiffness)
-3. **Passive stiffness** — a baseline spring from the joint mechanics
-4. **Viscous damping** — velocity-proportional resistance
-5. **Coulomb friction** — velocity-sign-proportional resistance
+1. **Active torque**: proportional to the *difference* in neural activation (net muscle pull)
+2. **Active stiffness**: proportional to the *sum* of neural activations (co-contraction stiffness)
+3. **Passive stiffness**: a baseline spring from the joint mechanics
+4. **Viscous damping**: velocity-proportional resistance
+5. **Coulomb friction**: velocity-sign-proportional resistance
 
 ---
 
@@ -42,10 +42,10 @@ $$
 $$
 
 Where:
-- $\delta_j$ — joint offset (from CPG state `offsets(iteration)`)
-- $\theta$ — current joint position (sensor reading)
-- $g$ — transform gain (`motor.transform.gain`)
-- $b$ — transform bias (`motor.transform.bias`)
+- $\delta_j$, joint offset (from CPG state `offsets(iteration)`)
+- $\theta$, current joint position (sensor reading)
+- $g$, transform gain (`motor.transform.gain`)
+- $b$, transform bias (`motor.transform.bias`)
 
 The total torque is:
 
@@ -172,8 +172,8 @@ Two equation modes exist:
 
 | Mode | Description | `torques_implicit` vs `torque_cmds` |
 |------|-------------|-------------------------------------|
-| `ekeberg_muscle` | Torque + spring model in MuJoCo | Uses `torques_implicit(iteration)` — provides torque *and* updates spring params |
-| `ekeberg_muscle_explicit` | Pure torque output, no MuJoCo spring model | Uses `torque_cmds(iteration)` — returns raw computed torque |
+| `ekeberg_muscle` | Torque + spring model in MuJoCo | Uses `torques_implicit(iteration)`, provides torque *and* updates spring params |
+| `ekeberg_muscle_explicit` | Pure torque output, no MuJoCo spring model | Uses `torque_cmds(iteration)`, returns raw computed torque |
 
 `ekeberg_muscle` is preferred when MuJoCo's built-in spring/damping solver improves stability (e.g., faster contacts). `ekeberg_muscle_explicit` is used when full torque control is needed without spring model interference.
 
@@ -236,6 +236,6 @@ This allows post-simulation decomposition of which torque component dominated at
 
 ## See Also
 
-- [CPG Oscillators](cpg-oscillators.md) — Source of all `outputs()` and `phases()` used here
+- [CPG Oscillators](cpg-oscillators.md): Source of all `outputs()` and `phases()` used here
 - [Passive Joint Model](joint-controllers.md#1-passive-joint-passivejointcy) - For joints without CPG drive
 - [Position Muscle](joint-controllers.md#2-position-muscle-positionmusclecy) - Alternative: position-mode control

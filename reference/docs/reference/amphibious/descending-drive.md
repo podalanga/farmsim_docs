@@ -1,6 +1,6 @@
 # farms_amphibious.control.drive
 
-Descending drive system — goal-directed modulation of CPG amplitude and frequency.
+Descending drive system, goal-directed modulation of CPG amplitude and frequency.
 
 ## Overview
 
@@ -233,12 +233,12 @@ Parameters map identically to `OrientationFollower`, but the controller manages 
     `self.contact_value`, and updates an internal `simple_pid.PID` instance.
     `farms_amphibious.control.amphibious.AmphibiousDriveController.step()`
     calls `drive.step()` and then, via `super().step()`, calls it again
-    unconditionally — so a drive attached to that controller integrates
+    unconditionally, so a drive attached to that controller integrates
     twice per physics step, distorting its turn/speed response rather than
     simply behaving as if run at a coarser timestep. Plain
     `AmphibiousController` (used by the bundled Zbot experiments) calls
     `drive.step()` exactly once, so the bug is dormant there. Full detail:
-    [Amphibious Controller — `AmphibiousDriveController.step`](amphibious-controller.md#amphibiousdrivecontroller).
+    [Amphibious Controller, `AmphibiousDriveController.step`](amphibious-controller.md#amphibiousdrivecontroller).
 
 ---
 

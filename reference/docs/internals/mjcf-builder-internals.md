@@ -7,9 +7,9 @@ This page documents the MJCF builder (`farms_mujoco/simulation/mjcf.py`, 1732 li
 | File | Lines | Purpose |
 |---|---|---|
 | `farms_mujoco/simulation/mjcf.py` | 1732 | SDF→MJCF conversion, actuator/sensor creation, scene setup |
-| `farms_core/io/sdf.py` | — | `ModelSDF`, `Link`, `Mesh`, `Visual`, `Collision` (SDF parsing) |
-| `farms_core/model/options.py` | — | `SpawnMode`, `AnimatOptions`, `MorphologyOptions` |
-| `farms_core/model/control.py` | — | `ControlType` (POSITION=0, VELOCITY=1, TORQUE=2, MUSCLE=3) |
+| `farms_core/io/sdf.py` | n/a | `ModelSDF`, `Link`, `Mesh`, `Visual`, `Collision` (SDF parsing) |
+| `farms_core/model/options.py` | n/a | `SpawnMode`, `AnimatOptions`, `MorphologyOptions` |
+| `farms_core/model/control.py` | n/a | `ControlType` (POSITION=0, VELOCITY=1, TORQUE=2, MUSCLE=3) |
 
 ## Call graph / entry points
 
@@ -61,11 +61,11 @@ Converts XYZ Euler angles to MuJoCo quaternion. Uses scipy's `Rotation` class wi
 
 ### `get_local_transform(parent_pose, child_pose)`
 
-Computes the local transform of a child link relative to its parent. Returns `(local_pos, local_euler)` — the position and XYZ Euler angles of the link in the parent's frame.
+Computes the local transform of a child link relative to its parent. Returns `(local_pos, local_euler)`, the position and XYZ Euler angles of the link in the parent's frame.
 
 If `parent_pose` is `None`, the parent transform is identity (world frame).
 
-## `mjc_add_link()` — per-link conversion
+## `mjc_add_link()`, per-link conversion
 
 ```python
 def mjc_add_link(mjcf_model, mjcf_map, sdf_link, prefix='', **kwargs):
@@ -109,7 +109,7 @@ If the link is a `ModelSDF` (the root), the spawn mode determines the base joint
 
 | SpawnMode | Joint types | Axes |
 |---|---|---|
-| `FREE` | `freejoint` | — |
+| `FREE` | `freejoint` | n/a |
 | `ROTX` | `hinge` | `[[1,0,0]]` |
 | `ROTY` | `hinge` | `[[0,1,0]]` |
 | `ROTZ` | `hinge` | `[[0,0,1]]` |
@@ -122,7 +122,7 @@ If the link is a `ModelSDF` (the root), the spawn mode determines the base joint
 | `SAGITTAL3` | `slide, slide, hinge, hinge, hinge` | `[[1,0,0], [0,0,1], [1,0,0], [0,1,0], [0,0,1]]` |
 | `CORONAL3` | `slide, slide, hinge, hinge, hinge` | `[[0,1,0], [0,0,1], [1,0,0], [0,1,0], [0,0,1]]` |
 | `TRANSVERSE3` | `slide, slide, hinge, hinge, hinge` | `[[1,0,0], [0,1,0], [1,0,0], [0,1,0], [0,0,1]]` |
-| `FIXED` | (none) | — |
+| `FIXED` | (none) | n/a |
 
 For multi-DOF spawn modes (e.g., SAGITTAL), intermediate bodies are created: `root0_b_{name}`, `root1_b_{name}`, etc., each with one joint.
 
@@ -160,7 +160,7 @@ body.add('inertial',
 
 Mass and inertia are clamped to `MIN_MASS` (1e-15) and `MIN_INERTIA` (1e-15) to avoid MuJoCo issues with zero-inertia bodies. The `fullinertia` format is `[Ixx, Iyy, Izz, Ixy, Ixz, Iyz]`.
 
-!!! note "The inertial `quat` is never set — the tensor is pre-rotated instead"
+!!! note "The inertial `quat` is never set, the tensor is pre-rotated instead"
     The source has a commented-out `quat=euler2mjcquat(inertial.pose[3:])` line with the
     note `# Not working in MuJoCo?`. Instead of relying on MJCF's `<inertial quat=.../>`
     to orient the inertia tensor, the code rotates the full 3×3 inertia tensor in Python
@@ -171,13 +171,13 @@ Mass and inertia are clamped to `MIN_MASS` (1e-15) and `MIN_INERTIA` (1e-15) to 
     ```
     and only ever emits `fullinertia` in the body's own (unrotated) frame. This means:
     the eigenvalue-positivity assertion (`eigvals > 0`) runs on the *un-rotated* diagonal
-    matrix built from `inertial.inertias`, then the rotation is applied afterward — so a
+    matrix built from `inertial.inertias`, then the rotation is applied afterward, so a
     physically valid (positive-definite) tensor stays valid under rotation, but if you
     ever add a code path that sets `quat=` on the `inertial` element directly, you will
     double-rotate the tensor. This is the same root bug pattern documented for `zbot`'s
     SDF/MuJoCo inertia export (see the SDF fidelity notes in `reference/core/farms-core.md`):
     diagonalizing to principal axes and then discarding or duplicating the frame
-    rotation silently corrupts mass distribution. Here it is done correctly — this note
+    rotation silently corrupts mass distribution. Here it is done correctly, this note
     exists to stop a future edit from "fixing" it by uncommenting the `quat=` line.
 
 ## `add_link_recursive()`
@@ -201,7 +201,7 @@ def add_link_recursive(mjcf_model, mjcf_map, sdf, **kwargs):
 
 Recursively traverses the SDF link tree, adding each link and its children. The `sdf.get_children(link=...)` and `sdf.get_parent_joint(link=...)` methods from `ModelSDF` provide the tree structure.
 
-## `sdf2mjcf()` — full model conversion
+## `sdf2mjcf()`, full model conversion
 
 ```python
 def sdf2mjcf(sdf, **kwargs) -> (mjcf.RootElement, Dict):
@@ -296,7 +296,7 @@ for pair_i, (link1, link2) in enumerate(animat_options.morphology.self_collision
 
 Creates explicit contact pairs for self-collisions defined in the animat options. `condim=6` enables full 6-DOF contact (friction + torsional + rolling).
 
-## `setup_mjcf_xml()` — complete scene assembly
+## `setup_mjcf_xml()`, complete scene assembly
 
 ```python
 def setup_mjcf_xml(experiment_options, **kwargs) -> (mjcf.RootElement, list, dict):
@@ -310,7 +310,7 @@ Converts the arena SDF to MJCF with `fixed_base=True`. Sets the arena position f
 
 **Step 2: Water** (lines 1408–1422)
 
-If `arena_options.water.height` is set, converts the water SDF to MJCF. The water body is positioned at the water surface height. Water has `contype=0, conaffinity=0` (no collision — it's visual only).
+If `arena_options.water.height` is set, converts the water SDF to MJCF. The water body is positioned at the water surface height. Water has `contype=0, conaffinity=0` (no collision, it's visual only).
 
 **Step 3: Animats** (lines 1426–1450)
 
@@ -318,7 +318,7 @@ For each animat:
 - Reads the animat SDF
 - Calls `sdf2mjcf` with `prefix=get_prefix(animat_i)`, `use_actuators=True`, `use_sensors=True`
 - Sets `contype=2^(animat_i+1)` so each animat has a unique collision group
-- `conaffinity=2*31-1` (note: this is `2*31-1 = 61`, NOT `2^31-1` — this is likely a bug, should be `2**31-1`)
+- `conaffinity=2*31-1` (note: this is `2*31-1 = 61`, NOT `2^31-1`, this is likely a bug, should be `2**31-1`)
 
 **Step 4: Compiler options** (lines 1452–1463)
 
@@ -405,7 +405,7 @@ elif isinstance(collision, Ellipsoid):
 
 2. Ensure the SDF parser (`farms_core/io/sdf.py`) can parse the new geometry type.
 
-3. No changes needed to `sdf2mjcf` or `setup_mjcf_xml` — they call `mjc_add_link` which handles all geometry types.
+3. No changes needed to `sdf2mjcf` or `setup_mjcf_xml`, they call `mjc_add_link` which handles all geometry types.
 
 ## How to integrate: adding a new actuator type
 

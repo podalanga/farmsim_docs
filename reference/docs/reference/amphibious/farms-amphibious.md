@@ -1,6 +1,6 @@
 # farms_amphibious Reference
 
-API reference for `farms_amphibious` — amphibious robot control with CPG
+API reference for `farms_amphibious`, amphibious robot control with CPG
 oscillator networks, descending drives, and multiple muscle equations.
 
 ## Module structure
@@ -20,7 +20,7 @@ farms_amphibious/
 │   ├── network.py         # AnimatNetwork, NetworkODE (ODE integrator)
 │   ├── drive.py           # DescendingDrive, OrientationFollower, PotentialMaps
 │   ├── kinematics.py      # KinematicsController (replay-only, no physics)
-│   ├── manta_control.py   # Manta-ray control experiment code — not
+│   ├── manta_control.py   # Manta-ray control experiment code, not
 │   │                      # imported/referenced anywhere else in the repo;
 │   │                      # dead code as far as the Zbot runtime is concerned
 │   ├── ode.pyx / ode.pxd                          # ode_oscillators_sparse (CPG ODE function, Cython)
@@ -72,11 +72,11 @@ Extends `AnimatOptions` with:
 
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `show_xfrc` | bool | — | Visualize external forces |
-| `scale_xfrc` | int | — | Force visualization scale |
-| `mujoco` | dict | — | MuJoCo-specific options |
-| `morphology` | `AmphibiousMorphologyOptions` | — | Extended morphology |
-| `control` | `AmphibiousControlOptions` or `KinematicsControlOptions` | — | Extended control |
+| `show_xfrc` | bool | n/a | Visualize external forces |
+| `scale_xfrc` | int | n/a | Force visualization scale |
+| `mujoco` | dict | n/a | MuJoCo-specific options |
+| `morphology` | `AmphibiousMorphologyOptions` | n/a | Extended morphology |
+| `control` | `AmphibiousControlOptions` or `KinematicsControlOptions` | n/a | Extended control |
 
 The control type is `KinematicsControlOptions` if `kinematics_file` is present
 in the control dict, otherwise `AmphibiousControlOptions`.
@@ -139,22 +139,22 @@ class AmphibiousNetworkOptions(Options):
 
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `name` | str | — | Oscillator name |
-| `initial_phase` | float | — | Initial phase [rad] |
-| `initial_amplitude` | float | — | Initial amplitude |
-| `frequency_gain` | float | — | Frequency × drive |
-| `frequency_bias` | float | — | Frequency bias [Hz] |
-| `frequency_low` | float | — | Min frequency [Hz] |
-| `frequency_high` | float | — | Max frequency [Hz] |
-| `frequency_saturation_low` | float | — | Low saturation freq |
-| `frequency_saturation_high` | float | — | High saturation freq |
-| `amplitude_gain` | float | — | Amplitude × drive |
-| `amplitude_bias` | float | — | Amplitude bias |
-| `amplitude_low` | float | — | Min amplitude |
-| `amplitude_high` | float | — | Max amplitude |
-| `amplitude_saturation_low` | float | — | Low saturation amp |
-| `amplitude_saturation_high` | float | — | High saturation amp |
-| `rate` | float | — | Filter rate |
+| `name` | str | n/a | Oscillator name |
+| `initial_phase` | float | n/a | Initial phase [rad] |
+| `initial_amplitude` | float | n/a | Initial amplitude |
+| `frequency_gain` | float | n/a | Frequency × drive |
+| `frequency_bias` | float | n/a | Frequency bias [Hz] |
+| `frequency_low` | float | n/a | Min frequency [Hz] |
+| `frequency_high` | float | n/a | Max frequency [Hz] |
+| `frequency_saturation_low` | float | n/a | Low saturation freq |
+| `frequency_saturation_high` | float | n/a | High saturation freq |
+| `amplitude_gain` | float | n/a | Amplitude × drive |
+| `amplitude_bias` | float | n/a | Amplitude bias |
+| `amplitude_low` | float | n/a | Min amplitude |
+| `amplitude_high` | float | n/a | Max amplitude |
+| `amplitude_saturation_low` | float | n/a | Low saturation amp |
+| `amplitude_saturation_high` | float | n/a | High saturation amp |
+| `rate` | float | n/a | Filter rate |
 | `modular_phase` | float | `0` | Modular phase |
 | `modular_amplitude` | float | `0` | Modular amplitude |
 
@@ -296,7 +296,7 @@ class NetworkODE(AnimatNetwork):
 
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `data` | AnimatData | — | Data container with state array |
+| `data` | AnimatData | n/a | Data container with state array |
 | `modulo` | int | 1 | Integrate every N steps |
 | `ode` | Callable | `ode_oscillators_sparse` | ODE function |
 | `integrator` | str | `dopri5` | scipy ODE integrator name |
@@ -322,6 +322,6 @@ def step(self, iteration, time, timestep, checks=False, strict=False):
 
 Extends `AnimatData` with CPG network-specific data structures. Contains:
 
-- `sensors` — standard `SensorsData`
-- `state` — `StateData` with phase/amplitude arrays for all oscillators
-- `network` — `NetworkLog` with drive history and connectivity data
+- `sensors`: standard `SensorsData`
+- `state`: `StateData` with phase/amplitude arrays for all oscillators
+- `network`: `NetworkLog` with drive history and connectivity data

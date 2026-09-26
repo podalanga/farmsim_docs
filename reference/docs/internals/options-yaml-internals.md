@@ -6,11 +6,11 @@ This page documents the options system and YAML parsing pipeline in detail. The 
 
 | File | Lines | Purpose |
 |---|---|---|
-| `farms_core/options.py` | 53 | `Options` — base dict subclass with attribute access |
+| `farms_core/options.py` | 53 | `Options`, base dict subclass with attribute access |
 | `farms_core/io/yaml.py` | 83 | `read_yaml`, `write_yaml`, `pyobject2yaml`, `yaml2pyobject` |
 | `farms_core/extensions/extensions.py` | 51 | `ExtensionOptions`, `import_item`, `import_module_item` |
-| `farms_core/model/options.py` | — | `AnimatOptions`, `MorphologyOptions`, `ControlOptions`, etc. |
-| `farms_core/experiment/options.py` | — | `ExperimentOptions` — top-level options container |
+| `farms_core/model/options.py` | n/a | `AnimatOptions`, `MorphologyOptions`, `ControlOptions`, etc. |
+| `farms_core/experiment/options.py` | n/a | `ExperimentOptions`, top-level options container |
 
 ## `Options` class (farms_core/options.py)
 
@@ -94,7 +94,7 @@ def load(cls, filename, strict=True):
     return cls(**yaml2pyobject(filename), **kwargs)
 ```
 
-Loads a YAML file and constructs an `Options` instance. The `strict` parameter is passed as a kwarg to the constructor — if `strict=False`, the constructor should accept unknown keys without raising.
+Loads a YAML file and constructs an `Options` instance. The `strict` parameter is passed as a kwarg to the constructor, if `strict=False`, the constructor should accept unknown keys without raising.
 
 ### `save(filename)`
 
@@ -178,7 +178,7 @@ def pyobject2yaml(filename, pyobject, mode='w+'):
             Dumper=YamlDumper)
 ```
 
-Simpler than `write_yaml` — no `explicit_start`, `indent`, or `width` settings. Used by `Options.save()`.
+Simpler than `write_yaml`, no `explicit_start`, `indent`, or `width` settings. Used by `Options.save()`.
 
 ### `yaml2pyobject(filename)`
 
@@ -189,7 +189,7 @@ def yaml2pyobject(filename):
     return options
 ```
 
-Simpler than `read_yaml` — same functionality but used by `Options.load()`.
+Simpler than `read_yaml`, same functionality but used by `Options.load()`.
 
 ### `defaultdict` representer
 
@@ -267,12 +267,12 @@ ExperimentOptions (Options)         # loaded by ExperimentOptions.load(), see be
   │    │    ├─ height, density, viscosity, velocity, drag, buoyancy
   │    │    └─ maps: list[str] (PNG velocity field paths)
   │    └─ (farms_core's own ArenaOptions is a thin ModelOptions subclass;
-  │        the amphibious build uses AmphibiousArenaOptions instead — see
+  │        the amphibious build uses AmphibiousArenaOptions instead, see
   │        the farms_amphibious internals for the fields actually used)
   ├─ animats: list[AnimatOptions]
   │    ├─ sdf: str (path to animat SDF)
   │    ├─ spawn: SpawnOptions
-  │    │    ├─ loader: SpawnLoader (int enum, 0=FARMS/1=PyBullet — NOT a dotted path)
+  │    │    ├─ loader: SpawnLoader (int enum, 0=FARMS/1=PyBullet, NOT a dotted path)
   │    │    ├─ mode: SpawnMode (default 'free')
   │    │    ├─ pose: [x, y, z, rx, ry, rz]
   │    │    ├─ velocity: [vx, vy, vz, wx, wy, wz]
@@ -289,12 +289,12 @@ ExperimentOptions (Options)         # loaded by ExperimentOptions.load(), see be
   │    │    ├─ controller_loader: str (dotted path to an AnimatController)
   │    │    ├─ motors: list[MotorOptions]
   │    │    │    └─ joint_name, control_types, gains, limits_torque
-  │    │    │       (farms_amphibious's motors add transform/offsets/passive/equation —
+  │    │    │       (farms_amphibious's motors add transform/offsets/passive/equation
   │    │    │        see the farms_amphibious internals)
   │    │    ├─ sensors: SensorsOptions
   │    │    │    └─ links, joints, contacts, xfrc, muscles, adhesions, visuals
   │    │    ├─ hill_muscles: list[MuscleOptions]
-  │    │    └─ (if AmphibiousControlOptions) network: AmphibiousNetworkOptions — see
+  │    │    └─ (if AmphibiousControlOptions) network: AmphibiousNetworkOptions, see
   │    │         the farms_amphibious internals for oscillators/connections/drives
   │    └─ extensions: list[AnimatExtensionOptions]
   │         └─ {loader: str, config: dict}
@@ -307,7 +307,7 @@ ExperimentOptions (Options)         # loaded by ExperimentOptions.load(), see be
 ```
 
 Every box above marked `{loader: str, config: dict}` is an `ExtensionOptions`
-instance — a small, generic, inline mechanism. `loaders: ExperimentLoadOptions`
+instance, a small, generic, inline mechanism. `loaders: ExperimentLoadOptions`
 at the bottom is a **different**, top-level-only mechanism: it's not nested
 inside `simulation`/`animats`/`arenas`, and its four/five fields point at
 whole `Options` subclasses (and data classes) rather than extensions. See
@@ -318,7 +318,7 @@ whole `Options` subclasses (and data classes) rather than extensions. See
 ### Extensions: inline `{loader, config}`, resolved by the caller
 
 `ExtensionOptions` (`farms_core/extensions/extensions.py`) only stores its
-two fields — it does **not** resolve the dotted path itself:
+two fields, it does **not** resolve the dotted path itself:
 
 ```python
 class ExtensionOptions(Options):
@@ -333,7 +333,7 @@ class ExtensionOptions(Options):
 Whatever code builds the extensions (e.g. `ExperimentTask.extract_extensions()`
 in `farms_mujoco`) calls `import_item(extension.loader)` and then
 `ExtensionClass.from_options(config=extension.config, ...)` itself, at the
-point the extensions list is consumed — not inside `ExtensionOptions`.
+point the extensions list is consumed, not inside `ExtensionOptions`.
 
 ### Top-level: `ExperimentOptions.load(filename)`, resolved by the class itself
 
@@ -345,7 +345,7 @@ Unlike the plain `Options.load()` inherited by most classes,
 `ExperimentOptions.load()` (`farms_core/experiment/options.py`) is
 overridden to do the `loaders:`-driven resolution:
 
-1. `super().load(filename)` — `yaml2pyobject(filename)` → plain dict, then
+1. `super().load(filename)`: `yaml2pyobject(filename)` → plain dict, then
    `ExperimentOptions(**dict)`, which at this point still holds `simulation`,
    `animats[i]`, `arenas[i]` as plain **filename strings** (the constructor
    doesn't try to parse them).
@@ -362,7 +362,7 @@ overridden to do the `loaders:`-driven resolution:
 ### Constructor chain
 
 `ExperimentOptions.__init__` itself is much simpler than the loading logic
-above — it just assigns whatever it's handed (already-parsed options
+above, it just assigns whatever it's handed (already-parsed options
 objects, by the time `.load()` calls it a second time, or already-`Options`
 instances if constructed directly in Python):
 
@@ -380,7 +380,7 @@ class ExperimentOptions(Options):
 
 Sub-options classes (`SimulationOptions`, `AnimatOptions`, etc.) each follow
 the more typical pattern of popping their own fields from `**kwargs` and
-constructing their own nested `Options` objects — see, e.g.,
+constructing their own nested `Options` objects, see, e.g.,
 `SimulationOptions.__init__` building `RuntimeSimulationOptions`,
 `PhysicsSimulationOptions`, `MuJoCoSimulationOptions`, and
 `PybulletSimulationOptions` from the corresponding sub-dicts.
@@ -442,6 +442,7 @@ class MyControlOptions(Options):
 Use in YAML:
 
 ```yaml
+# check-docs: skip
 control:
   param1: value1
   param2: 3.14
@@ -461,7 +462,7 @@ class MyExtension(AnimatExtension):
         return cls(config=config, ...)
 ```
 
-2. **Register in YAML** — inside the *animat's own config file*
+2. **Register in YAML**: inside the *animat's own config file*
    (`animat_config.yaml`, referenced by filename from `experiment_config.yaml`),
    not inline in `experiment_config.yaml` itself:
 

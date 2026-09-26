@@ -98,7 +98,7 @@ Full orchestration of the neural integration step. Handles multi-rate execution,
     (`farms_amphibious/control/network.py`), but no class or import named
     `IntegrationException` exists anywhere in this repository. Calling
     `step(..., strict=True)` when integration actually fails will raise a
-    `NameError` instead of the intended, catchable exception — callers
+    `NameError` instead of the intended, catchable exception, callers
     cannot `except IntegrationException` around this call. This is the same
     class of "referenced but never defined" bug already flagged for
     `get_amphibious_controller`/`drive_from_config`; see
@@ -142,7 +142,7 @@ def before_step(self, iteration, time, timestep):
 
 ## See Also
 
-- [CPG Oscillators](cpg-oscillators.md) — Mathematical foundation for CPG dynamics
-- [Amphibious Controller](amphibious-controller.md) — How the network is wired into the control loop
+- [CPG Oscillators](cpg-oscillators.md): Mathematical foundation for CPG dynamics
+- [Amphibious Controller](amphibious-controller.md): How the network is wired into the control loop
 
 Source: `farms_amphibious/control/network.py`

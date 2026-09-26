@@ -8,10 +8,10 @@ oscillator network used by `farms_amphibious` for locomotion control.
 The amphibious CPG network is defined in `AmphibiousNetworkOptions`
 (`farms_amphibious/model/options.py`). It consists of:
 
-- **Oscillators** — phase/amplitude oscillators that generate rhythmic patterns
-- **Drives** — descending drive signals that modulate oscillator frequency and
+- **Oscillators**: phase/amplitude oscillators that generate rhythmic patterns
+- **Drives**: descending drive signals that modulate oscillator frequency and
   amplitude
-- **Connections** — weighted connections between oscillators, sensors, and drives
+- **Connections**: weighted connections between oscillators, sensors, and drives
 
 ## Enabling the CPG network
 
@@ -40,7 +40,7 @@ control:
     The `AmphibiousControlOptions.__init__` only creates the network if the
     `network` key is present AND contains an `oscillators` sub-key. Otherwise
     `self.network` is set to `None`. When using a custom controller (like
-    ZbotCPGController), the network section is typically not used — the
+    ZbotCPGController), the network section is typically not used, the
     controller manages its own oscillators internally.
 
 ## Network option keys
@@ -68,22 +68,22 @@ Each entry in the `oscillators` list is parsed by `AmphibiousOscillatorOptions`:
 
 | Key | Type | Required | Default | Notes |
 |-----|------|----------|---------|-------|
-| `name` | str | Yes | — | Oscillator name (e.g., `osc_body_L_0`) |
-| `initial_phase` | float | Yes | — | Initial phase [rad] |
-| `initial_amplitude` | float | Yes | — | Initial amplitude |
-| `frequency_gain` | float | Yes | — | Frequency gain (multiplied by drive) |
-| `frequency_bias` | float | Yes | — | Frequency bias [Hz] |
-| `frequency_low` | float | Yes | — | Minimum frequency [Hz] |
-| `frequency_high` | float | Yes | — | Maximum frequency [Hz] |
-| `frequency_saturation_low` | float | Yes | — | Low saturation frequency |
-| `frequency_saturation_high` | float | Yes | — | High saturation frequency |
-| `amplitude_gain` | float | Yes | — | Amplitude gain (multiplied by drive) |
-| `amplitude_bias` | float | Yes | — | Amplitude bias |
-| `amplitude_low` | float | Yes | — | Minimum amplitude |
-| `amplitude_high` | float | Yes | — | Maximum amplitude |
-| `amplitude_saturation_low` | float | Yes | — | Low saturation amplitude |
-| `amplitude_saturation_high` | float | Yes | — | High saturation amplitude |
-| `rate` | float | Yes | — | Filter rate |
+| `name` | str | Yes | n/a | Oscillator name (e.g., `osc_body_L_0`) |
+| `initial_phase` | float | Yes | n/a | Initial phase [rad] |
+| `initial_amplitude` | float | Yes | n/a | Initial amplitude |
+| `frequency_gain` | float | Yes | n/a | Frequency gain (multiplied by drive) |
+| `frequency_bias` | float | Yes | n/a | Frequency bias [Hz] |
+| `frequency_low` | float | Yes | n/a | Minimum frequency [Hz] |
+| `frequency_high` | float | Yes | n/a | Maximum frequency [Hz] |
+| `frequency_saturation_low` | float | Yes | n/a | Low saturation frequency |
+| `frequency_saturation_high` | float | Yes | n/a | High saturation frequency |
+| `amplitude_gain` | float | Yes | n/a | Amplitude gain (multiplied by drive) |
+| `amplitude_bias` | float | Yes | n/a | Amplitude bias |
+| `amplitude_low` | float | Yes | n/a | Minimum amplitude |
+| `amplitude_high` | float | Yes | n/a | Maximum amplitude |
+| `amplitude_saturation_low` | float | Yes | n/a | Low saturation amplitude |
+| `amplitude_saturation_high` | float | Yes | n/a | High saturation amplitude |
+| `rate` | float | Yes | n/a | Filter rate |
 | `modular_phase` | float | No | `0` | Modular phase offset |
 | `modular_amplitude` | float | No | `0` | Modular amplitude offset |
 
@@ -101,10 +101,10 @@ Each entry in the `drives` list is parsed by `AmphibiousDriveOptions`:
 
 | Key | Type | Required | Default | Notes |
 |-----|------|----------|---------|-------|
-| `name` | str | Yes | — | Drive name (e.g., `drv_body_L_0`) |
-| `initial_value` | float | Yes | — | Initial drive value |
-| `kind` | str (DriveKind) | Yes | — | Drive type (see below) |
-| `contacts` | list[tuple[str, str]] | Yes | — | Associated contact links |
+| `name` | str | Yes | n/a | Drive name (e.g., `drv_body_L_0`) |
+| `initial_value` | float | Yes | n/a | Initial drive value |
+| `kind` | str (DriveKind) | Yes | n/a | Drive type (see below) |
+| `contacts` | list[tuple[str, str]] | Yes | n/a | Associated contact links |
 
 ### DriveKind enum
 
@@ -192,6 +192,6 @@ Oscillator outputs are mapped to joints via `AmphibiousMuscleSetOptions`:
 
 ## See also
 
-- [CPG Control Architecture](../explanation/cpg-architecture.md) — design rationale
-- [Configure an Experiment YAML](configure-yaml.md) — overall YAML structure
-- [farms_amphibious Reference](../reference/amphibious/farms-amphibious.md) — full API
+- [CPG Control Architecture](../explanation/cpg-architecture.md): design rationale
+- [Configure an Experiment YAML](configure-yaml.md): overall YAML structure
+- [farms_amphibious Reference](../reference/amphibious/farms-amphibious.md): full API

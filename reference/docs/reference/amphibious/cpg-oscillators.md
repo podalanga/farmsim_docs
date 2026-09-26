@@ -1,12 +1,12 @@
 # farms_amphibious.control.ode
 
 !!! note "Source Files"
-    - `farms_amphibious/control/ode.pyx` — Cython ODE kernels (compiled to `.pyd`)
-    - `farms_amphibious/data/data_cy.pyx` — Cython state containers
-    - `farms_amphibious/data/network.py` — Python wrappers and data classes
-    - `farms_amphibious/control/network.py` — ODE integrator
+    - `farms_amphibious/control/ode.pyx`: Cython ODE kernels (compiled to `.pyd`)
+    - `farms_amphibious/data/data_cy.pyx`: Cython state containers
+    - `farms_amphibious/data/network.py`: Python wrappers and data classes
+    - `farms_amphibious/control/network.py`: ODE integrator
 
-FARMS implements a **biologically inspired Central Pattern Generator (CPG)** network modelled as a system of coupled nonlinear oscillators. This is the mathematical engine that generates rhythmic, coordinated locomotion patterns for swimming and walking in amphibious robots. The oscillators are a **Hopf-type** phase-amplitude system — each oscillator has an independent phase and amplitude, coupled through weighted, phase-biased connections.
+FARMS implements a **biologically inspired Central Pattern Generator (CPG)** network modelled as a system of coupled nonlinear oscillators. This is the mathematical engine that generates rhythmic, coordinated locomotion patterns for swimming and walking in amphibious robots. The oscillators are a **Hopf-type** phase-amplitude system, each oscillator has an independent phase and amplitude, coupled through weighted, phase-biased connections.
 
 ---
 
@@ -35,7 +35,7 @@ cpdef DTYPEv1 offsets(self, unsigned int iteration):
 
 ### Oscillator Output Function
 
-The neural output of each oscillator — used to drive muscle models — is:
+The neural output of each oscillator, used to drive muscle models, is:
 
 $$
 y_i = r_i \cdot (1 + \cos(\varphi_i))
@@ -49,7 +49,7 @@ cpdef np.ndarray outputs(self, unsigned int iteration):
 ```
 
 !!! important "Why This Output Function"
-    The output $y_i \in [0, 2r_i]$ is always non-negative, which directly represents the firing rate of a motor neuron. When $\varphi_i = 0$, output is maximum ($2r_i$); when $\varphi_i = \pi$, output is zero. This is the half-wave rectified cosine — a well-established model for motor neuron activity.
+    The output $y_i \in [0, 2r_i]$ is always non-negative, which directly represents the firing rate of a motor neuron. When $\varphi_i = 0$, output is maximum ($2r_i$); when $\varphi_i = \pi$, output is zero. This is the half-wave rectified cosine, a well-established model for motor neuron activity.
 
 ---
 
@@ -97,7 +97,7 @@ cpdef inline void ode_dphase(...) nogil:
 ```
 
 !!! note "Phase coupling is amplitude-weighted"
-    The coupling term uses `state[n_oscillators + i1]` — the **amplitude** of the source oscillator, not 1. This means a silenced oscillator (amplitude → 0) stops exerting influence on its neighbours, which is critical for smooth gait transitions.
+    The coupling term uses `state[n_oscillators + i1]`, the **amplitude** of the source oscillator, not 1. This means a silenced oscillator (amplitude → 0) stops exerting influence on its neighbours, which is critical for smooth gait transitions.
 
 ---
 
@@ -133,7 +133,7 @@ The convergence rate `a_i` determines how quickly the oscillator amplitude track
 
 ## Drive-Dependent Parameters
 
-Both `ω_i` and `R_i^{nom}` are not fixed — they are **piecewise-linear functions of the descending drive** `d_i`:
+Both `ω_i` and `R_i^{nom}` are not fixed, they are **piecewise-linear functions of the descending drive** `d_i`:
 
 $$
 \omega_i(d_i) = \text{clamp}\left(g^{\omega}_i \cdot d_i + b^{\omega}_i,\; s^{\omega}_{lo},\; s^{\omega}_{hi}\right), \quad \text{if } d_i \in [lo_i, hi_i]
@@ -199,7 +199,7 @@ $$
 \frac{dr_{i0}}{dt} \mathrel{+}= w \cdot \theta_{i1} \quad (\text{STRETCH2AMP})
 $$
 
-**Tegotae stretch:** Multiplied by $\sin(\varphi_i)$ — this is phase-dependent feedback:
+**Tegotae stretch:** Multiplied by $\sin(\varphi_i)$, this is phase-dependent feedback:
 
 $$
 \frac{d\varphi_{i0}}{dt} \mathrel{+}= w \cdot \theta_{i1} \cdot \sin(\varphi_{i0}) \quad (\text{STRETCH2FREQTEGOTAE})
@@ -215,7 +215,7 @@ if connection_type == ConnectionType.STRETCH2FREQTEGOTAE:
     dstate[i0] += (
         joints2osc_map.c_weight(i)
         * joints.position_cy(iteration, i1)
-        * sin(state[i0])   # Phase-dependent — Tegotae
+        * sin(state[i0])   # Phase-dependent, Tegotae
     )
 elif connection_type == ConnectionType.STRETCH2FREQ:
     dstate[i0] += (
@@ -304,7 +304,7 @@ cpdef inline DTYPEv1 ode_oscillators_sparse(
     return dstate
 ```
 
-Setting `nosfb=1` bypasses all sensory feedback, giving a pure open-loop CPG — useful for in-water locomotion experiments where only the descending drive matters.
+Setting `nosfb=1` bypasses all sensory feedback, giving a pure open-loop CPG, useful for in-water locomotion experiments where only the descending drive matters.
 
 ---
 
@@ -407,7 +407,7 @@ class NetworkODE(AnimatNetwork):
 ```
 
 !!! note "Integrator kwargs are forwarded verbatim"
-    `nsteps`, `max_step`, `verbosity`, etc. are not named `__init__` parameters —
+    `nsteps`, `max_step`, `verbosity`, etc. are not named `__init__` parameters
     they are collected into `**kwargs` and stored as `self.integrator_kwargs`, then
     passed to `solver.set_integrator(self.integrator, **self.integrator_kwargs)`
     inside `initialize_episode()`. `AmphibiousController.from_options` constructs the
@@ -418,10 +418,10 @@ class NetworkODE(AnimatNetwork):
 
 `dopri5` is the **Dormand-Prince 4th/5th-order Runge-Kutta** with adaptive step size. It is the same algorithm as MATLAB's `ode45`. It is chosen because:
 
-1. **Explicit method** — works well for the non-stiff phase dynamics
-2. **Adaptive stepping** — automatically handles the fast transients when drive changes abruptly
-3. **Embedded error estimate** — 4th order result for stepping, 5th order for error estimation, giving efficient accuracy control
-4. **Low overhead** — uses only 6 function evaluations per step (Butcher tableau with FSAL property)
+1. **Explicit method**: works well for the non-stiff phase dynamics
+2. **Adaptive stepping**: automatically handles the fast transients when drive changes abruptly
+3. **Embedded error estimate**: 4th order result for stepping, 5th order for error estimation, giving efficient accuracy control
+4. **Low overhead**: uses only 6 function evaluations per step (Butcher tableau with FSAL property)
 
 ### Integration Step Logic
 
@@ -588,7 +588,7 @@ $$
 
 ## Related Pages
 
-- [Ekeberg Muscle Model](ekeberg-muscle.md) — How CPG outputs drive joint torques
-- [Position Muscle & Phase Controllers](joint-controllers.md) — How phases map to position commands
-- [Descending Drive](descending-drive.md) — How drive signals are computed
-- [NetworkODE](network-ode.md) — Integration loop details
+- [Ekeberg Muscle Model](ekeberg-muscle.md): How CPG outputs drive joint torques
+- [Position Muscle & Phase Controllers](joint-controllers.md): How phases map to position commands
+- [Descending Drive](descending-drive.md): How drive signals are computed
+- [NetworkODE](network-ode.md): Integration loop details

@@ -1,6 +1,6 @@
 # Add and Configure Sensors
 
-This guide explains how to configure sensors in FARMS — what sensor types are
+This guide explains how to configure sensors in FARMS, what sensor types are
 available, how to declare them in YAML, and how to access sensor data in code.
 
 ## Sensor types
@@ -58,14 +58,14 @@ model definition.
     contact reaction on each named link (contact with anything); a list of
     `[link_a, link_b]` pairs restricts tracking to contacts between that
     specific pair of links. Mixing forms across a single YAML `contacts:`
-    list is only as safe as whatever consumes it downstream — check
+    list is only as safe as whatever consumes it downstream, check
     `AmphibiousSensorsOptions.defaults_from_convention()` or your loader
     before relying on mixed forms.
 
 ### Column layout per category
 
 See the table above for the authoritative column counts and shapes, taken
-directly from `sc` in `sensor_convention.pyx` — do not re-derive them from
+directly from `sc` in `sensor_convention.pyx`, do not re-derive them from
 memory, as they don't map onto an obvious "3 position + 3 velocity" pattern
 for every category (joints and contacts in particular carry several extra
 derived/decomposed fields beyond the raw physical quantities).
@@ -129,12 +129,12 @@ of each `before_step()`, before any extension code runs.
 
 The update reads from:
 
-- `physics.data.qpos` — joint positions
-- `physics.data.qvel` — joint velocities
-- `physics.data.actuator_force` — joint torques (applied)
-- `physics.data.xpos` / `physics.data.xquat` — link positions/orientations
-- `physics.data.collision` — contact data
-- `physics.data.xfrc_applied` — external forces (e.g., from SwimmingExtension)
+- `physics.data.qpos`: joint positions
+- `physics.data.qvel`: joint velocities
+- `physics.data.actuator_force`: joint torques (applied)
+- `physics.data.xpos` / `physics.data.xquat`, link positions/orientations
+- `physics.data.collision`: contact data
+- `physics.data.xfrc_applied`: external forces (e.g., from SwimmingExtension)
 
 ## Adding a custom sensor type
 
@@ -164,7 +164,7 @@ class MySensorExtension(AnimatExtension):
 
 ## See also
 
-- [YAML Configuration Schema](../reference/env/yaml-schema.md) — complete sensor
+- [YAML Configuration Schema](../reference/env/yaml-schema.md): complete sensor
   option keys
-- [Data Model](../reference/env/data-model.md) — `SensorsData` class reference
-- [Write an AnimatExtension](write-extension.md) — extension lifecycle
+- [Data Flow and Data Model](../explanation/data-flow.md): the sensor arrays
+- [Write an AnimatExtension](write-extension.md): extension lifecycle

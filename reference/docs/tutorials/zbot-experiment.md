@@ -1,13 +1,13 @@
-# Swimming Experiment — YAML config walkthrough
+# Swimming Experiment, YAML config walkthrough
 
 This page is a complete walkthrough of the `experiments/zbot_swimming/` directory. Every key field in every config file is explained with its actual value and the effect it has on the simulation.
 
 !!! note "Source Files"
-    - `experiments/zbot_swimming/experiment_config.yaml` — Top-level experiment config
-    - `experiments/zbot_swimming/simulation_config.yaml` — Physics and runtime settings
-    - `experiments/zbot_swimming/animat_config.yaml` — Robot morphology, sensors, motors, CPG network
-    - `experiments/zbot_swimming/arena_config.yaml` — Ground plane and water properties
-    - `experiments/zbot_swimming/analysis.py` — Post-processing and plotting script
+    - `experiments/zbot_swimming/experiment_config.yaml`: Top-level experiment config
+    - `experiments/zbot_swimming/simulation_config.yaml`: Physics and runtime settings
+    - `experiments/zbot_swimming/animat_config.yaml`: Robot morphology, sensors, motors, CPG network
+    - `experiments/zbot_swimming/arena_config.yaml`: Ground plane and water properties
+    - `experiments/zbot_swimming/analysis.py`: Post-processing and plotting script
 
 ---
 
@@ -40,21 +40,11 @@ cd /app/experiments/zbot_swimming
 farmsim --experiment_config experiment_config.yaml
 ```
 
-Optional CLI flags:
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--simulator MUJOCO` | `MUJOCO` | Physics backend |
-| `--headless` | off | Disable MuJoCo viewer |
-| `--log_path Output/` | *(empty — uses config `Output`)* | Where to write HDF5 and YAML snapshots |
-| `--profile` | off | Print Python call graph to stdout |
-
-!!! tip
-    For cluster or batch runs, set `headless: true` inside `simulation_config.yaml` instead of passing the flag every time.
+The other command line options are listed in the [CLI reference](../reference/env/cli.md). There is no flag to disable the viewer: set `runtime.headless: true` in `simulation_config.yaml` for cluster or batch runs.
 
 ---
 
-## `experiment_config.yaml` — The Manifest
+## `experiment_config.yaml`, The Manifest
 
 This is the **only file** you pass to `farmsim`. It points to all other configs and declares which Python classes deserialise them.
 
@@ -76,7 +66,7 @@ loaders:
     - farms_amphibious.data.data.AmphibiousData
 ```
 
-### `loaders` — Class Injection
+### `loaders`, Class Injection
 
 The `loaders` section tells `farms_sim` which Python class to instantiate for each section. This is what allows you to use `AmphibiousOptions` (which carries CPG and muscle fields) instead of the minimal `AnimatOptions`.
 
@@ -93,7 +83,7 @@ The `loaders` section tells `farms_sim` which Python class to instantiate for ea
 
 ---
 
-## `simulation_config.yaml` — Physics & Logging
+## `simulation_config.yaml`, Physics & Logging
 
 ```yaml
 # experiments/zbot_swimming/simulation_config.yaml
@@ -103,19 +93,19 @@ units:
   kilograms: 1
 
 runtime:
-  n_iterations: 5001      # Total physics steps
-  buffer_size: 5001       # Sensor ring-buffer size (must be >= n_iterations)
+  n_iterations: 5001      # Number of iterations (logging/control steps)
+  buffer_size: 5001       # Iterations kept in the sensor buffers
   play: true              # Start unpaused in the viewer
-  rtl: 1.0                # Real-time limiter (1.0 = real-time, 0 = free-run)
-  fast: false             # Skip real-time limiter entirely
-  headless: false         # Set true to run without the MuJoCo GUI
-  show_progress: true     # Print progress bar to stdout
+  rtl: 1.0                # Viewer speed relative to real time (2.0 = twice as fast)
+  fast: false             # Viewer runs up to 256 times faster than real time
+  headless: false         # Set true to run without the viewer (never time-limited)
+  show_progress: true     # Progress bar in headless mode
 
 physics:
-  timestep: 0.002         # Physics integration step = 2 ms
+  timestep: 0.002         # Iteration period = 2 ms
   gravity: [0, 0, -9.81]  # Standard gravity (m/s²)
-  num_sub_steps: 1        # MuJoCo sub-steps per control step
-  cb_sub_steps: 2         # Controller callbacks per env.step() call
+  num_sub_steps: 1        # MuJoCo steps per environment step
+  cb_sub_steps: 2         # Environment steps (extension callbacks) per iteration
   n_solver_iters: 1000    # Constraint solver iteration limit
 
 mujoco:
@@ -137,7 +127,7 @@ extensions:
   - loader: farms_core.simulation.extensions.ExperimentLogger
     config:
       log_path: Output
-      skip: 0              # Log every step (skip=1 would log every other step)
+      skip: 0              # Stored but currently unused
   - loader: farms_core.simulation.extensions.ExperimentOptionsLogger
     config:
       log_path: Output
@@ -159,23 +149,24 @@ extensions:
 
 | Parameter | Value | Meaning |
 |-----------|-------|---------|
-| `timestep` | 0.002 s | Each physics step is 2 ms |
+| `timestep` | 0.002 s | One iteration (sensor logging, non-substep extensions) every 2 ms |
 | `n_iterations` | 5001 | Total simulation = 5001 × 0.002 = **~10 seconds** |
-| `cb_sub_steps` | 2 | Controller runs **twice per `env.step()`** call → 1 kHz effective controller rate |
-| `buffer_size` | 5001 | Must be **≥ n_iterations** or old sensor data will be overwritten |
+| `cb_sub_steps` | 2 | Two environment steps per iteration: MuJoCo steps of 0.002/2 = 1 ms, and substep extensions (controller, swimming) run at 1 kHz |
+| `num_sub_steps` | 1 | One MuJoCo step per environment step |
+| `buffer_size` | 5001 | Iterations kept in memory |
 
-!!! warning "Buffer Size"
-    If `buffer_size` < `n_iterations`, the sensor ring buffer wraps around and early data is lost. Always keep `buffer_size >= n_iterations`.
+!!! warning "Buffer size"
+    Sensor data is stored at index `iteration % buffer_size`. If `buffer_size < n_iterations`, the buffer wraps around and early data is overwritten, so keep `buffer_size >= n_iterations` unless you only need recent data.
 
 #### Physics Solver
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
 | `solver: CG` | Conjugate Gradient | Faster but less accurate than Newton for stiff contacts |
-| `integrator: implicitfast` | Implicit fast | MuJoCo's semi-implicit integrator — good for stiff joints |
+| `integrator: implicitfast` | Implicit fast | MuJoCo's semi-implicit integrator, good for stiff joints |
 | `cone: elliptic` | Elliptic friction cone | More realistic than pyramidal but costs more computation |
 
-#### Simulation Extensions — What's Wired Up by Default
+#### Simulation Extensions, What's Wired Up by Default
 
 Extensions are simulation-level hooks that run **globally** (not per-animat). They execute in the order listed:
 
@@ -191,89 +182,79 @@ Extensions are simulation-level hooks that run **globally** (not per-animat). Th
 The four extensions above are only the ones the default `zbot_swimming` and
 `zbot_bout_glide` configs happen to enable. FARMS ships several more
 `TaskExtension`s that slot into the same `simulation_config.yaml`
-`extensions:` list without touching any Python — verified against
+`extensions:` list without touching any Python, verified against
 `farms_mujoco/farms_mujoco/simulation/extensions.py` and
 `farms_mujoco/farms_mujoco/sensors/camera.py`. Everything below is written
 against the Zbot's real link names (`Head`, `Segment1`–`Segment6`,
 `TailSegment`) so it can be copy-pasted straight into
 `experiments/zbot_swimming/simulation_config.yaml`.
 
-##### `CameraRecording` — offscreen video export
+##### `CameraRecording`, offscreen video export
 
-Unlike `CameraFollower` (which only moves the *interactive* viewer camera
-and does nothing headless), `CameraRecording` drives its own independent
-`mujoco.MjvCamera` + offscreen `mujoco.Renderer`, captures a frame every
-`before_step()`, and encodes an `.mp4` (via `cv2`, H.264 with an `mp4v`
-fallback) or `.html` (via matplotlib) at `end_episode()`. This is what you
-want for batch/headless rendering or for a video that survives without an
-open GUI window:
+Unlike `CameraFollower`, which only moves the interactive viewer camera,
+`CameraRecording` (`farms_mujoco.sensors.camera.CameraRecording`) renders
+offscreen with its own camera and `mujoco.Renderer`, so it also works in
+headless runs. Frames are captured in `before_step()`, and the video is
+written at `end_episode()`:
 
 ```yaml
-# simulation_config.yaml — add alongside the existing extensions
+# simulation_config.yaml, added to the existing extensions
 extensions:
-  # ... ExperimentLogger, ExperimentOptionsLogger, MjcfSaver, CameraFollower ...
   - loader: farms_mujoco.sensors.camera.CameraRecording
     config:
-      path: Output/video          # '.mp4' or '.html' is appended from the writer, keep this extension-free
-      animat_id: 0                # tracks Zbot's global CoM every frame; null = fixed camera at `offset`
+      path: Output/video.mp4      # .mp4 (OpenCV/ffmpeg) or .html (matplotlib)
+      animat_id: 0                # Camera follows the animat CoM; null for a fixed camera at offset
       fps: 30
-      speed: 1.0                  # >1 = sped-up video; internally rescales capture cadence, not just metadata
+      speed: 1.0                  # Playback speed relative to real time
       azimuth: -30
       elevation: -15
       distance: 2
-      angular_velocity: 0         # deg/s, set non-zero for a continuously orbiting shot
+      angular_velocity: 0         # [deg/s], non-zero for an orbiting shot
       offset: [0, 0, 0.0]
       resolution: [1280, 720]
 ```
 
-| Field | Zbot-relevant notes |
-|-------|---------------------|
-| `path` | Give it **without** an extension — `Output/video`, not `Output/video.mp4`. The writer backend is chosen from whichever extension you'd normally append (`.mp4` → `cv2`/ffmpeg, `.html` → matplotlib), and that extension is appended internally from `os.path.splitext` on the *target* filename, so writing `path: Output/video.mp4` in the config is harmless but redundant — the code re-derives the extension either way. |
-| `animat_id` | Same `AmphibiousData.animats[0]` index used everywhere else in the Zbot configs. Leave at `0` — there is only one animat in both `zbot_swimming` and `zbot_bout_glide`. |
-| `speed` | Recomputes `skips` (physics steps between captured frames) from `speed/(timestep*fps)`, so at the Zbot's `physics.timestep: 0.002`, `speed: 1.0`, `fps: 30` → a frame is captured roughly every 16–17 physics steps, not every step. |
-| `distance`/`azimuth`/`elevation` | Independent of `CameraFollower`'s equivalent fields above — the two cameras don't share state, so tune them separately if you run both extensions together (harmless; one drives the live viewer, the other drives the offscreen renderer). |
-| `geomgroups` | Not shown above (defaults to `[1, 1, 0, 1, 0, 0]` in the extension, `[0, 1, 0, 1, 0, 0]` in `CameraRecordingOptions` — pass it explicitly if you need a specific group visible/hidden). Controls which MuJoCo geom groups (collision vs. visual meshes, etc.) are rendered into the video, independent of the interactive viewer's own display settings. |
+| Field | Notes |
+|-------|-------|
+| `path` | The extension selects the writer: `.mp4` uses OpenCV when available (H.264, falling back to `mp4v`), `.html` uses matplotlib. Other extensions are written with ffmpeg after a warning. |
+| `animat_id` | Index of the animat to follow (the zbot experiments have one animat, `0`). |
+| `fps`, `speed` | A frame is captured every `int(speed/(timestep*fps))` iterations: with `physics.timestep: 0.002`, `fps: 30` and `speed: 1.0`, every 16 iterations. |
+| `geomgroups` | MuJoCo geom groups rendered (default `[0, 1, 0, 1, 0, 0]`: visuals and group 3). |
 
-!!! bug "Don't pass a `camera` id with the default viewer"
-    Supplying a MJCF-embedded `camera` id in `config` crashes with
-    `AttributeError` on the first frame under `viewer: MuJoCo` (the setting
-    both Zbot experiments use). Leave `camera` unset — the extension
-    defaults to a free-floating `mjCAMERA_FREE` camera driven by
-    `distance`/`azimuth`/`elevation`/`offset` instead.
+!!! warning "Memory"
+    All frames are kept in memory for the whole episode (an array of
+    `n_iterations/(skips+1)` frames of `resolution`). For the 100 001-iteration
+    `zbot_bout_glide` configuration at 1280×720 that is about 17 GB, so reduce
+    the resolution, `fps` or the run length when recording long runs.
 
-!!! note "Requires `cv2` for `.mp4`"
-    If `cv2` isn't importable in your environment, `CameraRecording` falls
-    back to a matplotlib writer for every format, which buffers the entire
-    episode's frames in memory before encoding — fine for the Zbot's
-    default ~10 s run, but budget accordingly for the 100 001-step
-    `zbot_bout_glide` config if you enable this there.
+!!! note
+    `motion_filter` appears in the option documentation but is not accepted by
+    `CameraRecordingOptions`, and leaving `camera` unset (a free camera
+    driven by `distance`/`azimuth`/`elevation`/`offset`) is the tested path.
 
-##### Marker/trail viewer extensions — cheap visual debugging
+##### Visual debugging extensions
 
-These draw non-physical debug geometry directly into the interactive
-viewer's scratch scene (`viewer.user_scn`) — no mass, no collision, not
-part of the compiled MJCF, and **not visible in `CameraRecording`'s
-offscreen renders** (which render the real physics model, not the viewer's
-scratch buffer). All four require an open interactive window
-(`headless: false`), matching the Zbot's default `simulation_config.yaml`.
+These draw non-physical markers (no mass, no collision, not part of the
+MJCF): in the interactive viewer, and also in `CameraRecording` videos (set
+`show_on_camera: false` to hide them from the video).
 
 ```yaml
 extensions:
   - loader: farms_mujoco.simulation.extensions.CoMViewer
     config:
       animat_id: 0
-      size: [0.01, 0.0, 0.0]     # auto-scaled from total link mass if left at this default
+      size: [0.01, 0.0, 0.0]
       rgba: [1.0, 1.0, 1.0, 0.3]
   - loader: farms_mujoco.simulation.extensions.TrailCoMViewer
     config:
       animat_id: 0
       width: 5
       rgba: [1.0, 0.3, 0.0, 0.7]
-      spacing: 10                 # draw a new trail segment every 10 iterations
+      spacing: 10                 # A new trail segment every 10 iterations
   - loader: farms_mujoco.simulation.extensions.TrailLinkViewer
     config:
       animat_id: 0
-      link: TailSegment           # must be one of the Zbot's real SDF link names
+      link: TailSegment           # Must be a sensed link (control.sensors.links)
       width: 5
       rgba: [1.0, 0.3, 0.0, 0.7]
       spacing: 10
@@ -282,32 +263,27 @@ extensions:
       animat_id: 0
       size: [0.03, 0.03, 0.3]
       rgba: [1.0, 1.0, 1.0, 0.3]
-      offset: null                 # auto-derived from mass if omitted
+      offset: null
 ```
 
 | Extension | Use it to... |
 |-----------|--------------|
-| `CoMViewer` | Watch the whole-robot center of mass as a floating sphere — good for spotting drift or an unexpectedly off-axis CoM. |
-| `TrailCoMViewer` | Leave a breadcrumb trail of the CoM path over the run — useful for eyeballing swim-path curvature or drift from a straight line. |
-| `TrailLinkViewer` | Same trail, but for one specific link (e.g. `TailSegment` to see the tail-tip trajectory that actually produces thrust). **Requires** the named link to already be present as a `control.sensors.links` entry — it asserts against `animat_data.sensors.links.names` at `initialize_episode()` and raises if the link isn't sensed. |
-| `ArrowViewer` | A rotating pointer above the CoM — useful as a generic orientation/heading indicator while iterating on a controller, though by default it just spins at a fixed rate and isn't wired to any real torque/force value. |
+| `CoMViewer` | Show the whole-robot centre of mass as a sphere. |
+| `TrailCoMViewer` | Draw the path of the centre of mass. |
+| `TrailLinkViewer` | Draw the path of one link, for example the tail. The link must be listed in `control.sensors.links`. |
+| `ArrowViewer` | Draw an arrow above the centre of mass (an orientation indicator). |
 
-!!! warning "Scratch-geom buffer has a fixed capacity"
-    `TrailCoMViewer`/`TrailLinkViewer` never delete old segments. Over the
-    `zbot_bout_glide` config's 100 001-iteration run, a `spacing` of `10`
-    would draw 10 000 line segments into a buffer with a fixed maximum
-    size — increase `spacing` for long runs, or expect the trail to stop
-    drawing (or raise) once the limit is hit.
+!!! warning "Marker capacity"
+    Trails are never cleared, and MuJoCo scenes hold a limited number of
+    geoms: for long runs, increase `spacing`.
 
 ##### Sensors You Can Add
 
-`control.sensors` in `animat_config.yaml` currently populates four of the
-seven available categories (`links`, `joints`, `xfrc`, plus empty
-`contacts`/`muscles`/`adhesions`/`visuals`). The three left empty are not
-missing configuration — they are simply unused by the default rigid-joint,
-free-swimming Zbot — but each is available immediately if your experiment
-needs it, verified against `SensorsOptions` in `farms_core/model/options.py`
-and the `sc` column layout in `sensor_convention.pyx`:
+`control.sensors` lists the elements recorded by each of the eight sensor
+categories of `SensorsData` (`links`, `joints`, `contacts`, `xfrc`,
+`muscles`, `adhesions`, `visuals` and `rays`). The Zbot configurations only
+fill `links`, `joints` and `xfrc`. The other categories are available when an
+experiment needs them:
 
 ```yaml
 control:
@@ -315,21 +291,26 @@ control:
     links: [Head, Segment1, Segment2, Segment3, Segment4, Segment5, Segment6, TailSegment]
     joints: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6]
     xfrc: [Head, Segment1, Segment2, Segment3, Segment4, Segment5, Segment6, TailSegment]
-
-    # Currently empty in zbot_swimming/zbot_bout_glide — populate as needed:
-    contacts: [Head, TailSegment]        # per-link contact reaction totals ...
-    # contacts: [[Head, TailSegment]]    # ... or restrict to contact between a specific pair
-    muscles: []    # only relevant if you add `hill_muscles` — the Zbot uses Ekeberg `position_muscle`, not Hill muscles
-    adhesions: []  # suction/gripping actuators — not applicable to a fully submerged swimmer
-    visuals: []    # non-physical visual-only markers, separate from the debug viewer extensions above
+    contacts: [Head, TailSegment]  # Contacts of these links with anything
+    muscles: []    # Hill muscles (control.hill_muscles), unused by the Zbot
+    adhesions: []  # Adhesion actuators, unused by the Zbot
+    visuals: []    # Link colours
 ```
 
-| Category | When to turn it on for the Zbot | Array shape |
-|----------|----------------------------------|-------------|
-| `contacts` | You want to detect the robot touching the arena floor/walls (`ground_height: -1` in `arena_config.yaml`) — e.g. to end an episode early or penalize a controller for grounding out. Add the relevant link names (or `[link_a, link_b]` pairs for a specific contact) here first, since nothing populates this list automatically for a swimming morphology. | `(n_iters, n_contacts, 12)` |
-| `muscles` | Only if you replace the Ekeberg `position_muscle` motors with Hill-type muscles (`control.hill_muscles`, currently `[]` in both Zbot configs) — the sensor array tracks activation, tendon/fiber length and velocity, force, and spindle feedback fields. | `(n_iters, n_muscles, 17)` |
-| `adhesions` | Not meaningful for a fully submerged swimmer with no adhesion actuators configured; included here for completeness since it's part of the shared `AmphibiousControlOptions` schema used by walking/climbing FARMS models too. | `(n_iters, n_adhesions, 1)` |
-| `visuals` | Track programmatic color/emission changes on links (e.g. a controller that flashes a segment a different color on contact) — distinct from, and independent of, the marker/trail viewer extensions above, which draw separate scratch geometry rather than recolor the animat's own MJCF materials. | `(n_iters, n_visuals, 8)` |
+Each category is stored as an array of shape
+`(n_iterations, n_elements, n_columns)`, with the column counts of
+`farms_core/sensors/sensor_convention.pxd`:
+
+| Category | Columns | When to use it with the Zbot |
+|---|---|---|
+| `links` | 20 | Positions, orientations and velocities of the links |
+| `joints` | 17 | Joint positions, velocities, torques and commands |
+| `contacts` | 12 | Detect the robot touching the ground (`ground_height` in `arena_config.yaml`) |
+| `xfrc` | 6 | External forces and torques, including the fluid forces |
+| `muscles` | 17 | Only with Hill-type muscles (`control.hill_muscles`). The Zbot motors use the `position_muscle` equation, which is not a muscle model |
+| `adhesions` | 1 | Not relevant for a swimmer |
+| `visuals` | 8 | Colour and emission of the link visuals |
+| `rays` | 8 | Ray casting range sensors (distance, origin, direction) |
 
 See [Add and Configure Sensors](../how-to/configure-sensors.md) for the full
 column-by-column layout of every category and how to read the resulting
@@ -338,10 +319,10 @@ arrays out of `AnimatData.sensors` in a controller or `analysis.py`, and
 extension reference (including `SwimmingExtension`, which lives in
 `animat_config.yaml` rather than `simulation_config.yaml`).
 
-## `arena_config.yaml` — World and Water
+## `arena_config.yaml`, World and Water
 
 ```yaml
-# experiments/zbot_swimming/arena_config.yaml
+# experiments/zbot_swimming/arena_config.yaml (shortened)
 sdf: ../../models/arena_flat_v0/sdf/arena_flat.sdf  # Flat ground plane
 
 spawn:
@@ -351,32 +332,40 @@ spawn:
   velocity: [0, 0, 0, 0, 0, 0]
 
 water:
-  sdf: ../../models/arena_water_v0/sdf/arena_water.sdf
-  drag: true            # Enable hydrodynamic drag forces
+  sdf: ../../models/arena_water_v0/sdf/arena_water.sdf  # Visual only
+  drag: true            # Enable drag forces
   buoyancy: true        # Enable buoyancy forces
-  height: 0             # Z-coordinate of water surface (m)
-  velocity: [0, 0, 0]   # Water current vector [Vx, Vy, Vz] m/s
-  viscosity: 1.0        # Dynamic viscosity (Pa·s) — used as drag multiplier
-  density: 1000.0       # Fluid density (kg/m³)
+  height: 0             # Z coordinate of the water surface [m]
+  velocity: [0, 0, 0]   # Water current [m/s]
+  viscosity: 1.0        # Scale of the drag forces
+  density: 1000.0       # Water density [kg/m^3]
+  maps: ['', '']        # Optional water surface and velocity maps
+  cob_method: analytical  # Exact centre of buoyancy (alias of `exact`)
 
-ground_height: -1       # Z-coordinate of the ground plane (m)
+ground_height: -1       # Z coordinate of the ground [m]
 ```
 
 ### Water Properties
 
 | Field | Value | Effect |
 |-------|-------|--------|
-| `height: 0` | Water surface at z=0 | Robot spawned at z=0.01 is immediately submerged |
-| `velocity: [0,0,0]` | Still water | No current; all relative velocity is robot motion |
-| `viscosity: 1.0` | Used as drag multiplier `μ` | `$F_{\text{drag}} = C_d \cdot \mu \cdot v|v|$` |
-| `density: 1000.0` | Fresh water | Used for buoyancy: `$F_{\text{buoy}} \propto m \cdot g / \rho_{\text{link}}$` |
+| `height: 0` | Water surface at z=0 | The robot, spawned at z=0.01, starts at the surface |
+| `velocity: [0,0,0]` | Still water | Drag uses the velocity of the link relative to the water |
+| `viscosity: 1.0` | Drag scale `$\mu$` | Per-axis drag `$F_i = \mu\, c_i\, v_i |v_i|$` in the link frame, with the `drag_coefficients` `$c_i$` of the link |
+| `density: 1000.0` | Fresh water | Buoyancy `$F = -\rho V_{\text{sub}} g$`, applied at the centre of buoyancy |
+| `cob_method: analytical` | Exact method | `$V_{\text{sub}}$` and the centre of buoyancy are computed from the collision geoms at every step (see [Swimming reference](../reference/mujoco/mujoco-swimming.md)) |
 
-!!! tip "Adding a Water Current"
-    Set `velocity: [0.2, 0, 0]` to add a 0.2 m/s current along X. The `SwimmingExtension` computes drag from **relative** velocity `v_link - v_water`, so the robot will need to swim against the current to stay in place.
+The other fluid keys (`cob_method`, `fluid_model`, `added_mass`, ...) are
+listed in the [Configuration reference](../reference/env/configuration-reference.md#fluid-model-options).
+
+!!! tip "Adding a water current"
+    Set `velocity: [0.2, 0, 0]` for a 0.2 m/s current along X. The drag is
+    computed from the relative velocity `v_link - v_water`, so the robot
+    has to swim against the current to stay in place.
 
 ---
 
-## `animat_config.yaml` — The Robot Config
+## `animat_config.yaml`, The Robot Config
 
 This is the largest and most important file. It is split into four logical sections: **spawn**, **morphology**, **control**, and **extensions**.
 
@@ -399,11 +388,11 @@ morphology:
   links:
     - name: Head
       collisions: true
-      fluid_interaction: true   # This link participates in drag/buoyancy
-      density: 950.0            # kg/m³ — overrides SDF inertia to achieve this density
+      fluid_interaction: true   # This link has fluid forces
+      density: 950.0            # [kg/m^3] only used by cob_method: ramp
       drag_coefficients:
-        - [-4.0, -4.0, -0.1]   # Translational [Cx, Cy, Cz] — negative = resistive
-        - [0, 0, 0]             # Rotational [Croll, Cpitch, Cyaw]
+        - [-4.0, -4.0, -0.1]   # Linear drag [cx, cy, cz] in the link frame, negative opposes motion
+        - [0, 0, 0]             # Rotational drag
     # ... Segment1 through Segment6 identical to Head ...
     - name: TailSegment
       fluid_interaction: true
@@ -429,42 +418,34 @@ morphology:
 
 ### Morphology Fields Not Shown Above
 
-The Zbot config sets several `LinkOptions`/`AmphibiousLinkOptions` and
-`MorphologyOptions` fields to their default/inactive value, so the excerpt
-above omits them for readability. They are still present in
-`animat_config.yaml` for every link, and are worth understanding before
-tuning contact or mass properties — verified against
-`farms_core/model/options.py::LinkOptions` and
-`farms_amphibious/model/options.py::AmphibiousLinkOptions`:
+The Zbot configuration also sets these fields, omitted above for
+readability (`farms_core.model.options.LinkOptions`,
+`farms_amphibious.model.options.AmphibiousLinkOptions` and
+`farms_core.model.options.MorphologyOptions`):
 
-| Field | Zbot value | Class | Meaning |
-|-------|-----------|-------|---------|
-| `solref` | `null` | `LinkOptions.solref` | MuJoCo contact solver reference `[timeconst, dampratio]`. `null` → MuJoCo's own default is used. Set this per-link to make a specific contact softer/stiffer than the rest of the model. |
-| `solimp` | `null` | `LinkOptions.solimp` | MuJoCo contact solver impedance parameters. `null` → MuJoCo default. Rarely needed unless you see contact penetration or excessive bounce on a specific link. |
-| `mass_multiplier` | `1` | `AmphibiousLinkOptions.mass_multiplier` (Zbot links only; not on plain `LinkOptions`) | Scales the link's SDF-derived mass by this factor **after** the `density` override is applied. `1` = no change. Useful for quick "what if this segment were heavier" sweeps without editing the SDF or re-deriving `density`. |
-| `sites` | *(omitted, defaults to `[]`)* | `LinkOptions.sites` | Named attachment points on the link (e.g. for sensors or visual markers). Zbot does not use any. |
-| `self_collisions` | `[]` | `MorphologyOptions.self_collisions` | List of `[link_a, link_b]` name pairs that are allowed to collide with each other. Empty means the SDF's own default adjacency exclusion applies — no segment-vs-neighbour self-collision is added on top of it. Populate this if you need e.g. the head to be able to collide with the tail during a tight turn. |
-| `tendons` | *(omitted, defaults to `[]`)* | `MorphologyOptions.tendons` | List of `TendonOptions` for spatial tendons (e.g. antagonist cable actuation). Not used by the default rigid-joint Zbot. |
+| Field | Zbot value | Meaning |
+|-------|-----------|---------|
+| `friction` | `[0, 0, 0]` | MuJoCo friction (sliding, torsional, rolling) of the link's collision geoms |
+| `solref`, `solimp` | `null` | Parsed, but not applied per link by the MuJoCo builder: the contact parameters come from the simulation file (`mujoco` options) |
+| `mass_multiplier` | `1` | Only used by the PyBullet engine. It has no effect in MuJoCo |
+| `extras` | `restitution`, `linearDamping`, `angularDamping` | PyBullet parameters, unused in MuJoCo |
+| `self_collisions` | `[]` | Pairs `[link_a, link_b]` that collide with each other. Links of the same animat do not collide otherwise |
 
-!!! note "`density` vs `mass_multiplier`"
-    `density` (950 kg/m³ for every Zbot link) is used to **recompute** the
-    link's mass and inertia from its collision geometry, overriding
-    whatever mass the SDF originally specified — this is how the Zbot is
-    made slightly buoyant (950 < water's 1000 kg/m³, see
-    [Water Properties](#water-properties)). `mass_multiplier` is applied
-    **on top of** that already-recomputed mass. Changing `density` changes
-    both mass *and* how strongly the link floats; changing
-    `mass_multiplier` changes mass only, density-derived buoyancy math
-    stays the same.
+!!! note "Mass and density"
+    The masses and inertias come from the SDF file. The link `density` is
+    not used to recompute them: it is only used by `cob_method: ramp`, to
+    estimate the link volume as `mass/density`. With the exact method, the
+    volume comes from the collision geoms, so the robot floats if its mass
+    is below `$\rho V$` of its geoms. See the buoyancy note of
+    [The Zbot Model](zbot-model.md).
 
-### Control — Sensors, Motors, and CPG Network
+### Control, Sensors, Motors, and CPG Network
 
 #### Sensors
 
 ```yaml
 control:
   controller_loader: farms_amphibious.control.amphibious.AmphibiousController
-
   sensors:
     links: [Head, Segment1, Segment2, Segment3, Segment4, Segment5, Segment6, TailSegment]
     joints: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6]
@@ -473,181 +454,226 @@ control:
     muscles: []
 ```
 
-The `controller_loader` is the **dotted Python class path** FARMS will dynamically import and instantiate. This is the key hook for custom controllers — see [Custom CPG Controller](zbot-custom-controller.md).
+!!! note "`controller_loader` is not used"
+    `controller_loader` is parsed but not used to create the controller.
+    The controller is the `AmphibiousController` listed in the animat's
+    `extensions:` (see [Animat-level extensions](#animat-level-extensions)).
 
-Sensor data is written to the `animat_data` object every step and is accessible in your controller via `self.animat_data.sensors.*`.
+The sensor arrays are filled at every iteration and are available to
+extensions and controllers as `animat_data.sensors` (see
+[Sensors You Can Add](#sensors-you-can-add)).
 
 #### Motors
 
-Each joint has a `motor` entry specifying how torque is computed. For the Zbot, all 6 joints share the same gains:
+Each actuated joint has a motor. All six Zbot motors are identical:
 
 ```yaml
 motors:
   - joint_name: joint_1
-    control_types: [position]    # Joint is position-controlled
-    limits_torque: [-10.0, 10.0] # Clamp output torque to ±10 N·m
-    gains: [3.0, 0.01, 0]        # [Kp, Kd, Ki] for PD servo
-    equation: position_muscle    # CPG drives a Ekeberg muscle that outputs a target position
+    control_types: [position]    # Driven by the controller's positions()
+    limits_torque: [-10.0, 10.0] # Torque limits [N.m]
+    gains: [3.0, 0.01, 0]        # [kp, kv of the position actuator, kv of the velocity actuator]
+    equation: position_muscle    # Joint command computed from the CPG outputs
     transform:
       gain: 1
       bias: 0
-    offsets:
-      gain: 0.05                 # Scale factor for joint offset modulation
+    offsets:                     # Joint offset set by the left/right drive difference
+      gain: 0.05
       bias: 0
-      low: 1                     # Drive activation threshold
+      low: 1
       high: 5
       saturation_low: 0
       saturation_high: 0
-      rate: 3                    # Convergence rate for offset (1/s)
+      rate: 3                    # Convergence rate of the offset [1/s]
     passive:
       is_passive: false
   # ... joint_2 through joint_6 identical ...
 ```
 
+With `equation: position_muscle`, the position command of a joint is
+
+$$
+q_{\text{cmd}} = g_t \left(\tfrac{1}{2}(x_R - x_L) + q_{\text{off}}\right) + b_t,
+\qquad x = A\,(1 + \cos\theta)
+$$
+
+where $x_L$ and $x_R$ are the outputs of the two oscillators of the joint
+(`osc1` and `osc2` in `muscles:`), $g_t$ and $b_t$ are `transform.gain`
+and `transform.bias`, and $q_{\text{off}}$ is the offset, which converges
+at `rate` towards `offsets.gain*(drive_R - drive_L) + offsets.bias`. The
+MuJoCo position actuator then tracks $q_{\text{cmd}}$ with the gains.
+
 #### CPG Network
 
-The CPG section defines the full neural oscillator network. The Zbot uses **12 oscillators** — one Left/Right pair per joint — that are coupled to produce a swimming travelling wave.
+`control.network` describes the oscillator network: 12 oscillators (a left
+and a right one for each of the 6 joints), 14 drives and their couplings.
 
 ##### Drives
 
-Drives are the **descending input signals** that set the target frequency and amplitude for each oscillator. `initial_value: 4` puts the oscillator in the active swimming range.
+Drives are the descending inputs that set the frequency and amplitude of
+the oscillators:
 
 ```yaml
 drives:
+  - name: drive_brain_L
+    initial_value: 4
+  - name: drive_brain_R
+    initial_value: 4
   - name: drive_body_0_L
-    initial_value: 4        # Drive level (dimensionless). Range: ~1–5
-    kind: spine_left        # Input to the left-side oscillator chain
+    initial_value: 4
   - name: drive_body_0_R
     initial_value: 4
-    kind: spine_right
   # ... drive_body_1_L/R through drive_body_5_L/R ...
 ```
 
-Drive level `4` is the default "swim fast" setting. A lower value (e.g., `2`) produces slower, lower-amplitude oscillations.
+`drive_loader` and `drive_config` are empty in the Zbot configuration, so
+the drives keep their initial values.
 
 ##### Oscillators
 
-Each oscillator computes a phase `θ` and amplitude `A` via the CPG ODEs. The key parameters:
+Each oscillator has a phase $\theta$ and an amplitude $A$. Its intrinsic
+frequency and nominal amplitude depend on its drive $d$ (see `drive2osc`):
 
 ```yaml
 oscillators:
   - name: osc_body_0_L
-    initial_phase: 1.0489          # Starting phase (rad) — pre-tuned for stable gait
-    initial_amplitude: 0.0         # Amplitude ramps up from 0 via the ODE
-    frequency_gain: 1.5708         # ω = frequency_gain × drive_level (rad/s)
-                                   # At drive=4: ω = 1.5708×4 = 6.28 rad/s → 1 Hz
+    initial_phase: 1.0489
+    initial_amplitude: 0.0
+    frequency_gain: 1.5708         # [rad/s per drive unit]
     frequency_bias: 0.0
-    frequency_low: 1               # Drive level threshold where frequency activates
+    frequency_low: 1
     frequency_high: 5
-    amplitude_gain: 0.15           # A_nom = amplitude_gain × drive_level
-                                   # At drive=4: A_nom = 0.15×4 = 0.6 rad
+    frequency_saturation_low: 0
+    frequency_saturation_high: 0
+    amplitude_gain: 0.15
     amplitude_bias: 0.0
     amplitude_low: 0.9
     amplitude_high: 5
-    amplitude_saturation_high: 0.75  # Maximum amplitude is capped at 0.75 rad
-    rate: 3.0                      # Amplitude convergence rate (1/s)
-  # ... osc_body_0_R through osc_body_5_L/R ...
+    amplitude_saturation_low: 0
+    amplitude_saturation_high: 0.75
+    rate: 3.0                      # Amplitude convergence rate [1/s]
+  # ... 11 more oscillators ...
 ```
 
-!!! note "How frequency_gain maps to swimming frequency"
-    `ω = frequency_gain × drive_level`
-    → At `drive=4` and `frequency_gain=1.5708 (≈ π/2)`:
-    → `ω = 6.28 rad/s` → **f = 1.0 Hz**
+Every drive dependent parameter follows the same rule
+(`DriveDependentArrayCy.c_value`):
 
-    To swim at 2 Hz, set `frequency_gain: 3.1416 (≈ π)`.
+$$
+p(d) =
+\begin{cases}
+\text{gain}\cdot d + \text{bias} & \text{low} \le d \le \text{high} \\
+\text{saturation\_low} & d < \text{low} \\
+\text{saturation\_high} & d > \text{high}
+\end{cases}
+$$
+
+With $d = 4$: $\omega = 1.5708 \times 4 = 2\pi$ rad/s, so the oscillators
+run at 1 Hz, and the nominal amplitude is $0.15 \times 4 = 0.6$. Note that
+a drive above `frequency_high` gives a frequency of
+`frequency_saturation_high` (0 here), which stops the oscillator. To swim
+at 2 Hz with the same drive, set `frequency_gain: 3.1416`.
+
+The oscillator equations (`farms_amphibious/control/ode.pyx`) are
+
+$$
+\dot\theta_i = \omega_i + \sum_j A_j w_{ij} \sin(\theta_j - \theta_i - \varphi_{ij}),
+\qquad
+\dot A_i = a_i (R_i - A_i)
+$$
+
+with $R_i$ the nominal amplitude and $a_i$ the `rate`.
 
 ##### Oscillator-to-Oscillator Couplings (`osc2osc`)
 
-Couplings enforce **phase relationships** between oscillators. The Zbot uses two types:
+In a coupling, `in` is the oscillator that receives the coupling term
+($i$ above) and `out` is the oscillator it is coupled to ($j$), so that at
+steady state $\theta_{\text{out}} - \theta_{\text{in}} = \varphi$
+(`phase_bias`). The Zbot has 32 couplings, all of weight 30:
 
 ```yaml
 osc2osc:
-  # Left-Right anti-phase (undulation)
+  # Left and right of the same joint: anti-phase
   - in: osc_body_0_R
     out: osc_body_0_L
     type: OSC2OSC
     weight: 30.0
-    phase_bias: 3.14159      # π rad = 180° → anti-phase (undulation)
+    phase_bias: 3.14159
   - in: osc_body_0_L
     out: osc_body_0_R
+    type: OSC2OSC
     weight: 30.0
-    phase_bias: 3.14159      # Bidirectional coupling
-
-  # Front-to-Back travelling wave (60° lag per segment)
+    phase_bias: 3.14159
+  # Neighbouring joints of the same side
   - in: osc_body_1_L
     out: osc_body_0_L
+    type: OSC2OSC
     weight: 30.0
-    phase_bias: 1.0472       # π/3 rad = 60° → travelling wave head-to-tail
+    phase_bias: 1.0472       # osc_body_0_L leads osc_body_1_L by pi/3
   - in: osc_body_0_L
     out: osc_body_1_L
+    type: OSC2OSC
     weight: 30.0
-    phase_bias: 5.2360       # 5π/3 rad = 300° (reverse direction coupling)
-  # ... same pattern for joints 2–5 ...
+    phase_bias: 5.2360       # 5pi/3 = -pi/3, consistent with the coupling above
+  # ... same pattern for the right side and the other joints ...
 ```
 
-| Coupling type | Phase bias | Effect |
-|---------------|-----------|--------|
-| L ↔ R (same segment) | π (180°) | Anti-phase → lateral undulation |
-| N → N+1 (L chain) | π/3 (60°) | 60° lag front-to-back → travelling wave |
+| Coupling | Phase bias | Effect |
+|---|---|---|
+| Left and right of a joint | $\pi$ | Anti-phase: the joint bends left and right |
+| Joint $n$ to joint $n+1$ | $\pi/3$ | Each joint lags the previous one by 60°: a wave travelling from head to tail |
 
-##### Drive-to-Oscillator Mapping (`drive2osc`)
-
-Each drive signal connects to its corresponding oscillator:
+##### Drive-to-Oscillator and Drive-to-Joint Mapping
 
 ```yaml
-drive2osc:
+drive2osc:       # Drive of each oscillator
   - drive: drive_body_0_L
     oscillator: osc_body_0_L
   - drive: drive_body_0_R
     oscillator: osc_body_0_R
   # ... through drive_body_5_R ...
+drive2joint:     # Drives setting the offset of each joint
+  - drive0: drive_body_0_L
+    drive1: drive_body_0_R
+    joint: joint_1
+  # ... through joint_6 ...
 ```
+
+The two `drive_brain` drives are not connected to any oscillator.
 
 ##### Muscles (`muscles`)
 
-Each joint maps to a Left+Right oscillator pair via the **Ekeberg muscle model**:
+`muscles` pairs each joint with its left (`osc1`) and right (`osc2`)
+oscillators, which the `position_muscle` equation reads:
 
 ```yaml
 muscles:
   - joint_name: joint_1
-    osc1: osc_body_0_L      # Left (flexor) oscillator
-    osc2: osc_body_0_R      # Right (extensor) oscillator
-    alpha: 0.5              # Active torque gain
-    beta: 1.0               # Active + passive stiffness coefficient
-    gamma: 0.1              # Passive stiffness ratio (relative to beta)
-    delta: 0.001            # Viscous damping coefficient
-    epsilon: 0              # Coulomb friction (disabled)
+    osc1: osc_body_0_L
+    osc2: osc_body_0_R
+    alpha: 0.5
+    beta: 1.0
+    gamma: 0.1
+    delta: 0.001
+    epsilon: 0
   # ... joint_2 through joint_6 ...
 ```
 
-The Ekeberg torque equation:
-
-$$
-\tau = \underbrace{\alpha (A_L \sin\theta_L - A_R \sin\theta_R)}_{\text{active}}
-    + \underbrace{\beta (A_L \sin\theta_L + A_R \sin\theta_R)(\phi_{off} - \phi)}_{\text{active stiffness}}
-    + \underbrace{\gamma \beta (\phi_{off} - \phi)}_{\text{passive stiffness}}
-    - \underbrace{\delta \dot\phi}_{\text{damping}}
-$$
-
-See [Mathematical Models](../explanation/mathematical-models.md) for the full derivation.
+The `alpha` to `epsilon` coefficients are those of the Ekeberg muscle
+model. They are only used by the `ekeberg_muscle` and
+`ekeberg_muscle_explicit` equations, not by `position_muscle`. See
+[Mathematical Models](../explanation/mathematical-models.md) for the
+Ekeberg model.
 
 ### Control Fields Not Shown Above
 
-Three more `control:` fields sit alongside `muscles:` and are set to empty
-lists in the Zbot config. They belong to `AmphibiousControlOptions`
-(`farms_amphibious/model/options.py`) and only matter once you move beyond
-rigid position-controlled joints:
-
 | Field | Zbot value | Meaning |
 |-------|-----------|---------|
-| `hill_muscles` | `[]` | Hill-type muscle models (force-length-velocity actuation) as an alternative to the Ekeberg spring-damper model used here. Leave empty unless you are replacing `equation: position_muscle` with a biomechanical Hill muscle per joint. |
-| `adhesions` | `[]` | `AmphibiousAdhesionsOptions` — per-link adhesion (suction/gripping) actuators, used by legged/climbing amphibious models. Not applicable to a fully submerged swimmer. |
-| `visuals` | `[]` | `AmphibiousVisualsOptions` — extra non-physical visual-only geometry (e.g. debug markers) attached to links. |
+| `hill_muscles` | `[]` | Hill-type muscles (MuJoCo muscle actuators) |
+| `adhesions` | `[]` | Adhesion actuators, used by climbing models |
+| `visuals` | `[]` | Links whose colour is controlled |
 
-Leaving these as empty lists is the normal, expected state for a pure
-swimming experiment — they exist because `AmphibiousOptions` is shared
-across every animat morphology in FARMS (walking, climbing, swimming), and
-the Zbot only exercises the subset relevant to undulatory locomotion.
+They are empty because `AmphibiousOptions` is shared by all the
+amphibious models (walking, climbing, swimming).
 
 ### Animat-Level Extensions
 
@@ -657,61 +683,46 @@ extensions:
     config: {}
   - loader: farms_mujoco.swimming.extension.SwimmingExtension
     config:
-      water_properties: null    # Inherits from arena_config.yaml water section
+      water_properties: null    # Use the water block of arena_config.yaml
 ```
 
-!!! warning "Extension Order Matters"
-    Extensions execute **in the order listed**. `AmphibiousController` is first, so the CPG computes joint torques **before** `SwimmingExtension` applies hydrodynamic forces. If you swap the order, fluid forces will lag by one timestep.
+Extensions run in the order of the list. Both run before the MuJoCo step:
+the controller sets the actuator commands and the swimming extension
+writes the fluid forces to `xfrc_applied`, from the state at the start of
+the step, so their order does not change the result here.
+
+The animat file also sets `show_xfrc` and `scale_xfrc` (display of the
+external forces in the viewer) and a `mujoco` block of MuJoCo specific
+options.
 
 ---
 
-## From YAML to Physics: What Actually Consumes These Options
+## From YAML to Physics: What Consumes These Options
 
-The tables above describe *what* each field does in isolation. This section
-traces *where in the codebase* each Zbot-relevant YAML block is actually
-read, so you know which source file to open when a parameter doesn't behave
-the way its description implies.
+Where each Zbot option is read, to know which source file to open when a
+parameter does not behave as expected:
 
-| YAML block | Consumed by | What happens |
-|------------|-------------|--------------|
-| `morphology.links[*].density`, `.drag_coefficients`, `.fluid_interaction` | `farms_mujoco/swimming/hydrodynamics.pyx`, `swimming/buoyancy.py` (via `SwimmingHandler`) | At episode start, `SwimmingHandler.__init__` builds a per-link `PrimitiveCache` (bounding sphere + collision primitives) from the compiled MJCF geometry. Every control step, `compute_link_forces` reads `drag_coefficients` to compute quadratic drag and `density`/`mass_multiplier` (via the link's mass) to compute buoyancy, then rotates the combined force/torque from the link's URDF frame into world frame via `urdf2global` before it is written into `animat_data.sensors.xfrc`. |
-| `arena.water.*` | `farms_amphibious.model.options.AmphibiousArenaOptions` → `farms_mujoco.swimming.extension.SwimmingExtension` | `density`/`viscosity`/`velocity`/`height` are wrapped into a `WaterProperties` object once at setup. If `animat_config.yaml`'s `extensions: [...SwimmingExtension...] config: {water_properties: null}` is left `null` (as in the default Zbot config), the extension falls back to the arena's own water block instead of a per-animat override. |
-| `control.motors[*].equation: position_muscle` | `farms_amphibious/control/position_muscle_cy.pyx` (`PositionMuscleCy`) | Selected per-joint by `AmphibiousController` at construction time — this is the Cython class that actually integrates the Ekeberg torque equation shown below into a target joint position/torque every controller sub-step (`cb_sub_steps` times per physics step). |
-| `control.network.oscillators[*]`, `osc2osc`, `drive2osc` | `farms_amphibious/control/network.py` → `farms_amphibious/control/ode.pyx` (`NetworkODE`) | Assembled once into a single coupled ODE system and integrated with `scipy`'s `dopri5` (Dormand-Prince, adaptive-step Runge-Kutta) once per controller sub-step. The YAML values become the initial state vector and the weight/connectivity matrices — see [`internals/ode-internals.md`](../internals/ode-internals.md) for the full per-function walkthrough. |
-| `control.muscles[*]` (`alpha`…`epsilon`) | `farms_amphibious/control/ekeberg.pyx` | Read once at controller construction into a `EkebergMuscleCy` parameter struct per joint; not re-read from YAML during the run, so changing these values requires restarting the simulation, not editing the running process. |
-| `morphology.joints[*].limits/stiffness/damping/springref` | MJCF builder (`farms_mujoco/simulation/mjcf.py::mjc_add_link`) | Written directly into the compiled `<joint>` element's `range`, `stiffness`, `springref`, and `damping` XML attributes at MJCF-build time — these become MuJoCo's own passive joint physics, layered underneath (not instead of) the active `position_muscle` torque from the controller. |
-
-!!! warning "A known implementation gotcha: `bound_radii` and multi-body stability"
-    `SwimmingHandler.__init__` computes each link's bounding-sphere radius
-    (`bound_radii`) once from the compiled collision geometry, used as the
-    fast-path check before falling back to the exact mesh/analytic
-    submerged-volume computation. Halving this value incorrectly — e.g. by
-    passing a diameter where a radius is expected — silently shrinks every
-    link's fast-path buoyancy/drag footprint without raising an error, and
-    only shows up as growing numerical instability (NaN velocities) once
-    several segments interact hydrodynamically at once. If you see NaNs
-    appear only in multi-body swimming (not in a single-link sanity check),
-    audit `SwimmingHandler.__init__` and the `cob_options.py` method
-    selection (`cob_method: ramp | analytic | mesh`) before suspecting the
-    CPG or the MJCF solver settings — see
-    [`internals/hydrodynamics-internals.md`](../internals/hydrodynamics-internals.md)
-    for the confirmed frame-rotation bug in the same code path.
+| YAML block | Read by | What happens |
+|------------|---------|--------------|
+| `arena.water.*` | `farms_mujoco.swimming.extension.SwimmingExtension` | With `water_properties: null`, the extension uses the arena's `water` block. `density`, `viscosity`, `velocity` and `height` become a `WaterProperties` object, and the fluid keys (`cob_method`, ...) a `FluidOptions` |
+| `morphology.links[*].fluid_interaction`, `drag_coefficients`, `density` | `farms_mujoco/swimming/hydrodynamics.pyx` (`SwimmingHandler`) | At the start of the episode, the handler builds the centre of buoyancy model of each link from its MuJoCo collision geoms. At every environment step it computes the buoyancy (at the centre of buoyancy) and the drag (from `drag_coefficients`), and writes the wrench to `xfrc_applied` and to the `xfrc` sensors. `density` is only used by `cob_method: ramp` |
+| `control.motors[*].equation: position_muscle` | `farms_amphibious/control/position_muscle_cy.pyx` (`PositionMuscleCy`) | Chosen by `AmphibiousController` when it is created. Computes the position command of each joint from the oscillator outputs (see [Motors](#motors)) |
+| `control.network.*` | `farms_amphibious/control/network.py` and `farms_amphibious/control/ode.pyx` | Assembled into one ODE system, integrated with SciPy's `dopri5` (adaptive Runge-Kutta) at every environment step. See [ODE internals](../internals/ode-internals.md) |
+| `control.muscles[*]` | `farms_amphibious/control/amphibious.py` | Pairs each joint with its two oscillators. The `alpha` to `epsilon` coefficients are only used with the Ekeberg equations (`farms_amphibious/control/ekeberg.pyx`) |
+| `morphology.joints[*].stiffness`, `damping`, `springref` | MJCF builder (`farms_mujoco/simulation/mjcf.py`) | Added to the MuJoCo `<joint>` attributes: passive joint dynamics on top of the actuators. The joint limits come from the SDF file |
 
 !!! tip "Where to look when a YAML change has no visible effect"
-    A common source of confusion: `control.muscles[*]` and
-    `control.network.oscillators[*]` are only read **once**, at controller
-    construction, from the YAML file passed on the command line — not from
-    `Output/animat_0_options.yaml`. If you are iterating on gains, edit
-    `animat_config.yaml` directly and re-run; editing the `Output/` snapshot
-    does nothing (it is write-only, produced by `ExperimentOptionsLogger`
-    for reproducibility, never read back in).
+    The options are read once, when the simulation is created, from the
+    files given on the command line. The files written to `Output/`
+    (`animat_0_options.yaml`, ...) are snapshots for reproducibility and are
+    never read back: edit `animat_config.yaml` and run again.
 
-## `analysis.py` — Post-Processing
+## `analysis.py`, Post-Processing
 
 After the simulation, run:
 
 ```bash
-cd /app/experiments/zbot_swimming
+cd experiments/zbot_swimming
 python analysis.py
 ```
 
@@ -730,7 +741,7 @@ joints = data.animats[0].sensors.joints
 # Available sensor channels (via sensor convention sc):
 joints_pos     = joints.array[:, :, sc.joint_position]      # rad
 joints_vel     = joints.array[:, :, sc.joint_velocity]      # rad/s
-joints_trq_cmd = joints.array[:, :, sc.joint_cmd_torque]    # N·m (commanded)
+joints_trq_cmd = joints.array[:, :, sc.joint_cmd_torque]    # N·m (torque command)
 joints_trq_act = joints.array[:, :, sc.joint_torque_active] # N·m (active component)
 joints_trq_stf = joints.array[:, :, sc.joint_torque_stiffness] # N·m (stiffness)
 joints_trq_dmp = joints.array[:, :, sc.joint_torque_damping]   # N·m (damping)
@@ -751,7 +762,7 @@ joints_trq_frc = joints.array[:, :, sc.joint_torque_friction]  # N·m (friction)
 
 | File | Contents |
 |------|---------|
-| `Output/simulation.hdf5` | Full telemetry at every logged step |
+| `Output/simulation.hdf5` | Sensor data of every iteration (`ExperimentData`) |
 | `Output/simulation_options.yaml` | Snapshot of `SimulationOptions` for reproducibility |
 | `Output/animat_0_options.yaml` | Snapshot of `AmphibiousOptions` (CPG params, etc.) |
 | `Output/arena_0_options.yaml` | Snapshot of `AmphibiousArenaOptions` |
@@ -761,7 +772,7 @@ joints_trq_frc = joints.array[:, :, sc.joint_torque_friction]  # N·m (friction)
 
 ## See Also
 
-- [Zbot Model](zbot-model.md) — SDF geometry and physical properties
-- [Custom CPG Controller](zbot-custom-controller.md) — replace the default controller
-- [Configuration Reference](../reference/env/yaml-schema.md) — all YAML parameter definitions
-- [Mathematical Models](../explanation/mathematical-models.md) — CPG and Ekeberg equations
+- [Zbot Model](zbot-model.md): SDF geometry and physical properties
+- [Custom CPG Controller](zbot-custom-controller.md): replace the default controller
+- [Configuration Reference](../reference/env/configuration-reference.md): all YAML options (generated)
+- [Mathematical Models](../explanation/mathematical-models.md): CPG and Ekeberg equations

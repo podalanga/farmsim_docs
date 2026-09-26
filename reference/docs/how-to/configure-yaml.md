@@ -38,12 +38,12 @@ loaders:
 ```
 
 `animats` and `arenas` are lists because an experiment can spawn multiple
-animats/arenas — `loaders.animats_options`/`loaders.arenas_options` must
+animats/arenas, `loaders.animats_options`/`loaders.arenas_options` must
 have exactly as many entries, matched by index.
 
 !!! warning "This is a different mechanism from extension `loader:`/`config:` pairs"
     Individual entries in an `extensions:` list (see below) use an inline
-    `{loader, config}` pair instead — that's `ExtensionOptions`, resolved by
+    `{loader, config}` pair instead, that's `ExtensionOptions`, resolved by
     whatever creates the extensions (e.g. `ExperimentTask`), not by
     `ExperimentOptions.load()`. See
     [Options and YAML Design](../explanation/options-yaml-design.md) for
@@ -51,152 +51,71 @@ have exactly as many entries, matched by index.
 
 ## Configuration reference
 
-### experiment_config.yaml
+Every option of the four files, with its type and description, is listed
+in the [Configuration Parameter Reference](../reference/env/configuration-reference.md),
+which is generated from the code at each documentation build. The main
+blocks:
 
-| Key | Type | Required | Parsed by | Notes |
-|-----|------|----------|-----------|-------|
-| `simulation` | str | Yes | `ExperimentOptions.load` | Path to `simulation_config.yaml` |
-| `animats` | list[str] | Yes | `ExperimentOptions.load` | Paths to animat config files |
-| `arenas` | list[str] | Yes | `ExperimentOptions.load` | Paths to arena config files |
-| `loaders` | dict | Yes | `ExperimentLoadOptions` | Dotted-path classes for the above, plus `experiment_data`/`animats_data` |
+| File | Parsed by | Main keys |
+|------|-----------|-----------|
+| `experiment_config.yaml` | `ExperimentOptions` | `simulation`, `animats`, `arenas`, `loaders` |
+| `simulation_config.yaml` | `SimulationOptions` | `units`, `runtime` (`n_iterations`, `buffer_size`, `headless`, `fast`, `rtl`, ...), `physics` (`timestep`, `gravity`, `cb_sub_steps`, `num_sub_steps`, ...), `mujoco`, `pybullet`, `extensions` |
+| `animat_config.yaml` | `AnimatOptions` or `AmphibiousOptions` | `sdf`, `spawn`, `morphology`, `control`, `extensions`, and for `AmphibiousOptions` `show_xfrc`, `scale_xfrc`, `mujoco`, `control.network`, `control.muscles` |
+| `arena_config.yaml` | `ArenaOptions` or `AmphibiousArenaOptions` | `sdf`, `spawn`, `water`, `ground_height` |
 
-### simulation_config.yaml
+The fluid model options of the `water` block (`cob_method`,
+`fluid_model`, `added_mass`, ...) are described in
+[farms_mujoco.swimming](../reference/mujoco/mujoco-swimming.md).
 
-Parsed by `SimulationOptions` (`farms_core/simulation/options.py`):
-
-| Key | Type | Required | Default | Parsed by | Notes |
-|-----|------|----------|---------|-----------|-------|
-| `units` | dict | No | `meters=seconds=kilograms=1` | `SimulationUnitScaling` | Unit scaling factors; a flat `meters`/`seconds`/`kilograms` at the top level of `simulation_config.yaml` also works |
-| `runtime` | dict | No | see below | `RuntimeSimulationOptions` | Iteration count, playback speed |
-| `runtime.n_iterations` | int | No | `1000` | `RuntimeSimulationOptions` | Number of simulation steps to run |
-| `runtime.buffer_size` | int | No | `n_iterations` | `RuntimeSimulationOptions` | Ring-buffer size for logged data; wraps if smaller than `n_iterations` |
-| `runtime.play` | bool | No | `True` | `RuntimeSimulationOptions` | Start playing immediately (interactive mode) |
-| `runtime.rtl` | float | No | `1.0` | `RuntimeSimulationOptions` | Real-time limiter factor (interactive mode) |
-| `runtime.fast` | bool | No | `False` | `RuntimeSimulationOptions` | Bypass the real-time limiter |
-| `runtime.headless` | bool | No | `False` | `RuntimeSimulationOptions` | Run without a viewer |
-| `runtime.show_progress` | bool | No | `True` | `RuntimeSimulationOptions` | Display a progress bar |
-| `physics` | dict | No | see below | `PhysicsSimulationOptions` | Timestep, gravity, solver iterations |
-| `physics.timestep` | float | No | `1e-3` | `PhysicsSimulationOptions` | Physics timestep [s] |
-| `physics.gravity` | list[float] | No | `[0, 0, -9.81]` | `PhysicsSimulationOptions` | 3-vector |
-| `physics.num_sub_steps` | int | No | `1` | `PhysicsSimulationOptions` | Physics-engine-level substeps |
-| `physics.cb_sub_steps` | int | No | `0` | `PhysicsSimulationOptions` | FARMS callback substeps |
-| `physics.n_solver_iters` | int | No | `50` | `PhysicsSimulationOptions` | Max solver iterations per step |
-| `mujoco` | dict | No | `{}` | `MuJoCoSimulationOptions` | MuJoCo-specific settings (`integrator`, `solver`, `cone`, viewer options, ...) |
-| `pybullet` | dict | No | `{}` | `PybulletSimulationOptions` | PyBullet-specific settings |
-| `extensions` | list[dict] | No | `[]` | `SimulationOptions.__init__` | Sim-level extensions |
-
-Each extension entry:
-
-```yaml
-extensions:
-  - loader: farms_core.simulation.extensions.ExperimentLogger
-    config:
-      log_path: ./simulation.hdf5
-      skip: 1
-```
-
-### animat_config.yaml
-
-Parsed by `AnimatOptions` (`farms_core/model/options.py`) or a subclass like
-`AmphibiousOptions` (`farms_amphibious/model/options.py`):
-
-| Key | Type | Required | Default | Parsed by | Notes |
-|-----|------|----------|---------|-----------|-------|
-| `sdf` | str | Yes | — | `ModelOptions.__init__` | Path to SDF model file |
-| `spawn` | dict | Yes | — | `SpawnOptions` | Position, orientation, mode |
-| `morphology` | dict | Yes | — | `MorphologyOptions` | Links, joints, collisions |
-| `morphology.links` | list[dict] | Yes | — | `LinkOptions` | Per-link properties |
-| `morphology.joints` | list[dict] | Yes | — | `JointOptions` | Per-joint properties |
-| `morphology.self_collisions` | list[list[str]] | Yes | — | `MorphologyOptions` | Collision pairs |
-| `control` | dict | Yes | — | `ControlOptions` | Controller, sensors, motors |
-| `control.controller_loader` | str | No | `None` | `ControlOptions.__init__` | Dotted path to controller class |
-| `control.sensors` | dict | Yes | — | `SensorsOptions` | Sensor name lists |
-| `control.motors` | list[dict] | Yes | — | `MotorOptions` | Per-joint motor config |
-| `extensions` | list[dict] | No | `[]` | `AnimatOptions.__init__` | Animat-level extensions |
-
-For `AmphibiousOptions`, additional keys:
-
-| Key | Type | Required | Default | Parsed by | Notes |
-|-----|------|----------|---------|-----------|-------|
-| `show_xfrc` | bool | No | `False` | `AmphibiousOptions.__init__` | Visualize external forces |
-| `scale_xfrc` | int | No | `1` | `AmphibiousOptions.__init__` | Force visualization scale |
-| `mujoco` | dict | No | `{}` | `AmphibiousOptions.__init__` | MuJoCo-specific options |
-| `control.network` | dict | No | `None` | `AmphibiousNetworkOptions` | CPG network config (see [CPG guide](configure-cpg-network.md)) |
-
-!!! warning "sdf vs sdf_path"
-    The `AnimatOptions.__init__` constructor takes `sdf` as the key. However,
-    `AmphibiousOptions.from_options()` reads `sdf_path` from kwargs and maps
-    it to `sdf`. In YAML files loaded via the standard `Options.load()` path,
-    the key is `sdf`. The `sdf_path` key is used only in the `from_options()`
-    shorthand path.
-
-### arena_config.yaml
-
-Parsed by `ArenaOptions` (`farms_core/model/options.py`):
-
-| Key | Type | Required | Default | Parsed by | Notes |
-|-----|------|----------|---------|-----------|-------|
-| `sdf` | str | Yes | — | `ArenaOptions.__init__` | Path to arena SDF file |
-| `spawn` | dict | Yes | — | `SpawnOptions` | Arena spawn position |
-| `water` | dict | No | — | `WaterOptions` | Fluid properties |
-| `ground_height` | float | No | `0.0` | `ArenaOptions.__init__` | Ground plane height |
-
-#### Water options
-
-| Key | Type | Required | Default | Parsed by | Notes |
-|-----|------|----------|---------|-----------|-------|
-| `sdf` | str | No | `''` | `WaterOptions.__init__` | Water visual SDF |
-| `drag` | list[float] | Yes | — | `WaterOptions.__init__` | Drag coefficients [6 values] |
-| `buoyancy` | bool | Yes | — | `WaterOptions.__init__` | Enable buoyancy |
-| `height` | float | Yes | — | `WaterOptions.__init__` | Water surface height |
-| `velocity` | list[float] | No | `[0,0,0,0,0,0]` | `WaterOptions.__init__` | Fluid velocity [6 values] |
-| `viscosity` | float | No | `0.0` | `WaterOptions.__init__` | Fluid viscosity |
-| `density` | float | Yes | — | `WaterOptions.__init__` | Fluid density [kg/m³] |
-| `maps` | dict | No | `{}` | `WaterOptions.__init__` | Per-link fluid maps |
+!!! note "Timing"
+    An iteration lasts `physics.timestep` and is split into
+    `physics.cb_sub_steps` environment steps, each of
+    `physics.num_sub_steps` MuJoCo steps. Sensors are logged once per
+    iteration, for `runtime.n_iterations` iterations.
 
 ## Spawn configuration
 
-The `spawn` dict controls how an animat or arena is placed in the world:
+The `spawn` block places an animat or an arena in the world:
 
 ```yaml
 spawn:
-  position: [0.0, 0.0, 0.1]
-  orientation: [0.0, 0.0, 0.0]  # RPY or quaternion
-  mode: sagittal  # free | fixed | sagittal | coronal | transverse | ...
+  loader: 0
+  mode: free                        # See SpawnMode below
+  pose: [0, 0, 0.01, 0, -1.5708, 3.1416]  # x, y, z [m], roll, pitch, yaw [rad]
+  velocity: [0, 0, 0, 0, 0, 0]      # Linear [m/s] and angular [rad/s]
 ```
 
-`SpawnMode` values (verified in `farms_core/model/options.py`):
+`SpawnMode` (`farms_core.model.options.SpawnMode`) constrains the base
+link:
 
 | Mode | Description |
 |------|-------------|
-| `free` | Free-floating, no constraints |
+| `free` | Free-floating, no constraint |
 | `fixed` | Fixed base |
-| `rotx` / `roty` / `rotz` | Constrained to rotation about one axis |
-| `sagittal` | Sagittal plane (2D swimming) |
-| `coronal` | Coronal plane |
-| `transverse` | Transverse plane |
+| `rotx`, `roty`, `rotz` | Only rotation about one axis |
+| `sagittal`, `coronal`, `transverse` | Motion in one anatomical plane (variants with suffixes `0` and `3` exist) |
 
 ## Adding extensions
 
 Extensions are configured in both `simulation_config.yaml` and
-`animat_config.yaml` — but **which file** an extension goes in depends on
+`animat_config.yaml`: but **which file** an extension goes in depends on
 whether it's a `TaskExtension` (simulation-level) or an `AnimatExtension`
 (animat-level), not on what it conceptually "does". Camera and viewer
 extensions all subclass `TaskExtension` directly and belong in
 `simulation_config.yaml`, even though they visually track one animat by
-`animat_id` — they reach for `task.data.animats[animat_id]` themselves
+`animat_id`: they reach for `task.data.animats[animat_id]` themselves
 rather than receiving it automatically the way an `AnimatExtension` does.
 
 ```yaml
-# In simulation_config.yaml (sim-level extensions — includes ALL camera/viewer extensions)
+# In simulation_config.yaml (sim-level extensions, includes ALL camera/viewer extensions)
 extensions:
   - loader: farms_core.simulation.extensions.ExperimentLogger
     config:
-      log_path: ./simulation.hdf5
+      log_path: Output          # Folder of simulation.hdf5
       skip: 1
   - loader: farms_mujoco.simulation.extensions.MjcfSaver
     config:
-      path: ./model.xml
+      path: Output/simulation_mjcf.xml
   - loader: farms_mujoco.simulation.extensions.CameraFollower
     config:
       animat_id: 0
@@ -206,7 +125,7 @@ extensions:
       angular_velocity: 0.0   # deg/s; non-zero for a continuously orbiting live-viewer camera
   - loader: farms_mujoco.sensors.camera.CameraRecording
     config:
-      path: Output/video          # extension (.mp4/.html) appended automatically
+      path: Output/video.mp4      # The extension (.mp4 or .html) selects the writer
       resolution: [1280, 720]
       fps: 30
       speed: 1.0
@@ -216,8 +135,10 @@ extensions:
       azimuth: -30
       elevation: -15
       angular_velocity: 0
+```
 
-# In animat_config.yaml (animat-level extensions — controller + physics only)
+```yaml
+# In animat_config.yaml (animat-level extensions, controller + physics only)
 extensions:
   - loader: farms_amphibious.control.amphibious.AmphibiousController
     config: {}
@@ -236,16 +157,20 @@ Each extension entry has:
 `CameraFollower` moves the **live interactive viewer's** camera only (no
 effect headless, no effect on exported video). `CameraRecording` is a fully
 independent offscreen renderer that produces an actual video file and works
-identically whether or not a viewer window is open — use it whenever you
+identically whether or not a viewer window is open, use it whenever you
 need output you can share, not just a nicer live view. See
 [Use Built-in Extensions](use-extensions.md) for the full extension catalog,
 every config field, and known gotchas for each one (including a documented
 `CameraRecording` bug around the `camera` config key).
 
+!!! note "Controllers"
+    A controller runs only if it is listed in the animat's `extensions:`.
+    `control.controller_loader` is parsed but not used.
+
 ## Multiple animats
 
 To simulate multiple animats, add filenames to `animats` **and** a matching
-loader class to `loaders.animats_options`, at the same index — the two lists
+loader class to `loaders.animats_options`, at the same index, the two lists
 are matched by position, not by any key inside the animat entry itself:
 
 ```yaml
@@ -267,6 +192,6 @@ offending config filename in the message. Each animat gets an index
 
 ## See also
 
-- [YAML Configuration Schema](../reference/env/yaml-schema.md) — complete schema reference
-- [Configure CPG Network Parameters](configure-cpg-network.md) — CPG network YAML
-- [Options and YAML Design](../explanation/options-yaml-design.md) — how YAML loading works
+- [YAML Configuration Schema](../reference/env/yaml-schema.md): complete schema reference
+- [Configure CPG Network Parameters](configure-cpg-network.md): CPG network YAML
+- [Options and YAML Design](../explanation/options-yaml-design.md): how YAML loading works

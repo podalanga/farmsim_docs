@@ -10,7 +10,7 @@ This page documents the `ExperimentTask` class (`farms_mujoco/simulation/task.py
 | `farms_mujoco/simulation/physics.py` | 561 | `get_sensor_maps`, `get_physics2data_maps`, `physics2data` (called by task) |
 | `farms_mujoco/simulation/mjcf.py` | 1732 | `get_prefix` (used for multi-animat naming) |
 | `farms_core/simulation/extensions.py` | 192 | `TaskExtension` base class |
-| `farms_core/model/control.py` | — | `AnimatController`, `ControlType` |
+| `farms_core/model/control.py` | n/a | `AnimatController`, `ControlType` |
 
 ## Call graph / entry points
 
@@ -64,13 +64,13 @@ def __init__(
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `base_links` | list[str] | Yes | — | Base link names (marked as TODO: Unused) |
-| `n_iterations` | int | Yes | — | Total simulation iterations |
-| `timestep` | float | Yes | — | Physics timestep [s] |
+| `base_links` | list[str] | Yes | n/a | Base link names (marked as TODO: Unused) |
+| `n_iterations` | int | Yes | n/a | Total simulation iterations |
+| `timestep` | float | Yes | n/a | Physics timestep [s] |
 | `data` | ExperimentData | No | None | Pre-allocated experiment data |
 | `viewer` | Any | No | None | Viewer object |
 | `mjcf` | Any | No | None | MJCF model |
-| `experiment_options` | ExperimentOptions | Yes | — | Full experiment configuration |
+| `experiment_options` | ExperimentOptions | Yes | n/a | Full experiment configuration |
 | `restart` | bool | No | True | Whether simulation can restart |
 | `extensions` | list[TaskExtension] | No | [] | Additional extensions beyond those from options |
 | `hfield` | dict | No | None | Heightfield data and asset |
@@ -297,7 +297,7 @@ def update_sensors(self, physics: Physics, links_only=False):
 
 ### Rolling buffer mechanism
 
-`index = self.iteration % self.buffer_size` — when `buffer_size > 1`, data wraps around. This is used for memory-constrained scenarios where you only need the last N steps of data. When `buffer_size = 1` (default), only the current step's data is stored.
+`index = self.iteration % self.buffer_size`: when `buffer_size > 1`, data wraps around. This is used for memory-constrained scenarios where you only need the last N steps of data. When `buffer_size = 1` (default), only the current step's data is stored.
 
 ### What gets recorded
 

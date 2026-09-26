@@ -1,10 +1,10 @@
 # farms_amphibious.control.joints_control_cy
 
 !!! note "Source Files"
-    - `farms_amphibious/control/passive_cy.pyx` — `PassiveJointCy`
-    - `farms_amphibious/control/position_muscle_cy.pyx` — `PositionMuscleCy`
-    - `farms_amphibious/control/position_phase_cy.pyx` — `PositionPhaseCy`
-    - `farms_amphibious/control/joints_control_cy.pyx` — Base class `JointsControlCy`
+    - `farms_amphibious/control/passive_cy.pyx`: `PassiveJointCy`
+    - `farms_amphibious/control/position_muscle_cy.pyx`: `PositionMuscleCy`
+    - `farms_amphibious/control/position_phase_cy.pyx`: `PositionPhaseCy`
+    - `farms_amphibious/control/joints_control_cy.pyx`: Base class `JointsControlCy`
 
 In addition to the Ekeberg torque model, FARMS provides three additional joint actuator strategies. These cover passive dynamics, position control from oscillator amplitude, and phase-tracking position control.
 
@@ -12,7 +12,7 @@ In addition to the Ekeberg torque model, FARMS provides three additional joint a
 
 ## 1. Passive Joint (`PassiveJointCy`)
 
-A passive joint applies spring, damping, and friction torques with no active component — it behaves as a purely mechanical element.
+A passive joint applies spring, damping, and friction torques with no active component, it behaves as a purely mechanical element.
 
 ### Torque Equation
 
@@ -93,10 +93,10 @@ $$
 $$
 
 Where:
-- $y_k = r_k(1+\cos\varphi_k)$ — neural output of oscillator $k$
-- $\delta_j$ — joint offset from the CPG state at `offsets(iteration)[joint_data_i]`
-- $g$ — `transform_gain[joint_data_i]`
-- $b$ — `transform_bias[joint_data_i]`
+- $y_k = r_k(1+\cos\varphi_k)$, neural output of oscillator $k$
+- $\delta_j$, joint offset from the CPG state at `offsets(iteration)[joint_data_i]`
+- $g$, `transform_gain[joint_data_i]`
+- $b$, `transform_bias[joint_data_i]`
 
 **From `position_muscle_cy.pyx` (lines 12–33):**
 
@@ -119,7 +119,7 @@ cpdef void step(self, unsigned int iteration):
 ```
 
 !!! note "Why 0.5"
-    The factor of 0.5 normalises the neural difference. Since $y_k \in [0, 2r_k]$, the difference $\Delta y \in [-2r, 2r]$. Multiplying by 0.5 gives an effective angular excursion of $r$ per side — matching the nominal amplitude parameter.
+    The factor of 0.5 normalises the neural difference. Since $y_k \in [0, 2r_k]$, the difference $\Delta y \in [-2r, 2r]$. Multiplying by 0.5 gives an effective angular excursion of $r$ per side, matching the nominal amplitude parameter.
 
 ### Construction
 
@@ -196,7 +196,7 @@ $$
 \theta^{cmd} = g \cdot (\Delta\theta + \theta) + b
 $$
 
-where $\theta = (\theta_{raw} - b)/g$ is the sensed position mapped into convention space and $\text{wrap}(x) = fmod(x + \pi,\, 2\pi) - \pi$. The limb is driven toward the CPG joint offset $\delta_j$ (i.e. `0 + offsets[joint_data_i]`) — the retracted/neutral posture dictated by the descending drive, not a fixed $\pi$.
+where $\theta = (\theta_{raw} - b)/g$ is the sensed position mapped into convention space and $\text{wrap}(x) = fmod(x + \pi,\, 2\pi) - \pi$. The limb is driven toward the CPG joint offset $\delta_j$ (i.e. `0 + offsets[joint_data_i]`), the retracted/neutral posture dictated by the descending drive, not a fixed $\pi$.
 
 **Walking mode (`amplitude >= threshold`):**
 
@@ -293,6 +293,6 @@ def before_step(self, task, action, physics):
 
 ## See Also
 
-- [Ekeberg Muscle Model](ekeberg-muscle.md) — Deep dive into active muscle torques
-- [CPG Oscillators](cpg-oscillators.md) — Source of all `outputs()` and `phases()` used here
-- [Amphibious Controller](amphibious-controller.md) — How all controllers are assembled
+- [Ekeberg Muscle Model](ekeberg-muscle.md): Deep dive into active muscle torques
+- [CPG Oscillators](cpg-oscillators.md): Source of all `outputs()` and `phases()` used here
+- [Amphibious Controller](amphibious-controller.md): How all controllers are assembled
