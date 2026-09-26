@@ -3,7 +3,10 @@
 export DISABLE_MKDOCS_2_WARNING = true
 export MUJOCO_GL ?= egl
 
-.PHONY: check build serve
+.PHONY: install check build serve
+
+install:  ## Clone and install the FARMS packages of farms-packages.yaml
+	python tools/install_farms.py
 
 check:  ## Check the hand-written pages against the installed code
 	python tools/check_docs.py

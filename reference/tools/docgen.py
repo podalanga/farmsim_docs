@@ -32,6 +32,7 @@ quiet_logs()
 SKIP_MODULES = (
     'farms_amphibious.bullet',       # Requires pybullet (optional engine)
     'farms_core.pylog.log',
+    'farms_amphibious.callbacks',    # Legacy: imports a module that no longer exists
 )
 
 # Option classes documented in the configuration reference, by file
@@ -149,14 +150,23 @@ def parse_yaml_comments(text):
     return result
 
 
+# Modules reading YAML dictionaries by subscript (connection['in'], ...)
+SUBSCRIPT_KEY_MODULES = ('options.py', 'data.py', 'network.py')
+
+
 def code_option_keys():
-    """Keys read by the options classes (kwargs.pop/get('key') in code)"""
+    """Keys read by the options classes: kwargs.pop/get('key') in code, and
+    dictionary subscripts (entry['key']) in the options and network modules"""
     keys = set()
     pattern = re.compile(r"""kwargs\.(?:pop|get)\(\s*['"]([A-Za-z_0-9]+)['"]""")
+    subscript = re.compile(r"""\w\[['"]([A-Za-z_][A-Za-z_0-9]*)['"]\]""")
     for package in PACKAGES:
         root = Path(importlib.import_module(package).__file__).parent
         for path in root.rglob('*.py'):
-            keys.update(pattern.findall(path.read_text(encoding='utf-8', errors='ignore')))
+            text = path.read_text(encoding='utf-8', errors='ignore')
+            keys.update(pattern.findall(text))
+            if path.name in SUBSCRIPT_KEY_MODULES:
+                keys.update(subscript.findall(text))
     return keys
 
 

@@ -27,7 +27,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import docgen  # noqa: E402  pylint: disable=wrong-import-position
 
-REFERENCE = re.compile(r'\bfarms_(?:core|mujoco|sim|amphibious)(?:\.[A-Za-z_][A-Za-z0-9_]*)+')
+REFERENCE = re.compile(
+    r'(?<![/\w-])farms_(?:core|mujoco|sim|amphibious)(?:\.[A-Za-z_][A-Za-z0-9_]*)+(?!\.git\b)'
+)
 SOURCE_PATH = re.compile(
     r'\b(farms_(?:core|mujoco|sim|amphibious)/[A-Za-z0-9_/.]+?\.(?:pyx|pxd|py))\b'
 )

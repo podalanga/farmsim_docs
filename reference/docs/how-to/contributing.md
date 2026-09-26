@@ -218,13 +218,34 @@ code, and fails on:
    `# check-docs: skip` is not checked);
 5. an em dash.
 
+### Which code is documented
+
+`reference/farms-packages.yaml` lists the four FARMS packages with the
+public repository and the ref (branch, tag or commit) to document:
+
+```yaml
+# check-docs: skip
+packages:
+  - name: farms_core
+    repo: https://github.com/podalanga/farms_core.git
+    ref: fluid-fast
+  # ... farms_mujoco, farms_sim, farms_amphibious
+```
+
+`tools/install_farms.py` clones them at these refs and installs them in
+dependency order. The documentation needs nothing else: no experiment
+files or private repository.
+
 ### Building locally
 
-With the FARMS packages installed in the environment:
+In an environment where the FARMS packages are installed (for example
+the `farms_zbot` environment), or after installing them with
+`make install`:
 
 ```bash
 cd farmsim_docs/reference
 pip install -r requirements.txt
+make install  # Optional: clone and install the packages of farms-packages.yaml
 make check    # Drift guard
 make build    # Drift guard, then mkdocs build --strict
 make serve    # Live preview on http://127.0.0.1:8000
@@ -232,26 +253,27 @@ make serve    # Live preview on http://127.0.0.1:8000
 
 ### Automatic updates
 
-The workflow `.github/workflows/deploy-docs.yml` of `farmsim_docs` checks
-out `farms_zbot` with its submodules (the pinned FARMS commits), installs
-the packages, runs the drift guard and `mkdocs build --strict`, and
-deploys to GitHub Pages. It runs:
+The workflow `.github/workflows/deploy-docs.yml` of `farmsim_docs`
+installs the packages of `farms-packages.yaml`, runs the drift guard and
+`mkdocs build --strict`, and deploys to GitHub Pages. It runs:
 
-- on a push to `main` of `farmsim_docs` (and checks pull requests without
-  deploying);
-- every night, to pick up code changes;
-- manually (`workflow_dispatch`, with an optional `farms_zbot` ref);
-- when a code repository sends a `code-updated` event.
+- on a push to `main` (and checks pull requests without deploying);
+- every night, so that new commits on the documented branches are picked
+  up;
+- manually (`workflow_dispatch`), optionally with other refs
+  (`farms_refs: farms_mujoco=my-branch`);
+- when a FARMS repository sends a `code-updated` event.
 
-To send that event on every push of `farms_zbot` (or of a FARMS
-repository), copy `templates/notify-docs.yml` to its
-`.github/workflows/`, and add a repository secret `DOCS_DISPATCH_TOKEN`:
-a fine-grained personal access token with "Contents: read and write"
-access to `farmsim_docs`.
+To send that event on every push of a FARMS repository, copy
+`templates/notify-docs.yml` to its `.github/workflows/`, set its branch to
+the one documented, and add a repository secret `DOCS_DISPATCH_TOKEN`: a
+fine-grained personal access token with "Contents: read and write" access
+to `farmsim_docs`.
 
 When a code change renames an option, a class or a flag, the generated
 pages follow automatically, and the drift guard fails the build until the
-hand-written pages are updated.
+hand-written pages are updated. To document another version of a package,
+change its ref in `farms-packages.yaml`.
 
 ### Writing pages
 
