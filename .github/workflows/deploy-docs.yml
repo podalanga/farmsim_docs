@@ -1,45 +1,86 @@
-name: Deploy Docs to GitHub Pages
+name: Docs
 
+# The site describes the FARMS code pinned by farms_zbot (its submodules).
+# API, configuration and CLI pages are generated from that code at every
+# build, and tools/check_docs.py fails the build when the hand-written
+# pages mention modules, files, flags or options that no longer exist.
 on:
   push:
     branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 3 * * *'  # Nightly: pick up code changes without a dispatch
   workflow_dispatch:
+    inputs:
+      farms_zbot_ref:
+        description: farms_zbot branch or commit to document
+        required: false
+        default: main
+  repository_dispatch:
+    types: [code-updated]  # Sent by the code repositories (docs/notify-docs.yml)
 
-# Grant GITHUB_TOKEN the permissions required to make a Pages deployment
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FARMS_ZBOT_REPO: podalanga/farms_zbot
+  FARMS_ZBOT_REF: ${{ github.event.inputs.farms_zbot_ref || github.event.client_payload.zbot_ref || 'main' }}
+  DISABLE_MKDOCS_2_WARNING: 'true'
+  MUJOCO_GL: osmesa
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout documentation
+        uses: actions/checkout@v4
+        with:
+          path: docs-repo
+
+      - name: Checkout farms_zbot and its FARMS submodules
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git clone --depth 1 --branch "$FARMS_ZBOT_REF" "https://github.com/$FARMS_ZBOT_REPO.git" farms_zbot \
+            || { git clone "https://github.com/$FARMS_ZBOT_REPO.git" farms_zbot && git -C farms_zbot checkout "$FARMS_ZBOT_REF"; }
+          git -C farms_zbot submodule update --init --depth 1 \
+            farms/farms_core farms/farms_mujoco farms/farms_sim farms/farms_amphibious
+          git -C farms_zbot submodule status
+
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          
-      - name: Install dependencies
+          python-version: '3.12'
+
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libegl1 libgl1 libosmesa6
+
+      - name: Install FARMS (pinned versions) and the documentation toolchain
         run: |
-          pip install mkdocs-material>=9.7 pymdown-extensions>=10.6
-          
+          pip install --upgrade pip setuptools wheel Cython uv
+          cd farms_zbot/farms && python setup_farms.py
+          pip install -r "$GITHUB_WORKSPACE/docs-repo/reference/requirements.txt"
+
+      - name: Check the pages against the code
+        working-directory: docs-repo/reference
+        run: python tools/check_docs.py --experiments "$GITHUB_WORKSPACE/farms_zbot/experiments"
+
       - name: Build site
-        working-directory: ./reference
+        working-directory: docs-repo/reference
         run: mkdocs build --strict
-        
+
       - name: Upload artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./reference/site
+          path: docs-repo/reference/site
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

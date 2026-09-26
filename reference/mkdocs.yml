@@ -46,6 +46,36 @@ extra_javascript:
   - javascripts/mathjax.js
   - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - tools/gen_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: auto
+            docstring_options:
+              default: sphinx
+              per_style_options:
+                sphinx:
+                  warnings: false
+                numpy:
+                  warnings: false
+                google:
+                  warnings: false
+            show_source: false
+            show_root_heading: false
+            show_root_toc_entry: false
+            show_signature_annotations: true
+            separate_signature: true
+            members_order: source
+            filters: ["!^_"]
+            heading_level: 2
 extra:
   generator: false
 markdown_extensions:
@@ -117,6 +147,7 @@ nav:
       - MuJoCo Swimming (SwimmingExtension, Drag Model): reference/mujoco/mujoco-swimming.md
     - farms_sim:
       - Package Overview: reference/sim/farms-sim.md
+    - API (generated): reference/api/
   - Explanation:
     - System Architecture: explanation/architecture.md
     - Architecture Diagrams and Data Flow: explanation/architecture-diagrams.md
