@@ -76,7 +76,7 @@ Where:
 
 In the YAML `osc2osc` entries, `in` is the target $i$ and `out` the source $j$: at steady state, $\varphi_{out} - \varphi_{in} = \Delta\varphi$ (`phase_bias`).
 
-**From `ode.pyx` (lines 45–78):**
+**From `ode.pyx`:**
 
 ```cython
 cpdef inline void ode_dphase(...) nogil:
@@ -118,7 +118,7 @@ Where:
 | $a_i$ | Convergence rate (rad/s) | `oscillators.c_rate(i)` |
 | $R_i^{nom}$ | Nominal amplitude (drive-dependent) | `oscillators.c_nominal_amplitude(iteration, i, drives)` |
 
-**From `ode.pyx` (lines 81–99):**
+**From `ode.pyx`:**
 
 ```cython
 cpdef inline void ode_damplitude(...) nogil:
@@ -171,7 +171,7 @@ $$
 \frac{d\delta_j}{dt} = a_j^{off} \cdot \left(\delta_j^{des}(d) - \delta_j\right)
 $$
 
-**From `ode.pyx` (lines 237–259):**
+**From `ode.pyx`:**
 
 ```cython
 cpdef inline void ode_joints(...) nogil:
@@ -213,7 +213,7 @@ $$
 !!! note "Tegotae feedback origin"
     Tegotae (手応え, Japanese for "tactile response") is a control strategy introduced by Owaki & Ishiguro (2017) where each limb CPG is locally modulated by the ground reaction force, producing emergent gait patterns without central coordination. FARMS implements this via `sin(phase)` multiplication.
 
-**From `ode.pyx` (lines 102–156):**
+**From `ode.pyx`:**
 
 ```cython
 if connection_type == ConnectionType.STRETCH2FREQTEGOTAE:
@@ -247,7 +247,7 @@ $$
 \frac{d\varphi_{i0}}{dt} \mathrel{+}= w \cdot \|F_{contact,\,i1}\| \cdot \sin(\varphi_{i0}) \quad (\text{REACTION2FREQTEGOTAE})
 $$
 
-**From `ode.pyx` (lines 159–193):**
+**From `ode.pyx`:**
 
 ```cython
 contact_reaction = sqrt(

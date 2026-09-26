@@ -57,7 +57,7 @@ $$
 - \underbrace{\varepsilon \cdot \text{sign}(\dot{\theta})}_{\text{friction}}
 $$
 
-**From `ekeberg.pyx` (lines 43–131):**
+**From `ekeberg.pyx`:**
 
 ```cython
 cpdef void step(self, unsigned int iteration):
@@ -130,7 +130,7 @@ $$
 k_{damp} = \delta
 $$
 
-**From `ekeberg.pyx` (lines 111–115):**
+**From `ekeberg.pyx`:**
 
 ```cython
 self.damping_coefs[muscle_i] = self.parameters[muscle_i][DELTA]
@@ -153,7 +153,7 @@ $$
 \theta^{ref} = g \cdot \delta_j + b
 $$
 
-**From `ekeberg.pyx` (lines 117–122):**
+**From `ekeberg.pyx`:**
 
 ```cython
 self.joints_offsets[muscle_i] = (

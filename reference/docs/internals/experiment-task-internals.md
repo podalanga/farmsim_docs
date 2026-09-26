@@ -1,21 +1,21 @@
 # ExperimentTask Internals
 
-This page documents the `ExperimentTask` class (`farms_mujoco/simulation/task.py`, 624 lines) in detail, covering the full simulation lifecycle: initialization, sensor updates, control dispatch, and step execution. This is the central orchestrator of every FARMS MuJoCo simulation.
+This page documents the `ExperimentTask` class (`farms_mujoco/simulation/task.py`) in detail, covering the full simulation lifecycle: initialization, sensor updates, control dispatch, and step execution. This is the central orchestrator of every FARMS MuJoCo simulation.
 
 ## Source files covered
 
-| File | Lines | Purpose |
-|---|---|---|
-| `farms_mujoco/simulation/task.py` | 624 | `ExperimentTask`, `duration2nit` |
-| `farms_mujoco/simulation/physics.py` | 561 | `get_sensor_maps`, `get_physics2data_maps`, `physics2data` (called by task) |
-| `farms_mujoco/simulation/mjcf.py` | 1732 | `get_prefix` (used for multi-animat naming) |
-| `farms_core/simulation/extensions.py` | 192 | `TaskExtension` base class |
-| `farms_core/model/control.py` | n/a | `AnimatController`, `ControlType` |
+| File | Purpose |
+|---|---|
+| `farms_mujoco/simulation/task.py` | `ExperimentTask`, `duration2nit` |
+| `farms_mujoco/simulation/physics.py` | `get_sensor_maps`, `get_physics2data_maps`, `physics2data` (called by task) |
+| `farms_mujoco/simulation/mjcf.py` | `get_prefix` (used for multi-animat naming) |
+| `farms_core/simulation/extensions.py` | `TaskExtension` base class |
+| `farms_core/model/control.py` | `AnimatController`, `ControlType` |
 
 ## Call graph / entry points
 
 ```
-Simulation.run() / Simulation.interactive()
+Simulation.run() / Simulation.iterator()
   └─ env = dm_control.Environment(task, physics, ...)
        └─ env.step(action)
             ├─ task.before_step(action, physics)     [Control dispatch]
@@ -66,7 +66,7 @@ def __init__(
 |---|---|---|---|---|
 | `base_links` | list[str] | Yes | n/a | Base link names (marked as TODO: Unused) |
 | `n_iterations` | int | Yes | n/a | Total simulation iterations |
-| `timestep` | float | Yes | n/a | Physics timestep [s] |
+| `timestep` | float | Yes | n/a | Iteration duration (`physics.timestep`) [s] |
 | `data` | ExperimentData | No | None | Pre-allocated experiment data |
 | `viewer` | Any | No | None | Viewer object |
 | `mjcf` | Any | No | None | MJCF model |
@@ -76,7 +76,7 @@ def __init__(
 | `hfield` | dict | No | None | Heightfield data and asset |
 | `units` | SimulationUnits | No | SimulationUnits() | Unit scaling |
 | `buffer_size` | int | No | 1 | Rolling buffer size for data arrays |
-| `substeps` | int | No | 1 | Physics substeps per control step |
+| `substeps` | int | No | 1 | Environment steps per iteration (`physics.cb_sub_steps`) |
 
 **Strict kwargs**: `assert not kwargs, kwargs` rejects unknown parameters.
 
@@ -84,24 +84,30 @@ def __init__(
 
 | Attribute | Description |
 |---|---|
-| `self.iteration` | Current control iteration (incremented every full step) |
-| `self.sim_iteration` | Current physics substep (incremented every substep) |
-| `self.sim_iterations` | `n_iterations * cb_sub_steps` (total physics substeps) |
-| `self.sim_timestep` | `timestep / cb_sub_steps` (physics substep size) |
-| `self.extensions` | All extensions (sim + animat + extra) |
+| `self.iteration` | Current iteration (incremented at the end of each iteration) |
+| `self.sim_iteration` | Environment steps done (incremented every environment step) |
+| `self.physics_iterations` | `n_iterations*cb_sub_steps*num_sub_steps`: total MuJoCo steps |
+| `self.physics_timestep` | `timestep/(cb_sub_steps*num_sub_steps)`: the MuJoCo timestep [s] |
+| `self.extensions` | All extensions (simulation, animats, then extra ones) |
 | `self.maps` | Per-animat mapping dicts (sensors, ctrl, etc.) |
-| `self.buffer_size` | Rolling buffer size (max 1) |
-| `self.cb_sub_steps` | Number of physics substeps per control step |
-| `self.substeps_links` | Whether any extension needs per-substep link updates |
+| `self.buffer_size` | Number of iterations held by the data arrays (at least 1) |
+| `self.cb_sub_steps` | Environment steps per iteration |
+| `self.substeps_links` | Whether any extension runs on substeps (then links are updated at every environment step) |
 | `self.initialized` | Whether `initialize_episode` has run |
 
 ### Substep mechanism
 
-When `substeps > 1`, the physics engine runs multiple substeps per control step:
-- `sim_timestep = timestep / substeps` (smaller physics steps for stability)
-- `sim_iterations = n_iterations * substeps` (more total physics steps)
-- `before_step` is called once per control step (every `substeps` physics steps)
-- `after_step` increments `sim_iteration` every physics step, `iteration` only on full steps
+An iteration lasts `timestep` and is made of `cb_sub_steps` environment
+steps (`env.step()`), each of `num_sub_steps` MuJoCo steps (the
+environment's `n_sub_steps`):
+
+- `before_step()` runs at every environment step. It updates the sensors
+  on the first step of an iteration (all of them) and, when
+  `substeps_links`, on the other steps (links only). Extensions run on the
+  first step, or on every step when created with `substep=True`.
+- `after_step()` increments `sim_iteration` at every environment step, and
+  `iteration` (plus the extensions' `after_step()`) at the end of each
+  iteration.
 
 ## `extract_extensions(experiment_options, experiment_data)` (staticmethod)
 
@@ -148,7 +154,7 @@ def initialize_episode(self, physics: Physics, viewer=None):
 
 ### Walkthrough
 
-**Step 1: Re-initialization check** (lines 146–154)
+**Step 1: Re-initialization check**
 
 ```python
 if self.initialized:
@@ -160,7 +166,7 @@ if self.initialized:
 
 If already initialized, only resets iteration counters. For full re-initialization, set `self.initialized = False` before calling.
 
-**Step 2: Restart check** (lines 155–158)
+**Step 2: Restart check**
 
 ```python
 if self._restart:
@@ -169,7 +175,7 @@ if self._restart:
 
 If restart is enabled, an application interface must be set.
 
-**Step 3: Viewer setup** (lines 161–163)
+**Step 3: Viewer setup**
 
 ```python
 if viewer is not None:
@@ -179,7 +185,7 @@ if viewer is not None:
 
 Clears user scene geometry.
 
-**Step 4: Link masses** (lines 166–174)
+**Step 4: Link masses**
 
 ```python
 links_row = physics.named.model.body_mass.axes.row
@@ -193,14 +199,14 @@ for animat_i, animat in enumerate(self.data.animats):
 
 Reads body masses from the MuJoCo model for each animat's links. Uses `get_prefix(animat_i)` to handle multi-animat naming (each animat gets a prefix like `animat_0_`).
 
-**Step 5: Iteration reset** (lines 177–178)
+**Step 5: Iteration reset**
 
 ```python
 self.iteration = 0
 self.sim_iteration = 0
 ```
 
-**Step 6: Heightfield setup** (lines 181–199)
+**Step 6: Heightfield setup**
 
 ```python
 if self._extras['hfield'] is not None:
@@ -215,7 +221,7 @@ if self._extras['hfield'] is not None:
 
 Loads heightfield terrain data into the MuJoCo model. The data is normalized from [0, 1] to [-1, 1] via `2 * (data - 0.5)`.
 
-**Step 7: Maps, data, sensors** (lines 201–206)
+**Step 7: Maps, data, sensors**
 
 ```python
 self.initialize_maps(physics)
@@ -228,7 +234,7 @@ self.initialize_sensors(physics)
 - `initialize_data`: If no pre-allocated data, creates `AnimatData` from sensor names.
 - `initialize_sensors`: Calls `get_sensor_maps(physics)` and `get_physics2data_maps(physics, ...)` for each animat.
 
-**Step 8: Control initialization** (lines 208–215)
+**Step 8: Control initialization**
 
 ```python
 self._controllers = [
@@ -241,7 +247,7 @@ if self._controllers:
 
 Filters extensions that are `AnimatController` instances, then calls `initialize_control()`.
 
-**Step 9: Keyframe reset** (line 218)
+**Step 9: Keyframe reset**
 
 ```python
 physics.reset(keyframe_id=0)
@@ -249,11 +255,11 @@ physics.reset(keyframe_id=0)
 
 Resets the physics state to the first keyframe (initial pose).
 
-**Step 10: Camera setup** (lines 220–236)
+**Step 10: Camera setup**
 
 If viewer or app is present, positions the camera to look at the animat.
 
-**Step 11: Extension initialization** (lines 238–239)
+**Step 11: Extension initialization**
 
 ```python
 for extension in self.extensions:
@@ -262,7 +268,7 @@ for extension in self.extensions:
 
 Each extension gets its own `initialize_episode` call. This is where controllers, drives, and other extensions set up their internal state.
 
-**Step 12: MuJoCo muscle callbacks** (lines 242–244)
+**Step 12: MuJoCo muscle callbacks**
 
 ```python
 if rt_muscle:
@@ -272,7 +278,7 @@ if rt_muscle:
 
 Sets MuJoCo callbacks for muscle actuator computation (if `farms_muscle` is installed).
 
-**Step 13: Mark initialized** (line 247)
+**Step 13: Mark initialized**
 
 ```python
 self.initialized = True
@@ -297,7 +303,7 @@ def update_sensors(self, physics: Physics, links_only=False):
 
 ### Rolling buffer mechanism
 
-`index = self.iteration % self.buffer_size`: when `buffer_size > 1`, data wraps around. This is used for memory-constrained scenarios where you only need the last N steps of data. When `buffer_size = 1` (default), only the current step's data is stored.
+`index = self.iteration % self.buffer_size`: when `buffer_size` is smaller than `n_iterations`, the data wraps around, which keeps only the last `buffer_size` iterations in memory. `Simulation` passes `runtime.buffer_size`, which defaults to `n_iterations` (the task's own default, 1, is only used when it is created directly).
 
 ### What gets recorded
 
@@ -312,20 +318,20 @@ Then `physics2data()` copies all link, joint, contact, and muscle data for each 
 
 ## `before_step(action, physics)`
 
-The main control dispatch function, called once per control step (or substep).
+The main control dispatch function, called by dm_control before every environment step.
 
 ### Walkthrough
 
-**Step 1: Auto-initialization** (lines 269–274)
+**Step 1: Auto-initialization**
 
 ```python
-if physics.time() / self.units.seconds < 1e-6 * self.sim_timestep:
+if physics.time() / self.units.seconds < 1e-6 * self.physics_timestep:
     self.initialize_episode(physics, self.viewer)
 ```
 
 If this is the very first step (time ≈ 0), initialize the episode.
 
-**Step 2: Full step vs substep** (lines 276–278)
+**Step 2: Full step vs substep**
 
 ```python
 full_step = (
@@ -334,9 +340,14 @@ full_step = (
 )
 ```
 
-`full_step` is True on the first substep and the last substep of each control step. When `cb_sub_steps = 1`, every step is a full step.
+With the counter updates of `after_step()` (`iteration` is incremented
+when `(sim_iteration + 1) % cb_sub_steps == 0` after incrementing
+`sim_iteration`), `full_step` is true on the first environment step of each
+iteration. Iteration 0 is special: it has a single environment step, then
+every following iteration has `cb_sub_steps` steps. When `cb_sub_steps = 1`,
+every step is a full step.
 
-**Step 3: Iteration check** (lines 282–283)
+**Step 3: Iteration check**
 
 ```python
 if self.n_iterations > 0:
@@ -345,7 +356,7 @@ if self.n_iterations > 0:
 
 Safety check: don't exceed the planned iteration count.
 
-**Step 4: Sensor update** (lines 286–287)
+**Step 4: Sensor update**
 
 ```python
 if full_step or self.substeps_links:
@@ -354,7 +365,7 @@ if full_step or self.substeps_links:
 
 Sensors are updated on full steps. If any extension needs per-substep link data (`substeps_links = True`), links are also updated on substeps with `links_only=True`.
 
-**Step 5: Extension before_step** (lines 290–321)
+**Step 5: Extension before_step**
 
 ```python
 for extension in self.extensions:
@@ -436,7 +447,7 @@ For example: `actuator_position_animat_0_joint_body_3`, `actuator_torque_animat_
 | `ctrl['jnt_stiffness']` | Joint name → jnt_stiffness index |
 | `ctrl['dof_damping']` | Joint name → dof_damping index |
 
-### Force limiting for non-position joints (lines 442–456)
+### Force limiting for non-position joints
 
 ```python
 for mtr_opts in animat_options.control.motors:
@@ -467,7 +478,7 @@ def after_step(self, physics: Physics):
             extension.after_step(task=self, physics=physics)
 ```
 
-Increments `sim_iteration` every physics step, `iteration` only on full steps. Extension `after_step` is called only on full steps. On the last iteration, the simulation is marked complete.
+Increments `sim_iteration` at every environment step, and `iteration` at the end of each iteration, when the extensions' `after_step()` is also called. On the last iteration, the simulation is marked complete.
 
 ## How to integrate: adding a new extension
 
@@ -508,7 +519,7 @@ simulation:
 
 ## How to integrate: adding a new control type
 
-To add a new control type (e.g., `ControlType.SPRING`):
+To add a new control type (for example a hypothetical `ACCELERATION` member of `ControlType`):
 
 1. Add the enum value to `ControlType` in `farms_core/model/control.py`.
 2. In `ExperimentTask.before_step()`, add a new dispatch block.
@@ -535,7 +546,7 @@ If the SDF model is modified (links/joints added or removed) but the FARMS data 
 
 ### 5. `farms_muscle` not installed
 
-If `farms_muscle` is not installed, the try/except at lines 23–27 catches the `ImportError` and logs a warning. The simulation will run but without rigid tendon muscle callbacks. This may cause incorrect muscle dynamics.
+If `farms_muscle` is not installed, the try/except at import catches the `ImportError` and logs a warning. The simulation will run but without rigid tendon muscle callbacks. This may cause incorrect muscle dynamics.
 
 ## What NOT to assume
 

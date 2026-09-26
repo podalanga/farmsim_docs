@@ -1,13 +1,13 @@
 # AmphibiousConvention: Naming and Indexing Internals
 
-This page documents the `AmphibiousConvention` class (`farms_amphibious/model/convention.py`, 519 lines), which provides the naming and indexing scheme that connects oscillators, joints, links, and drives in the amphibious CPG model. Every maintainer working on `farms_amphibious` needs to understand this class because it is the single source of truth for mapping between array indices and human-readable names.
+This page documents the `AmphibiousConvention` class (`farms_amphibious/model/convention.py`), which provides the naming and indexing scheme that connects oscillators, joints, links, and drives in the amphibious CPG model. Every maintainer working on `farms_amphibious` needs to understand this class because it is the single source of truth for mapping between array indices and human-readable names.
 
 ## Source files covered
 
-| File | Lines | Purpose |
-|---|---|---|
-| `farms_amphibious/model/convention.py` | 519 | `AmphibiousConvention`, `BodyPartKind`, `Side` |
-| `farms_core/options.py` | 53 | `Options` base class (dict subclass) |
+| File | Purpose |
+|---|---|
+| `farms_amphibious/model/convention.py` | `AmphibiousConvention`, `BodyPartKind`, `Side` |
+| `farms_core/options.py` | `Options` base class (dict subclass) |
 
 ## Call graph / entry points
 
@@ -96,7 +96,7 @@ def __init__(self, **kwargs):
 
 **Critical assertion at line 86**: `assert not kwargs, kwargs`. Any unknown keyword argument causes construction failure. This is a strict constructor, typos in parameter names are caught immediately.
 
-### Default joint name generation (lines 60–75)
+### Default joint name generation
 
 When `joints_names` is not provided and there is no `joints` kwarg:
 
@@ -120,7 +120,7 @@ joint_leg_0_L_0, joint_leg_0_L_1, joint_leg_0_R_0, joint_leg_0_R_1,
 joint_leg_1_L_0, joint_leg_1_L_1, joint_leg_1_R_0, joint_leg_1_R_1
 ```
 
-### Default link name generation (lines 46–58)
+### Default link name generation
 
 When `links_names` is not provided and there is no `links` kwarg:
 
@@ -676,7 +676,7 @@ class MyCustomConvention(AmphibiousConvention):
 
 ## Common failure modes
 
-### 1. Unknown kwargs assertion (line 86)
+### 1. Unknown kwargs assertion
 
 ```python
 assert not kwargs, kwargs
@@ -684,7 +684,7 @@ assert not kwargs, kwargs
 
 Any typo in parameter names (e.g., `n_joint_body` instead of `n_joints_body`) will cause an `AssertionError` with the dict of remaining kwargs. The fix is to use the exact parameter names documented above.
 
-### 2. Joint name count mismatch (line 78)
+### 2. Joint name count mismatch
 
 ```python
 assert len(self.joints_names) >= n_joints_all()

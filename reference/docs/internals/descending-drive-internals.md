@@ -1,14 +1,14 @@
 # Descending Drive and Sensory Feedback Internals
 
-This page documents the `DescendingDrive` system (`farms_amphibious/control/drive.py`, 582 lines) that provides high-level locomotion commands to the CPG network. The descending drive is the bridge between high-level navigation goals (follow a path, turn left/right) and the low-level CPG oscillator dynamics.
+This page documents the `DescendingDrive` system (`farms_amphibious/control/drive.py`) that provides high-level locomotion commands to the CPG network. The descending drive is the bridge between high-level navigation goals (follow a path, turn left/right) and the low-level CPG oscillator dynamics.
 
 ## Source files covered
 
-| File | Lines | Purpose |
-|---|---|---|
-| `farms_amphibious/control/drive.py` | 582 | `DescendingDrive` ABC, `OrientationFollower`, `DistributedOrientationFollower`, `PotentialMap` classes |
-| `farms_amphibious/data/network.py` | n/a | `DriveArray` with `spine_left_indices`, `brain_left_indices`, etc. |
-| `farms_amphibious/model/options.py` | n/a | `DriveKind` enum |
+| File | Purpose |
+|---|---|
+| `farms_amphibious/control/drive.py` | `DescendingDrive` ABC, `OrientationFollower`, `DistributedOrientationFollower`, `PotentialMap` classes |
+| `farms_amphibious/data/network.py` | `DriveArray` with `spine_left_indices`, `brain_left_indices`, etc. |
+| `farms_amphibious/model/options.py` | `DriveKind` enum |
 
 ## Call graph / entry points
 
@@ -322,7 +322,7 @@ class OrientationFollower(DescendingDrive):
 | `drive_types` | list | Per-drive-index classification (BRAIN_LEFT, BRAIN_RIGHT, SPINE_LEFT, SPINE_RIGHT, or None) |
 | `pid` | `simple_pid.PID` | PID controller for heading |
 
-### `drive_types` computation (lines 279–290)
+### `drive_types` computation
 
 ```python
 self.drive_types = [

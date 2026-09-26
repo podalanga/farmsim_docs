@@ -1,15 +1,15 @@
 # MJCF Builder Internals
 
-This page documents the MJCF builder (`farms_mujoco/simulation/mjcf.py`, 1732 lines) in detail. This module converts SDF model files into MuJoCo MJCF XML, creates actuators and sensors, sets up keyframes, configures physics options, and assembles the complete simulation scene.
+This page documents the MJCF builder (`farms_mujoco/simulation/mjcf.py`) in detail. This module converts SDF model files into MuJoCo MJCF XML, creates actuators and sensors, sets up keyframes, configures physics options, and assembles the complete simulation scene.
 
 ## Source files covered
 
-| File | Lines | Purpose |
-|---|---|---|
-| `farms_mujoco/simulation/mjcf.py` | 1732 | SDF→MJCF conversion, actuator/sensor creation, scene setup |
-| `farms_core/io/sdf.py` | n/a | `ModelSDF`, `Link`, `Mesh`, `Visual`, `Collision` (SDF parsing) |
-| `farms_core/model/options.py` | n/a | `SpawnMode`, `AnimatOptions`, `MorphologyOptions` |
-| `farms_core/model/control.py` | n/a | `ControlType` (POSITION=0, VELOCITY=1, TORQUE=2, MUSCLE=3) |
+| File | Purpose |
+|---|---|
+| `farms_mujoco/simulation/mjcf.py` | SDF→MJCF conversion, actuator/sensor creation, scene setup |
+| `farms_core/io/sdf.py` | `ModelSDF`, `Link`, `Mesh`, `Visual`, `Collision` (SDF parsing) |
+| `farms_core/model/options.py` | `SpawnMode`, `AnimatOptions`, `MorphologyOptions` |
+| `farms_core/model/control.py` | `ControlType` (POSITION=0, VELOCITY=1, TORQUE=2, MUSCLE=3) |
 
 ## Call graph / entry points
 
@@ -89,7 +89,7 @@ def mjc_add_link(mjcf_model, mjcf_map, sdf_link, prefix='', **kwargs):
 
 ### Walkthrough
 
-**Step 1: Body creation** (lines 170–184)
+**Step 1: Body creation**
 
 ```python
 link_name = sdf_link.name
@@ -103,7 +103,7 @@ mjcf_map['links'][f'{prefix}{link_name}'] = body
 
 Each SDF link becomes a MuJoCo body. The position is computed relative to the parent and scaled by `units.meters`.
 
-**Step 2: Base link spawn mode** (lines 190–274)
+**Step 2: Base link spawn mode**
 
 If the link is a `ModelSDF` (the root), the spawn mode determines the base joint:
 
@@ -126,7 +126,7 @@ If the link is a `ModelSDF` (the root), the spawn mode determines the base joint
 
 For multi-DOF spawn modes (e.g., SAGITTAL), intermediate bodies are created: `root0_b_{name}`, `root1_b_{name}`, etc., each with one joint.
 
-**Step 3: Child link joints** (lines 277–300)
+**Step 3: Child link joints**
 
 For non-root links with a parent joint:
 - `revolute` / `continuous` → `hinge` joint
@@ -134,13 +134,13 @@ For non-root links with a parent joint:
 
 The joint axis is rotated by the joint's Euler pose: `euler2mat(sdf_joint.pose[3:]) @ sdf_joint.axis.xyz`.
 
-**Step 4: Geometries** (lines 300–600)
+**Step 4: Geometries**
 
 For each visual and collision element on the SDF link, the corresponding MJCF geom is created. Geometry types: `Box`, `Cylinder`, `Capsule`, `Sphere`, `Plane`, `Mesh`, `Heightmap`.
 
 Collision geoms get `contype` and `conaffinity` bitmasks. Visual geoms get `contype=0, conaffinity=0` (no collision).
 
-**Step 5: Inertial properties** (lines 650–715)
+**Step 5: Inertial properties**
 
 ```python
 body.add('inertial',
@@ -222,15 +222,15 @@ def sdf2mjcf(sdf, **kwargs) -> (mjcf.RootElement, Dict):
 
 ### Walkthrough
 
-**Step 1: Model initialization** (lines 819–846)
+**Step 1: Model initialization**
 
 Creates a `mjcf.RootElement` if none provided. Initializes `mjcf_map` with empty dicts for `links`, `joints`, `sites`, `visuals`, `collisions`, `actuators`, `tendons`, `muscles`.
 
-**Step 2: Root link and tree** (lines 848–878)
+**Step 2: Root link and tree**
 
 Adds the model root link (the `ModelSDF` itself), then recursively adds all base links and their children.
 
-**Step 3: Keyframes** (lines 880–949)
+**Step 3: Keyframes**
 
 If `animat_options` is provided, creates a keyframe with initial joint positions and velocities:
 
@@ -248,7 +248,7 @@ Initial joint positions come from `joint.initial[0]` and velocities from `joint.
 
 For free base spawn, the spawn pose and velocity from `animat_options.spawn` are written into the keyframe.
 
-**Step 4: Actuators** (lines 951–1130)
+**Step 4: Actuators**
 
 For each joint in `animat_options.control.joints_names()`, THREE actuators are created:
 
@@ -269,11 +269,11 @@ For each joint in `animat_options.control.joints_names()`, THREE actuators are c
 
 If `motor.limits_torque` is set, all three actuators get `forcelimited=True` and `forcerange=[min, max] * units.torques`.
 
-**Adhesion actuators** (lines 1036–1047): If `animat_options.control.adhesions` exists, creates `adhesion` actuators with `ctrlrange=[0.999*force, force]`.
+**Adhesion actuators**: If `animat_options.control.adhesions` exists, creates `adhesion` actuators with `ctrlrange=[0.999*force, force]`.
 
-**Hill muscle actuators** (lines 1049–1129): If `use_muscles=True`, creates `general` actuators with `dyntype='muscle'`, `gaintype='user'`, `biastype='user'`. The `gainprm`/`biasprm` arrays contain: `[max_force, optimal_fiber, tendon_slack, max_velocity*optimal_fiber, pennation_angle]`. The `user` array contains proprioceptive sensor parameters (Type Ia, II, Ib).
+**Hill muscle actuators**: If `use_muscles=True`, creates `general` actuators with `dyntype='muscle'`, `gaintype='user'`, `biastype='user'`. The `gainprm`/`biasprm` arrays contain: `[max_force, optimal_fiber, tendon_slack, max_velocity*optimal_fiber, pennation_angle]`. The `user` array contains proprioceptive sensor parameters (Type Ia, II, Ib).
 
-**Step 5: Sensors** (lines 1131–1196)
+**Step 5: Sensors**
 
 | Sensor type | Condition | Object |
 |---|---|---|
@@ -285,7 +285,7 @@ If `motor.limits_torque` is set, all three actuators get `forcelimited=True` and
 | `actuatorfrc` | `use_actuator_sensors` | Each actuator |
 | `actuatorfrc` (muscle) | `use_muscle_sensors` | Each muscle actuator |
 
-**Step 6: Self-collision pairs** (lines 1198–1220)
+**Step 6: Self-collision pairs**
 
 ```python
 for pair_i, (link1, link2) in enumerate(animat_options.morphology.self_collisions):
@@ -304,15 +304,15 @@ def setup_mjcf_xml(experiment_options, **kwargs) -> (mjcf.RootElement, list, dic
 
 ### Walkthrough
 
-**Step 1: Arena** (lines 1388–1407)
+**Step 1: Arena**
 
 Converts the arena SDF to MJCF with `fixed_base=True`. Sets the arena position from `arena_options.spawn.pose`. Adjusts for `ground_height` if set.
 
-**Step 2: Water** (lines 1408–1422)
+**Step 2: Water**
 
 If `arena_options.water.height` is set, converts the water SDF to MJCF. The water body is positioned at the water surface height. Water has `contype=0, conaffinity=0` (no collision, it's visual only).
 
-**Step 3: Animats** (lines 1426–1450)
+**Step 3: Animats**
 
 For each animat:
 - Reads the animat SDF
@@ -320,7 +320,7 @@ For each animat:
 - Sets `contype=2^(animat_i+1)` so each animat has a unique collision group
 - `conaffinity=2*31-1` (note: this is `2*31-1 = 61`, NOT `2^31-1`, this is likely a bug, should be `2**31-1`)
 
-**Step 4: Compiler options** (lines 1452–1463)
+**Step 4: Compiler options**
 
 ```python
 mjcf_model.compiler.angle = 'radian'
@@ -333,7 +333,7 @@ mjcf_model.compiler.fusestatic = True
 mjcf_model.compiler.lengthrange.mode = "none"  # Disable for muscles
 ```
 
-**Step 5: Physics options** (lines 1519–1601)
+**Step 5: Physics options**
 
 | Option | Source | Default |
 |---|---|---|
@@ -348,7 +348,7 @@ mjcf_model.compiler.lengthrange.mode = "none"  # Disable for muscles
 | `mpr_iterations` (MuJoCo < 323) | `simulation_options.mujoco.mpr_iterations` | 1000 |
 | `noslip_iterations` | `simulation_options.mujoco.noslip_iterations` | 0 |
 
-**Step 6: Per-animat post-processing** (lines 1603–1694)
+**Step 6: Per-animat post-processing**
 
 For each animat:
 
@@ -360,15 +360,15 @@ For each animat:
 
 4. **Passive muscle properties**: For Ekeberg muscle equations, adds `beta*gamma` to joint stiffness and `delta` to joint damping. This implements the passive component of the Ekeberg model at the MuJoCo level.
 
-**Step 7: Visual setup** (lines 1480–1517)
+**Step 7: Visual setup**
 
 Configures visual scaling for forces, contacts, actuators, etc. All scales use `simulation_options.mujoco.visual_scale`.
 
-**Step 8: Lights, cameras, sky** (lines 1700–1717)
+**Step 8: Lights, cameras, sky**
 
 Adds a tracking light, 4 cameras (3 tracking + 1 fixed), and a gradient skybox to the first animat's base link.
 
-**Step 9: XML serialization** (lines 1720–1731)
+**Step 9: XML serialization**
 
 Calls `mjcf2str()` to produce the final XML string. Optionally saves to file.
 

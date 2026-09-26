@@ -1,14 +1,14 @@
 # ODE Internals: CPG Network Integration
 
-This page documents the Cython ODE functions (`farms_amphibious/control/ode.pyx`, 320 lines) and the Python integration wrapper (`farms_amphibious/control/network.py`, 121 lines) that together form the mathematical core of the amphibious locomotion controller. These functions compute the derivatives of the CPG oscillator network state and integrate them forward in time.
+This page documents the Cython ODE functions (`farms_amphibious/control/ode.pyx`) and the Python integration wrapper (`farms_amphibious/control/network.py`) that together form the mathematical core of the amphibious locomotion controller. These functions compute the derivatives of the CPG oscillator network state and integrate them forward in time.
 
 ## Source files covered
 
-| File | Lines | Purpose |
-|---|---|---|
-| `farms_amphibious/control/ode.pyx` | 320 | Cython ODE functions: phase, amplitude, joint, sensory feedback |
-| `farms_amphibious/control/network.py` | 121 | `AnimatNetwork` (ABC), `NetworkODE`, scipy.integrate.ode wrapper |
-| `farms_amphibious/data/data_cy.pyx` | n/a | `ConnectionType` enum, `AmphibiousDataCy` cdef class |
+| File | Purpose |
+|---|---|
+| `farms_amphibious/control/ode.pyx` | Cython ODE functions: phase, amplitude, joint, sensory feedback |
+| `farms_amphibious/control/network.py` | `AnimatNetwork` (ABC), `NetworkODE`, scipy.integrate.ode wrapper |
+| `farms_amphibious/data/data_cy.pyx` | `ConnectionType` enum, `AmphibiousDataCy` cdef class |
 
 ## Call graph / entry points
 

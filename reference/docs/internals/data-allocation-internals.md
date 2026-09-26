@@ -4,26 +4,26 @@ This page documents the data allocation and management system in detail. FARMS u
 
 ## Source files covered
 
-| File | Lines | Purpose |
-|---|---|---|
-| `farms_core/model/data.py` | 140 | `AnimatData`, base animat data container |
-| `farms_core/sensors/data.py` | 2106 | `SensorsData`, `LinkSensorArray`, `JointSensorArray`, etc. |
-| `farms_core/experiment/data.py` | 155 | `ExperimentData`, top-level data container |
-| `farms_core/simulation/data.py` | n/a | `SimulationData`, simulation-level data |
-| `farms_core/io/hdf5.py` | 140 | HDF5 serialization (`hdf5_to_dict`, `dict_to_hdf5`) |
-| `farms_amphibious/data/data.py` | 319 | `AmphibiousData`, `AmphibiousExperimentData` |
-| `farms_amphibious/data/network.py` | 637 | `OscillatorNetworkState`, `NetworkParameters`, connectivity maps |
+| File | Purpose |
+|---|---|
+| `farms_core/model/data.py` | `AnimatData`, base animat data container |
+| `farms_core/sensors/data.py` | `SensorsData`, `LinkSensorArray`, `JointSensorArray`, etc. |
+| `farms_core/experiment/data.py` | `ExperimentData`, top-level data container |
+| `farms_core/simulation/data.py` | `SimulationData`, simulation-level data |
+| `farms_core/io/hdf5.py` | HDF5 serialization (`hdf5_to_dict`, `dict_to_hdf5`) |
+| `farms_amphibious/data/data.py` | `AmphibiousData`, `AmphibiousExperimentData` |
+| `farms_amphibious/data/network.py` | `OscillatorNetworkState`, `NetworkParameters`, connectivity maps |
 
 ## Class hierarchy
 
 ```
 ExperimentData
-  ├─ times: np.ndarray [buffer_size]
+  ├─ times: np.ndarray [n_iterations]
   ├─ timestep: float
   ├─ simulation: SimulationData
-  │    ├─ ncon: IntegerArray1D [buffer_size]
-  │    ├─ niter: IntegerArray1D [buffer_size]
-  │    └─ energy: DoubleArray2D [buffer_size, 6]
+  │    ├─ ncon: IntegerArray1D [n_iterations]
+  │    ├─ niter: IntegerArray1D [n_iterations]
+  │    └─ energy: DoubleArray2D [n_iterations, 2]
   └─ animats: list[AnimatData]
        └─ AnimatData (AnimatDataCy)
             ├─ sensors: SensorsData (SensorsDataCy)
@@ -33,16 +33,18 @@ ExperimentData
             │    ├─ xfrc: XfrcArray [buffer, n_xfrc, 6]
             │    ├─ muscles: MusclesArray [buffer, n_muscles, muscle_fields]
             │    ├─ adhesions: AdhesionsArray [buffer, n_adhesions, adhesion_fields]
-            │    └─ visuals: VisualsArray [buffer, n_visuals, visual_fields]
+            │    ├─ visuals: VisualsArray [buffer, n_visuals, visual_fields]
+            │    └─ rays: RaySensorArray [buffer, n_rays, ray_fields]
             └─ network: NetworkLog | None  (for CPG animats)
 
 AmphibiousData (extends AnimatData)
-  ├─ state: OscillatorNetworkState [buffer, n_oscillators*3]
+  ├─ state: OscillatorNetworkState [buffer, 2*n_oscillators + n_joints]
+  │    (phases, amplitudes, joint offsets)
   ├─ network: NetworkParameters
   │    ├─ drives: DriveArray [buffer, n_drives]
   │    ├─ oscillators: Oscillators (freq, amp, phase, offset, etc.)
   │    └─ connectivity maps (osc2osc, joints2osc, contacts2osc, xfrc2osc)
-  └─ joints: JointsControlArray [buffer, n_joints, 7]
+  └─ joints: JointsControlArray [n_joints, 7] (offset parameters)
 ```
 
 ## `AnimatData` (farms_core/model/data.py)

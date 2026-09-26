@@ -4,13 +4,13 @@ This page documents the options system and YAML parsing pipeline in detail. The 
 
 ## Source files covered
 
-| File | Lines | Purpose |
-|---|---|---|
-| `farms_core/options.py` | 53 | `Options`, base dict subclass with attribute access |
-| `farms_core/io/yaml.py` | 83 | `read_yaml`, `write_yaml`, `pyobject2yaml`, `yaml2pyobject` |
-| `farms_core/extensions/extensions.py` | 51 | `ExtensionOptions`, `import_item`, `import_module_item` |
-| `farms_core/model/options.py` | n/a | `AnimatOptions`, `MorphologyOptions`, `ControlOptions`, etc. |
-| `farms_core/experiment/options.py` | n/a | `ExperimentOptions`, top-level options container |
+| File | Purpose |
+|---|---|
+| `farms_core/options.py` | `Options`, base dict subclass with attribute access |
+| `farms_core/io/yaml.py` | `read_yaml`, `write_yaml`, `pyobject2yaml`, `yaml2pyobject` |
+| `farms_core/extensions/extensions.py` | `ExtensionOptions`, `import_item`, `import_module_item` |
+| `farms_core/model/options.py` | `AnimatOptions`, `MorphologyOptions`, `ControlOptions`, etc. |
+| `farms_core/experiment/options.py` | `ExperimentOptions`, top-level options container |
 
 ## `Options` class (farms_core/options.py)
 
@@ -70,7 +70,7 @@ __setattr__ = dict.__setitem__
 
 These two lines redirect attribute access to dictionary operations. `options.key = value` is equivalent to `options['key'] = value`.
 
-The explicit `__getattr__` method (lines 22–27) is a fallback that converts `KeyError` to `AttributeError` for missing keys. This is important for `hasattr()` checks and pickling.
+The explicit `__getattr__` method is a fallback that converts `KeyError` to `AttributeError` for missing keys. This is important for `hasattr()` checks and pickling.
 
 ### `to_dict()`
 

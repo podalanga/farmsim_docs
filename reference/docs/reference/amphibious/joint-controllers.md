@@ -32,7 +32,7 @@ Where:
 | $\theta$ | Joint position | From `joints_data.positions(iteration)` |
 | $\dot{\theta}$ | Joint velocity | From `joints_data.velocities(iteration)` |
 
-**From `passive_cy.pyx` (lines 50–69):**
+**From `passive_cy.pyx`:**
 
 ```cython
 cpdef void step(self, unsigned int iteration):
@@ -98,7 +98,7 @@ Where:
 - $g$, `transform_gain[joint_data_i]`
 - $b$, `transform_bias[joint_data_i]`
 
-**From `position_muscle_cy.pyx` (lines 12–33):**
+**From `position_muscle_cy.pyx`:**
 
 ```cython
 cpdef void step(self, unsigned int iteration):
@@ -226,7 +226,7 @@ The joint tracks the oscillator phase plus the CPG offset: `desired_angle = phas
     (plus the base-class `joints_names`/`joints_data`/`indices`/`gain`/`bias` via `**kwargs`).
     There is **no** `weight` or `offset` argument on this class.
 
-**From `amphibious.py` (lines 410–419):**
+**From `amphibious.py`:**
 
 ```python
 self.network2joints['position_phase'] = PositionPhaseCy(

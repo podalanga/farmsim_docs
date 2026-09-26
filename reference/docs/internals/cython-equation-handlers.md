@@ -4,14 +4,14 @@ This page documents the Cython classes that convert CPG oscillator state into jo
 
 ## Source files covered
 
-| File | Lines | Purpose |
-|---|---|---|
-| `farms_amphibious/control/position_phase_cy.pyx` | 67 | `PositionPhaseCy`, phase-based position control |
-| `farms_amphibious/control/ekeberg.pyx` | 131 | `EkebergMuscleCy`, Ekeberg muscle model |
-| `farms_amphibious/control/amphibious.py` | 695 | `JointMuscleController`, `AmphibiousController`, `JointsMap`, `MusclesMap` |
-| `farms_amphibious/control/passive_cy.pyx` | n/a | `PassiveJointCy`, passive stiffness/damping |
-| `farms_amphibious/control/position_muscle_cy.pyx` | n/a | `PositionMuscleCy`, amplitude-based position control |
-| `farms_amphibious/control/joints_control_cy.pyx` | n/a | `JointsControlCy`, `JointsMusclesCy` (base classes) |
+| File | Purpose |
+|---|---|
+| `farms_amphibious/control/position_phase_cy.pyx` | `PositionPhaseCy`, phase-based position control |
+| `farms_amphibious/control/ekeberg.pyx` | `EkebergMuscleCy`, Ekeberg muscle model |
+| `farms_amphibious/control/amphibious.py` | `JointMuscleController`, `AmphibiousController`, `JointsMap`, `MusclesMap` |
+| `farms_amphibious/control/passive_cy.pyx` | `PassiveJointCy`, passive stiffness/damping |
+| `farms_amphibious/control/position_muscle_cy.pyx` | `PositionMuscleCy`, amplitude-based position control |
+| `farms_amphibious/control/joints_control_cy.pyx` | `JointsControlCy`, `JointsMusclesCy` (base classes) |
 
 ## Call graph / entry points
 

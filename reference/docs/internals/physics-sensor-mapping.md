@@ -4,11 +4,11 @@ This page documents how FARMS maps between MuJoCo's physics state and FARMS sens
 
 ## Source files covered
 
-| File | Lines | Purpose |
-|---|---|---|
-| `farms_mujoco/simulation/physics.py` | 560 | `get_sensor_maps()`, `get_physics2data_maps()`, `physics2data()`, and helper functions |
-| `farms_mujoco/sensors/sensors.pyx` | n/a | `cycontacts2data()`, `cymusclesensors2data()` (Cython sensor transfer) |
-| `farms_core/sensors/sensor_convention.pxd`, `sensor_convention.pyx` | n/a | Column index constants (`.pxd`, for Cython) and the `sc` enum (`.pyx`, for Python) |
+| File | Purpose |
+|---|---|
+| `farms_mujoco/simulation/physics.py` | `get_sensor_maps()`, `get_physics2data_maps()`, `physics2data()`, and helper functions |
+| `farms_mujoco/sensors/sensors.pyx` | `cycontacts2data()`, `cymusclesensors2data()` (Cython sensor transfer) |
+| `farms_core/sensors/sensor_convention.pxd`, `sensor_convention.pyx` | Column index constants (`.pxd`, for Cython) and the `sc` enum (`.pyx`, for Python) |
 
 ## Call graph / entry points
 
@@ -125,7 +125,7 @@ Builds the mapping from MuJoCo physics state arrays to FARMS data arrays. This i
 
 ### Maps built
 
-#### Link maps (lines 196–215)
+#### Link maps
 
 | Map key | Source | Description |
 |---|---|---|
@@ -136,7 +136,7 @@ Builds the mapping from MuJoCo physics state arrays to FARMS data arrays. This i
 
 Each maps link names to indices in the corresponding MuJoCo data array.
 
-#### Joint maps (lines 217–227)
+#### Joint maps
 
 | Map key | Source | Description |
 |---|---|---|
@@ -145,7 +145,7 @@ Each maps link names to indices in the corresponding MuJoCo data array.
 
 Built with `single=True` because each joint maps to exactly one position/velocity slot.
 
-#### Link sensor maps (lines 229–246)
+#### Link sensor maps
 
 For each of `framepos`, `framequat`, `framelinvel`, `frameangvel`:
 
@@ -163,7 +163,7 @@ sensor_maps[f'{identifier}2data'] = np.array([
 
 If ANY link name is missing from the sensor names, the entire map is set to empty list `[]`. This is a fail-safe: if sensors are not defined for all links, the corresponding data transfer is skipped.
 
-**Quaternion reordering** (line 243–246):
+**Quaternion reordering**:
 
 ```python
 if len(sensor_maps['framequat2data']) > 0:
@@ -174,24 +174,24 @@ if len(sensor_maps['framequat2data']) > 0:
 
 MuJoCo uses `[w, x, y, z]` quaternion ordering. FARMS uses `[x, y, z, w]` ordering. This line reorders the quaternion indices so that when data is read, it comes out in FARMS convention. The index array columns are permuted: column 0 (w) goes to position 3, and columns 1,2,3 (x,y,z) go to positions 0,1,2.
 
-#### Joint sensor maps (lines 248–278)
+#### Joint sensor maps
 
 For `jointpos`, `jointvel`, `jointlimitfrc`, `actuatorfrc_position`, `actuatorfrc_velocity`, `actuatorfrc_motor`: same pattern as link sensors but with `[0]` appended (single value per joint).
 
 For `force` and `torque`: built by filtering names that exist in the row.
 
-#### Muscle sensor maps (lines 280–343)
+#### Muscle sensor maps
 
 For `musclefrc`, `musclefiberlen`, `musclefibervel`, `musclepenn`, `muscleactivefrc`, `musclepassivefrc`, `muscleIa`, `muscleII`, `muscleIb`: same pattern.
 
-**Tendon maps** (lines 300–309):
+**Tendon maps**:
 
 | Map key | Source |
 |---|---|
 | `tendonpos2data` | `physics.named.data.ten_length` |
 | `tendonvel2data` | `physics.named.data.ten_velocity` |
 
-**7-field muscle sensor map** (lines 311–343):
+**7-field muscle sensor map**:
 
 ```python
 sensor_maps['musclesensors2data'] = np.array([
@@ -222,7 +222,7 @@ Each muscle maps to 7 MuJoCo data fields:
 
 This 7-field mapping is used by `cymusclesensors2data()` (Cython) to efficiently copy all muscle data in one call.
 
-#### Contact maps (lines 362–394)
+#### Contact maps
 
 ```python
 contacts_pairs = [
@@ -252,7 +252,7 @@ Contact mapping works by:
    - `(geom_id, -1)`: Single-body contacts (ground contact, where the second body is empty string).
    - `(geom_id1, geom_id2)`: Two-body contacts.
 
-**Warning for missing pairs** (lines 382–394):
+**Warning for missing pairs**:
 
 ```python
 for pair_i, pair in enumerate(contacts_pairs):
@@ -263,7 +263,7 @@ for pair_i, pair in enumerate(contacts_pairs):
 
 If a contact pair from the data is not found in the physics model's collisions, a warning is logged. This typically means the SDF model defines a contact sensor for a body pair that doesn't have collision enabled in MuJoCo.
 
-#### External force maps (lines 396–405)
+#### External force maps
 
 | Map key | Description |
 |---|---|
