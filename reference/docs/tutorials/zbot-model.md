@@ -17,7 +17,7 @@ models/
             └── tube_connector.stl
 ```
 
-The SDF is loaded by FARMS at runtime and converted to MuJoCo's MJCF format internally. Masses, inertias and geometry come from the SDF. The `morphology` section of `animat_config.yaml` adds the simulation properties of each link and joint (fluid interaction, density, drag coefficients, friction, `mass_multiplier`, joint limits, stiffness and damping).
+The SDF is loaded by FARMS at runtime and converted to MuJoCo's MJCF format internally. Masses, inertias and geometry come from the SDF. The `morphology` section of `animat_config.yaml` adds the simulation properties of each link and joint (fluid interaction, drag coefficients, friction, joint stiffness, damping and spring reference). Joint limits also come from the SDF file.
 
 ---
 
@@ -84,7 +84,7 @@ Masses, inertias and geometry come from `models/zbot/sdf/zbot.sdf`; densities an
 | Drag coefficients (angular) | `[0, 0, 0]` (`zbot_swimming`), `[-0.0005, -0.0005, -0.0005]` (`zbot_bout_glide`) |
 
 !!! note "Buoyancy comes from the geometry, not from `density`"
-    With the default `cob_method: exact`, buoyancy is `rho_water * g * V`, where `V` is the submerged volume of the link's collision geoms, so it depends on the geometry and on the link mass from the SDF. The link `density` is only used by the legacy `cob_method: ramp`. The collision geoms of a link overlap (for example the segments' cylinder and boxes), and `exact` counts the overlapping volume twice, which makes the zbot float. With the true union volume (`cob_method: lut` or `cob_overlap: scale`) the zbot is slightly heavier than the water it displaces. Use `farms/farms_mujoco/benchmarks/inspect_buoyancy.py` to print the buoyancy budget of each link. See [MuJoCo Swimming](../reference/mujoco/mujoco-swimming.md).
+    With the default `cob_method: exact`, buoyancy is `rho_water * g * V`, where `V` is the submerged volume of the link's collision geoms: it depends on the geometry only, and whether the robot floats depends on its mass (from the SDF) compared with `rho_water * V`. The link `density` is only used by the legacy `cob_method: ramp`. The collision geoms of a link overlap (for example the segments' cylinder and boxes), and `exact` counts the overlapping volume twice, which makes the zbot float. With the true union volume (`cob_method: lut` or `cob_overlap: scale`) the zbot is slightly heavier than the water it displaces. Use `farms/farms_mujoco/benchmarks/inspect_buoyancy.py` to print the buoyancy budget of each link. See [MuJoCo Swimming](../reference/mujoco/mujoco-swimming.md).
 
 ### Body Segments (Segment1 – Segment6)
 

@@ -33,6 +33,7 @@ env:
   FARMS_ZBOT_REF: ${{ github.event.inputs.farms_zbot_ref || github.event.client_payload.zbot_ref || 'main' }}
   DISABLE_MKDOCS_2_WARNING: 'true'
   MUJOCO_GL: osmesa
+  UV_SYSTEM_PYTHON: '1'  # setup_farms.py uses `uv pip install` outside a virtual environment
 
 jobs:
   build:

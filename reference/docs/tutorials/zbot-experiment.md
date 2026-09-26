@@ -403,7 +403,7 @@ morphology:
   joints:
     - name: joint_1
       initial: [0, 0]           # [initial_position (rad), initial_velocity (rad/s)]
-      limits: [[-inf, inf], [-inf, inf]]
+      limits: [[-inf, inf], [-inf, inf]]  # Not applied: MuJoCo uses the SDF joint limits
       stiffness: 0
       springref: 0
       damping: 0
