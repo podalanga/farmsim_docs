@@ -273,20 +273,25 @@ self.equations_dict = {
 
 | `motor.equation` | Class Instantiated | Control Type |
 |---|---|---|
-| `'ekeberg_muscle'` | `EkebergMuscleCy` | Torque (implicit spring) |
+| `'ekeberg_muscle'` | `EkebergMuscleCy` | Velocity and torque (stiffness and damping through the MuJoCo joint) |
 | `'ekeberg_muscle_explicit'` | `EkebergMuscleCy` | Torque (explicit, no MuJoCo spring) |
-| `'passive'` | `PassiveJointCy` | Torque (passive only) |
+| `'passive'` | `PassiveJointCy` | Velocity and torque (passive only) |
 | `'position_muscle'` | `PositionMuscleCy` | Position (amplitude-diff based) |
 | `'position_phase'` | `PositionPhaseCy` | Position (phase tracking + gait switching) |
 
-Multiple equation types can coexist in one controller. The `before_step` loop calls `net2joints.step(index)` for each:
+Multiple equation types can coexist in one controller. At every
+environment step, `AmphibiousController.before_step()` calls `step()`,
+which steps the drive, the network, then each handler:
 
 ```python
-def before_step(self, task, action, physics):
-    index = task.iteration % task.buffer_size
-    self.network.step(index=index, time=..., timestep=...)
+def step(self, iteration, time, timestep):
+    if self.drive is not None:
+        self.drive.step(iteration, time, timestep)
+    if self.network is not None:
+        self.network.step(iteration, time, timestep)
     for net2joints in self.network2joints.values():
-        net2joints.step(index)   # EkebergMuscleCy, PassiveJointCy, etc.
+        if net2joints is not None:
+            net2joints.step(iteration)   # EkebergMuscleCy, PositionMuscleCy, ...
 ```
 
 ---

@@ -1,315 +1,87 @@
 # farms_core Reference
 
-API reference for `farms_core`, the core library providing options, model
-definitions, sensors, simulation infrastructure, I/O, and experiment management.
+`farms_core` is the foundation of FARMS: options (YAML files), data arrays
+and sensors, the extension and controller base classes, I/O, and unit
+scaling. Every other package imports it.
 
-## Module structure
+## Module map
 
-```
+```text
 farms_core/
-├── options.py           # Options base class
-├── pylog.py             # Logging
-├── array.py             # Array utilities
-├── units.py             # Unit definitions
-├── extensions/
-│   └── extensions.py    # import_item()
+├── options.py           # Options: dict subclass, load()/save() YAML
+├── doc.py               # ClassDoc/ChildDoc: option descriptions (doc())
+├── units.py             # SimulationUnitScaling
+├── pylog/               # Logging
+├── array/               # Typed Cython arrays (DoubleArray1D, ...), array helpers
 ├── io/
-│   └── yaml.py          # yaml2pyobject, pyobject2yaml
+│   ├── yaml.py          # yaml2pyobject, pyobject2yaml
+│   ├── hdf5.py          # dict_to_hdf5, hdf5_to_dict
+│   └── sdf.py           # SDF model parser (ModelSDF, Link, Joint, ...)
+├── extensions/
+│   └── extensions.py    # import_item(), ExtensionOptions
+├── experiment/
+│   ├── options.py       # ExperimentOptions, ExperimentLoadOptions
+│   └── data.py          # ExperimentData
+├── simulation/
+│   ├── options.py       # SimulationOptions, Runtime/Physics/MuJoCo/Pybullet options, Simulator
+│   ├── data.py          # SimulationData (contacts, solver iterations, energy)
+│   ├── extensions.py    # TaskExtension, ExperimentLogger, ExperimentOptionsLogger
+│   └── parse_args.py    # Command line helpers
 ├── model/
-│   ├── options.py       # ModelOptions, AnimatOptions, LinkOptions, ...
+│   ├── options.py       # AnimatOptions, ArenaOptions, SpawnOptions, MorphologyOptions,
+│   │                    # LinkOptions, JointOptions, ControlOptions, MotorOptions,
+│   │                    # SensorsOptions, WaterOptions, ...
+│   ├── data.py          # AnimatData
 │   ├── control.py       # AnimatController, ControlType
-│   ├── data.py          # AnimatData, SensorsData
 │   └── extensions.py    # AnimatExtension
 ├── sensors/
-│   └── sensor_convention.py  # sc (sensor convention)
-├── simulation/
-│   ├── options.py       # SimulationOptions, RunOptions, etc.
-│   └── extensions.py    # TaskExtension, ExperimentLogger
-├── experiment/
-│   ├── options.py       # ExperimentOptions
-│   └── data.py          # ExperimentData
-└── analysis/            # Analysis utilities
+│   ├── data.py          # SensorsData and the sensor arrays
+│   ├── sensor_convention.pxd/.pyx  # Column indices, sc enum
+│   └── data_cy.pyx      # Cython accessors
+├── utils/               # profile(), transforms (quaternions)
+└── analysis/            # Plot style and metrics
 ```
 
-## Options base class
-
-**Source:** `farms_core/options.py`
-
-```python
-class Options(dict):
-    """Base class for all FARMS configuration objects."""
-
-    @classmethod
-    def load(cls, filename: str) -> 'Options':
-        """Load from YAML file using yaml2pyobject()."""
-
-    def save(self, filename: str):
-        """Save to YAML file using pyobject2yaml()."""
-```
-
-`Options` is a `dict` subclass. All option classes (SimulationOptions,
-AnimatOptions, etc.) extend it. The `load()` classmethod uses
-`yaml2pyobject()` to deserialize YAML into the appropriate Python objects,
-using `loader` dotted paths to resolve classes.
-
-## Simulation options
-
-**Source:** `farms_core/simulation/options.py`
-
-### SimulationOptions
-
-```python
-class SimulationOptions(Options):
-    def __init__(self, units, run, physics, mujoco=None,
-                 pybullet=None, extensions=None):
-        ...
-```
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `units` | `UnitOptions` | Unit scaling (length, angle, seconds, etc.) |
-| `run` | `RunOptions` | Runtime parameters (duration, timestep) |
-| `physics` | `PhysicsOptions` | Physics parameters (gravity) |
-| `mujoco` | `MujocoOptions` | MuJoCo-specific options |
-| `pybullet` | `PybulletOptions` | PyBullet-specific options |
-| `extensions` | list[`ExtensionOptions`] | Sim-level extension configs |
-
-### RunOptions
-
-```python
-class RunOptions(Options):
-    def __init__(self, duration, timestep, n_iterations=None):
-        ...
-```
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `duration` | float | Simulation duration [s] |
-| `timestep` | float | Physics timestep [s] |
-| `n_iterations` | int | Total iterations (computed if not given) |
-
-## Model options
-
-**Source:** `farms_core/model/options.py`
-
-### ModelOptions
-
-```python
-class ModelOptions(Options):
-    def __init__(self, sdf, **kwargs):
-        ...
-```
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `sdf` | str | Path to SDF model file |
-
-### AnimatOptions
-
-```python
-class AnimatOptions(ModelOptions):
-    def __init__(self, sdf, spawn, morphology, control, extensions):
-        ...
-```
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `sdf` | str | SDF file path |
-| `spawn` | `SpawnOptions` | Spawn position/orientation |
-| `morphology` | `MorphologyOptions` | Links, joints, collisions |
-| `control` | `ControlOptions` | Controller, sensors, motors |
-| `extensions` | list[`AnimatExtensionOptions`] | Animat extensions |
-
-### MorphologyOptions
-
-```python
-class MorphologyOptions(Options):
-    def __init__(self, links, self_collisions, joints, tendons=None):
-        ...
-```
-
-### LinkOptions
-
-```python
-class LinkOptions(Options):
-    def __init__(self, name, collisions, friction, fluid_interaction=False,
-                 density=1000, drag_coefficients=None, sites=None,
-                 solref=None, solimp=None, extras=None):
-        ...
-```
-
-| Attribute | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `name` | str | n/a | Link name |
-| `collisions` | bool | n/a | Enable collisions |
-| `friction` | list[float] | n/a | [lateral, spinning, rolling] |
-| `fluid_interaction` | bool | `False` | Enable fluid forces |
-| `density` | float | `1000` | Density [kg/m³] |
-| `drag_coefficients` | list[float] | `[0,0,0,0,0,0]` | 6 drag coefficients |
-| `sites` | list | `[]` | Site definitions |
-
-### JointOptions
-
-```python
-class JointOptions(Options):
-    def __init__(self, name, initial, limits, stiffness, springref,
-                 damping, extras=None):
-        ...
-```
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `name` | str | Joint name |
-| `initial` | list[float] | [position, velocity] |
-| `limits` | list[list[float]] | [[pos_min, pos_max], [vel_min, vel_max]] |
-| `stiffness` | float | Joint stiffness |
-| `springref` | float | Spring reference |
-| `damping` | float | Joint damping |
-
-### ControlOptions
-
-```python
-class ControlOptions(Options):
-    def __init__(self, controller_loader, sensors, motors, hill_muscles=None):
-        ...
-```
-
-### MotorOptions
-
-```python
-class MotorOptions(Options):
-    def __init__(self, joint_name, control_types, limits_torque, gains):
-        ...
-```
-
-### SensorsOptions
-
-```python
-class SensorsOptions(Options):
-    def __init__(self, links, joints, contacts, xfrc, muscles,
-                 adhesions, visuals):
-        ...
-```
-
-All attributes are `list[str]`, lists of sensor names.
-
-### SpawnOptions
-
-```python
-class SpawnOptions(Options):
-    def __init__(self, position, orientation, mode):
-        ...
-```
-
-### ArenaOptions
-
-```python
-class ArenaOptions(Options):
-    def __init__(self, sdf, spawn, water=None, ground_height=0.0):
-        ...
-```
-
-### WaterOptions
-
-```python
-class WaterOptions(Options):
-    def __init__(self, sdf, drag, buoyancy, height,
-                 velocity=None, viscosity=0.0, density, maps=None):
-        ...
-```
-
-## Experiment options
-
-**Source:** `farms_core/experiment/options.py`
-
-### ExperimentOptions
-
-```python
-class ExperimentOptions(Options):
-    def __init__(self, simulation, animats, arenas):
-        ...
-```
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `simulation` | SimulationOptions | Simulation configuration |
-| `animats` | list[AnimatOptions] | Animat configurations |
-| `arenas` | list[ArenaOptions] | Arena configurations |
-
-## Data classes
-
-**Source:** `farms_core/model/data.py`, `farms_core/experiment/data.py`
-
-### ExperimentData
-
-```python
-class ExperimentData:
-    def __init__(self, times, timestep, simulation, animats):
-        ...
-
-    @classmethod
-    def from_options(cls, options: ExperimentOptions) -> 'ExperimentData':
-        """Pre-allocate all data arrays from options."""
-
-    def to_file(self, filename: str):
-        """Save to HDF5."""
-
-    @classmethod
-    def from_file(cls, filename: str) -> 'ExperimentData':
-        """Load from HDF5."""
-```
-
-### AnimatData
-
-```python
-class AnimatData:
-    def __init__(self, sensors, state=None, network=None):
-        ...
-```
-
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `sensors` | `SensorsData` | All sensor arrays |
-| `state` | `StateData` | CPG network state (optional) |
-| `network` | `NetworkLog` | Network log (optional) |
-
-### SensorsData
-
-```python
-class SensorsData:
-    def __init__(self, links, joints, contacts, xfrc, muscles,
-                 adhesions, visuals):
-        ...
-```
-
-Each attribute is an array object with `.array` (numpy ndarray) and `.names`
-(list[str]).
-
-## I/O utilities
-
-**Source:** `farms_core/io/yaml.py`
-
-### yaml2pyobject
-
-```python
-def yaml2pyobject(filename, loader_class=None):
-    """Deserialize YAML to Python object using loader dotted paths."""
-```
-
-### pyobject2yaml
-
-```python
-def pyobject2yaml(obj, filename, test=False):
-    """Serialize Python Options object to YAML."""
-```
+## Where to find what
+
+| Topic | Page |
+|-------|------|
+| Every YAML key | [Configuration Parameter Reference](../env/configuration-reference.md) (generated) |
+| Options classes | [farms_core.model.options](core-options.md) |
+| Extensions, controllers, loggers | [Core Control](core-control.md) |
+| Sensor arrays | [Core Sensors](core-sensors.md) |
+| SDF, HDF5, YAML | [Core I/O](core-io.md) |
+| Data classes and files | [Data Flow and Data Model](../../explanation/data-flow.md) |
+| Full API | [Generated API reference](../api/farms_core/index.md) |
 
 ## import_item
 
-**Source:** `farms_core/extensions/extensions.py`
+`farms_core.extensions.extensions.import_item(path)` imports a class or
+function from its dotted path (`package.module.Name`). It resolves every
+`loader` of the YAML files: the classes of `loaders:` in the experiment
+file, and the extensions.
 
-```python
-def import_item(dotted_path: str):
-    """Import a Python object by its dotted path (e.g., 'pkg.module.Class')."""
-```
+::: farms_core.extensions.extensions.import_item
+    options:
+      show_root_heading: false
+      heading_level: 3
 
-Used to resolve `loader` fields in YAML configuration.
+## Units
+
+`SimulationUnitScaling` (`simulation.units` in the simulation file) scales
+the MuJoCo model: 1 m in reality is `meters` in the simulation, and so on
+for `seconds` and `kilograms`. The derived factors (`newtons`, `torques`,
+`velocity`, `angular_velocity`, `stiffness`, `damping`, `inertia`, ...)
+convert the other quantities. The data arrays are in SI units. Extensions
+get the factors from `task.units`.
+
+::: farms_core.units.SimulationUnitScaling
+    options:
+      show_root_heading: false
+      heading_level: 3
+      members: false
+
+## See also
+
+- [System Architecture](../../explanation/architecture.md)
+- [Options and YAML Design](../../explanation/options-yaml-design.md)

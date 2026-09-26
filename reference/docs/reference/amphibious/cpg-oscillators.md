@@ -74,6 +74,8 @@ Where:
 | $\Delta\varphi_{ji}$ | Desired phase difference (phase bias) | `connectivity.c_desired_phase(i)` |
 | $\mathcal{C}(i)$ | Set of connections targeting oscillator $i$ | `osc2osc_map` |
 
+In the YAML `osc2osc` entries, `in` is the target $i$ and `out` the source $j$: at steady state, $\varphi_{out} - \varphi_{in} = \Delta\varphi$ (`phase_bias`).
+
 **From `ode.pyx` (lines 45–78):**
 
 ```cython
@@ -136,14 +138,17 @@ The convergence rate `a_i` determines how quickly the oscillator amplitude track
 Both `ω_i` and `R_i^{nom}` are not fixed, they are **piecewise-linear functions of the descending drive** `d_i`:
 
 $$
-\omega_i(d_i) = \text{clamp}\left(g^{\omega}_i \cdot d_i + b^{\omega}_i,\; s^{\omega}_{lo},\; s^{\omega}_{hi}\right), \quad \text{if } d_i \in [lo_i, hi_i]
+\omega_i(d_i) =
+\begin{cases}
+g^{\omega}_i \, d_i + b^{\omega}_i & lo_i \le d_i \le hi_i \\
+s^{\omega}_{lo,i} & d_i < lo_i \\
+s^{\omega}_{hi,i} & d_i > hi_i
+\end{cases}
 $$
 
-The drive itself is clamped:
-
-$$
-d_i^{eff} = \text{clamp}(d_i, lo_i, hi_i)
-$$
+and the same for the nominal amplitude $R_i^{nom}$ with the amplitude
+parameters. There is no clamping: outside `[low, high]` the value jumps
+to the saturation value (`DriveDependentArrayCy.c_value`).
 
 The `DriveDependentArrayCy` stores 6 parameters per oscillator: `[gain, bias, low, high, saturation_low, saturation_high]`:
 
@@ -154,7 +159,7 @@ class DriveDependentArray(DriveDependentArrayCy):
         return cls(np.array([gain, bias, low, high, saturation_low, saturation_high]))
 ```
 
-This creates the characteristic "drive-frequency" curve seen in salamander CPG literature: below `low`, the oscillator is silent; above `high`, frequency saturates.
+This gives the drive-frequency curve of the salamander CPG models: below `low`, the value is `saturation_low` (0 silences the oscillator), and above `high` it is `saturation_high`.
 
 ---
 
@@ -568,7 +573,7 @@ The effective formula is:
 $$
 f(d) = \begin{cases}
 s_{lo} & \text{if } d < lo \\
-\text{clamp}(g \cdot d + b,\; s_{lo},\; s_{hi}) & \text{if } lo \leq d \leq hi \\
+g \cdot d + b & \text{if } lo \leq d \leq hi \\
 s_{hi} & \text{if } d > hi
 \end{cases}
 $$

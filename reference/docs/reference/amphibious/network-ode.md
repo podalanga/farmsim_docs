@@ -115,13 +115,19 @@ Full orchestration of the neural integration step. Handles multi-rate execution,
 
 ### Why `dopri5`?
 
-Coupled oscillators can become stiff equations, especially when subjected to discontinuous sensory feedback such as foot strikes. Simple fixed-step methods (like Euler integration) cause rapid phase drift or catastrophic instability in CPGs. The default `'dopri5'` (Dormand-Prince Runge-Kutta 4(5)) method provides adaptive step sizing with high-order accuracy, ensuring the phases of the oscillators remain mathematically pure regardless of external perturbations.
+`dopri5` (Dormand-Prince Runge-Kutta 4(5)) is an explicit method with
+adaptive steps and error control: it keeps the phases accurate over long
+runs, and refines its steps when the feedback terms change quickly (for
+example at foot contacts). It is not a stiff solver; with very strong
+couplings or feedback weights, reduce the maximum step (`max_step`, set to
+`physics.timestep` by `AmphibiousController`) or use an implicit
+integrator such as `vode` (`NetworkODE(data, integrator='vode', method='bdf')`).
 
 ### Multi-Rate Integration
 
 Physics engines often require extremely small timesteps (e.g., $1 \text{ms}$) to resolve collisions stably. However, neural CPG networks evolve comparatively slowly.
 
-The `modulo` parameter enables multi-rate integration. If `modulo = 5`, the computationally expensive ODE solver only steps once every 5 physics iterations. During skipped iterations, `NetworkODE` simply repeats the previous neural state, vastly accelerating the simulation without compromising physics stability.
+The `modulo` parameter enables multi-rate integration. If `modulo = 5`, the ODE solver only integrates on one iteration out of 5, and the state is copied on the others. This saves time, at the cost of a CPG state that changes by steps.
 
 ---
 
