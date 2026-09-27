@@ -22,7 +22,7 @@ The convention object is then passed to:
 
 - `AmphibiousData.from_options(convention, ...)`: to pre-allocate state arrays with correct sizes
 - `AmphibiousController(convention, ...)`: to map oscillator outputs to joint commands
-- `DescendingDrive` subclasses, to know where brain/spine indices are in the drive array
+- `DescendingDrive` subclasses: to know where brain/spine indices are in the drive array
 - `ode_oscillators_sparse()`: indirectly, via the data containers that were sized by the convention
 
 ## Class hierarchy
@@ -92,9 +92,9 @@ def __init__(self, **kwargs):
 | `links_names` | list | No | Generated | Custom link names. If `links` kwarg is present, extracted from `link['name']`. Otherwise auto-generated. |
 | `joints_names` | list | No | Generated | Custom joint names. Same fallback logic as `links_names`. |
 
-**Critical assertion at line 78**: `len(self.joints_names) >= n_joints_all()`. If you provide fewer names than the total joint count, construction fails with a detailed error message listing the body/legs/passive breakdown.
+**Assertion (line 78)**: `len(self.joints_names) >= n_joints_all()`. If you provide fewer names than the total joint count, construction fails with a detailed error message listing the body/legs/passive breakdown.
 
-**Critical assertion at line 86**: `assert not kwargs, kwargs`. Any unknown keyword argument causes construction failure. This is a strict constructor, typos in parameter names are caught immediately.
+**Assertion (line 86)**: `assert not kwargs, kwargs`. Any unknown keyword argument causes construction failure. This is a strict constructor: typos in parameter names are caught immediately.
 
 ### Default joint name generation
 
@@ -136,7 +136,7 @@ links_names = (
 )
 ```
 
-Note: body links have `n_joints_body + 1` entries (one more than joints, because the spine has one extra link at the head). Leg links do NOT include a passive section.
+Note: body links have `n_joints_body + 1` entries (one more than joints, because the spine has one extra link at the head). Leg links do not include a passive section.
 
 ## Construction classmethods
 
@@ -248,7 +248,7 @@ Names follow the pattern `osc_body_{joint_i}_{L|R}`. When `single_osc_body=True`
 
 This method has two calling conventions:
 
-**Convention 1, by flat joint index** (`index=` kwarg):
+**Convention 1: by flat joint index** (`index=` kwarg):
 
 ```python
 def leg_osc_indices(self, **kwargs):
@@ -262,7 +262,7 @@ def leg_osc_indices(self, **kwargs):
 
 The `index` here is a **joint** index (not an oscillator index). It must be >= `n_joints_body`. The offset into the oscillator array is computed as `n_osc_body() + leg_opj * (joint_index - n_joints_body)`.
 
-**Convention 2, by leg/side/joint decomposition**:
+**Convention 2: by leg/side/joint decomposition**:
 
 ```python
     else:
@@ -282,7 +282,7 @@ The `index` here is a **joint** index (not an oscillator index). It must be >= `
         )
 ```
 
-**Important**: `leg_i` in the assertion checks `0 <= leg_i < n_legs` but the error message says `Leg must be < {n_legs//2}`. This is because `leg_i` is a **pair index** (0, 1, 2, ...) where each pair contains a Left and Right leg. The assertion uses `n_legs` (total) but the actual valid range is `0` to `n_legs//2 - 1`. The assertion is overly permissive, it would allow `leg_i = n_legs - 1` but the indexing math would produce an out-of-bounds oscillator index.
+`leg_i` in the assertion checks `0 <= leg_i < n_legs` but the error message says `Leg must be < {n_legs//2}`. This is because `leg_i` is a **pair index** (0, 1, 2, ...) where each pair contains a Left and Right leg. The assertion uses `n_legs` (total) but the actual valid range is `0` to `n_legs//2 - 1`. The assertion is overly permissive: it would allow `leg_i = n_legs - 1` but the indexing math would produce an out-of-bounds oscillator index.
 
 ### `legosc2index(leg_i, side_i, joint_i, side=0)`
 
@@ -297,7 +297,7 @@ def legosc2index(self, leg_i, side_i, joint_i, side=0):
     )[side]
 ```
 
-The `side` parameter here is the **oscillator side within the leg joint** (0 or 1), NOT the body side. When `single_osc_legs=False`, each leg joint has two oscillators (representing opposing muscles), and `side` selects between them.
+The `side` parameter here is the **oscillator side within the leg joint** (0 or 1), not the body side. When `single_osc_legs=False`, each leg joint has two oscillators (representing opposing muscles), and `side` selects between them.
 
 ### `legosc2name(leg_i, side_i, joint_i, side=0)`
 
@@ -385,7 +385,7 @@ def oscname2index(self, name):
     return osc_names.index(name)
 ```
 
-**Performance note**: `oscname2index` iterates over ALL oscillators to build a name list and then does `.index()`. For large animats this is O(n) per lookup. Do not call this in a hot loop.
+**Performance note**: `oscname2index` iterates over all oscillators to build a name list and then does `.index()`. For large animats this is O(n) per lookup. Do not call this in a hot loop.
 
 ## Joint indexing
 
@@ -479,7 +479,7 @@ def feet_links_names(self):
     ]
 ```
 
-Returns the last link of each leg, the foot. Iterates over leg pairs then sides.
+Returns the last link of each leg (the foot). Iterates over leg pairs then sides.
 
 ## Contact indexing
 
@@ -490,7 +490,7 @@ def contactleglink2index(self, leg_i, side_i):
     return 2 * leg_i + side_i
 ```
 
-This is a **separate, simpler** indexing scheme for contact sensors. It does NOT correspond to the main link/joint index space. Contact sensors are indexed by leg pair and side only, there is one contact sensor per foot.
+This is a **separate, simpler** indexing scheme for contact sensors. It does not correspond to the main link/joint index space. Contact sensors are indexed by leg pair and side only. There is one contact sensor per foot.
 
 ### `contactleglink2name(leg_i, side_i)`
 
@@ -646,7 +646,7 @@ To add a 12th body joint to the salamander:
 4. The drive array gains `drive_body_11_L` and `drive_body_11_R`.
 5. **You must also update**: the SDF model (new link + joint), the oscillator network YAML (new oscillator entries, phase biases, connectivity), and any drive/controller YAML.
 
-**Do NOT** hardcode oscillator indices anywhere in your code. Always use `convention.bodyosc2index(joint_i, side)` or `convention.legosc2index(leg_i, side_i, joint_i, side)` to compute indices dynamically.
+**Do not** hardcode oscillator indices anywhere in your code. Always use `convention.bodyosc2index(joint_i, side)` or `convention.legosc2index(leg_i, side_i, joint_i, side)` to compute indices dynamically.
 
 ## How to integrate: adding a new leg pair
 
@@ -672,11 +672,11 @@ class MyCustomConvention(AmphibiousConvention):
         return self.n_osc() + 5  # Example
 ```
 
-**Important**: If you override `__init__`, always pop your custom kwargs before calling `super().__init__()`, because the parent constructor asserts `not kwargs`. If you add new parameters, they must be consumed before the parent sees them.
+If you override `__init__`, always pop your custom kwargs before calling `super().__init__()`, because the parent constructor asserts `not kwargs`. If you add new parameters, they must be consumed before the parent sees them.
 
-## Common failure modes
+## Troubleshooting
 
-### 1. Unknown kwargs assertion
+### Unknown kwargs assertion
 
 ```python
 assert not kwargs, kwargs
@@ -684,7 +684,7 @@ assert not kwargs, kwargs
 
 Any typo in parameter names (e.g., `n_joint_body` instead of `n_joints_body`) will cause an `AssertionError` with the dict of remaining kwargs. The fix is to use the exact parameter names documented above.
 
-### 2. Joint name count mismatch
+### Joint name count mismatch
 
 ```python
 assert len(self.joints_names) >= n_joints_all()
@@ -692,11 +692,11 @@ assert len(self.joints_names) >= n_joints_all()
 
 If you provide custom `joints_names` that are too short, construction fails. The error message includes the body/legs/passive breakdown to help debug.
 
-### 3. Index out of range in indexing methods
+### Index out of range in indexing methods
 
 Every indexing method (`body_osc_indices`, `leg_osc_indices`, `legosc2index`, etc.) has assertions that check `0 <= index < limit`. These will raise `AssertionError` with descriptive messages. Common cause: passing a leg pair index that is too large (e.g., `leg_i=3` when there are only 2 pairs).
 
-### 4. `single_osc_body=True` but passing `side=1`
+### `single_osc_body=True` but passing `side=1`
 
 ```python
 if self.single_osc_body:
@@ -705,7 +705,7 @@ if self.single_osc_body:
 
 If the convention was constructed with `single_osc_body=True`, there is only one oscillator per body joint. Passing `side=1` (or any non-zero value) to `bodyosc2index` or `bodyosc2name` raises an `AssertionError`.
 
-### 5. `oscname2index` performance
+### `oscname2index` performance
 
 `oscname2index` builds a full list of all oscillator names on every call. For large animats (38+ oscillators) called in a loop, this can be slow. Cache the result if you need repeated lookups:
 
@@ -723,18 +723,18 @@ for name in names:
     idx = name_to_idx[name]
 ```
 
-## What NOT to assume
+## Caveats
 
-1. **`leg_i` is a pair index, not an individual leg index.** `leg_i=0` means the first leg pair (both left and right legs of that pair). The valid range is `0` to `n_legs//2 - 1`, not `0` to `n_legs - 1`.
+- `leg_i` is a pair index, not an individual leg index. `leg_i=0` means the first leg pair (both left and right legs of that pair). The valid range is `0` to `n_legs//2 - 1`, not `0` to `n_legs - 1`.
 
-2. **Left always comes before Right.** In all name generation and indexing, side 0 = Left, side 1 = Right. This is consistent across oscillators, joints, links, and drives.
+- Left always comes before Right. In all name generation and indexing, side 0 = Left, side 1 = Right. This is consistent across oscillators, joints, links, and drives.
 
-3. **Passive joints have no oscillators.** They are included in `n_joints_all()` and `joints_names` but do NOT contribute to `n_osc()` or `n_states()`. The ODE state vector only contains active joints.
+- Passive joints have no oscillators. They are included in `n_joints_all()` and `joints_names` but do not contribute to `n_osc()` or `n_states()`. The ODE state vector only contains active joints.
 
-4. **`bodyjoint2name` takes a link index, not a joint index.** Despite its name, it indexes into `self.joints_names[link_i]` where `link_i` ranges from 0 to `n_joints_body` (inclusive). This is because the naming was designed so that joint `i` connects link `i` to link `i+1`.
+- `bodyjoint2name` takes a link index, not a joint index. Despite its name, it indexes into `self.joints_names[link_i]` where `link_i` ranges from 0 to `n_joints_body` (inclusive). This is because the naming was designed so that joint `i` connects link `i` to link `i+1`.
 
-5. **`n_links_body` defaults to `n_joints_body + 1`.** A spine with N joints has N+1 links (head + N segments). If you override this, you must ensure the SDF model matches.
+- `n_links_body` defaults to `n_joints_body + 1`. A spine with N joints has N+1 links (head + N segments). If you override this, you must ensure the SDF model matches.
 
-6. **Brain drives are always 2.** The `descending_drives_names = ['brain_left', 'brain_right']` is hardcoded. Even with `single_osc_body=True`, you always get 2 brain drives. This is because brain drives represent left/right descending pathways, not oscillator counts.
+- Brain drives are always 2. The `descending_drives_names = ['brain_left', 'brain_right']` is hardcoded. Even with `single_osc_body=True`, you always get 2 brain drives. This is because brain drives represent left/right descending pathways, not oscillator counts.
 
-7. **The `Side` enum uses `LEFT=0`, `RIGHT=1`.** This is the same convention as the integer `side` parameter in all indexing methods. Do not confuse `Side` (body side L/R) with the oscillator `side` parameter in `legosc2index` (which selects between the two opposing muscle oscillators within a leg joint).
+- The `Side` enum uses `LEFT=0`, `RIGHT=1`. This is the same convention as the integer `side` parameter in all indexing methods. Do not confuse `Side` (body side L/R) with the oscillator `side` parameter in `legosc2index` (which selects between the two opposing muscle oscillators within a leg joint).

@@ -12,7 +12,7 @@ In addition to the Ekeberg torque model, FARMS provides three additional joint a
 
 ## 1. Passive Joint (`PassiveJointCy`)
 
-A passive joint applies spring, damping, and friction torques with no active component, it behaves as a purely mechanical element.
+A passive joint applies spring, damping, and friction torques with no active component. It behaves as a purely mechanical element.
 
 ### Torque Equation
 
@@ -93,10 +93,10 @@ $$
 $$
 
 Where:
-- $y_k = r_k(1+\cos\varphi_k)$, neural output of oscillator $k$
-- $\delta_j$, joint offset from the CPG state at `offsets(iteration)[joint_data_i]`
-- $g$, `transform_gain[joint_data_i]`
-- $b$, `transform_bias[joint_data_i]`
+- $y_k = r_k(1+\cos\varphi_k)$: neural output of oscillator $k$
+- $\delta_j$: joint offset from the CPG state at `offsets(iteration)[joint_data_i]`
+- $g$: `transform_gain[joint_data_i]`
+- $b$: `transform_bias[joint_data_i]`
 
 **From `position_muscle_cy.pyx`:**
 
@@ -142,7 +142,7 @@ The `position_cmds(iteration)` method (defined in `JointsControlCy`, the base of
 
 ## 3. Position Phase (`PositionPhaseCy`)
 
-The most sophisticated position controller. Rather than using amplitude difference, it tracks the **oscillator phase** directly, with a built-in **swim/walk switching** mechanism based on amplitude threshold.
+The most complex position controller. Rather than using amplitude difference, it tracks the **oscillator phase** directly, with a built-in **swim/walk switching** mechanism based on amplitude threshold.
 
 ### Two-Mode Control
 
@@ -196,7 +196,7 @@ $$
 \theta^{cmd} = g \cdot (\Delta\theta + \theta) + b
 $$
 
-where $\theta = (\theta_{raw} - b)/g$ is the sensed position mapped into convention space and $\text{wrap}(x) = fmod(x + \pi,\, 2\pi) - \pi$. The limb is driven toward the CPG joint offset $\delta_j$ (i.e. `0 + offsets[joint_data_i]`), the retracted/neutral posture dictated by the descending drive, not a fixed $\pi$.
+where $\theta = (\theta_{raw} - b)/g$ is the sensed position mapped into convention space and $\text{wrap}(x) = fmod(x + \pi,\, 2\pi) - \pi$. The limb is driven toward the CPG joint offset $\delta_j$ (i.e. `0 + offsets[joint_data_i]`): the retracted/neutral posture dictated by the descending drive, not a fixed $\pi$.
 
 **Walking mode (`amplitude >= threshold`):**
 
@@ -210,7 +210,7 @@ $$
 
 The joint tracks the oscillator phase plus the CPG offset: `desired_angle = phases[osc_i_0] + offsets[joint_data_i]`. The angular difference `dif` is the wrapped phase error, and `transform_gain` scales the proportional correction.
 
-!!! important "The threshold as a gait switch"
+!!! note "The threshold as a gait switch"
     The `threshold` parameter compares against the oscillator amplitude. The Cython class default is `0` (`kwargs.pop('threshold', 0)`), but `AmphibiousController` constructs `PositionPhaseCy` with `threshold=1e-2`. When the descending drive is low (swimming regime), the nominal amplitude converges to near zero, which drops below threshold and switches the limb to hold its CPG offset posture. When drive increases (walking regime), amplitude rises above threshold, enabling phase tracking. This creates an automatic gait transition without explicit state machines.
 
 ### Constructor Parameters
@@ -298,6 +298,6 @@ def step(self, iteration, time, timestep):
 
 ## See Also
 
-- [Ekeberg Muscle Model](ekeberg-muscle.md): Deep dive into active muscle torques
+- [Ekeberg Muscle Model](ekeberg-muscle.md): details of the active muscle torques
 - [CPG Oscillators](cpg-oscillators.md): Source of all `outputs()` and `phases()` used here
 - [Amphibious Controller](amphibious-controller.md): How all controllers are assembled

@@ -1,4 +1,4 @@
-# Contributing, Development guide and coding standards
+# Contributing: development guide and coding standards
 
 How to set up a development environment, where the code lives, the coding
 conventions, how to test a change, and how the documentation is built and

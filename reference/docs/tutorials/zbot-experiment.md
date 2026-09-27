@@ -1,4 +1,4 @@
-# Swimming Experiment, YAML config walkthrough
+# Swimming Experiment: YAML config walkthrough
 
 This page is a complete walkthrough of the `experiments/zbot_swimming/` directory. Every key field in every config file is explained with its actual value and the effect it has on the simulation.
 
@@ -44,7 +44,7 @@ The other command line options are listed in the [CLI reference](../reference/en
 
 ---
 
-## `experiment_config.yaml`, The Manifest
+## `experiment_config.yaml`: The Manifest
 
 This is the **only file** you pass to `farmsim`. It points to all other configs and declares which Python classes deserialise them.
 
@@ -66,7 +66,7 @@ loaders:
     - farms_amphibious.data.data.AmphibiousData
 ```
 
-### `loaders`, Class Injection
+### `loaders`: Class Injection
 
 The `loaders` section tells `farms_sim` which Python class to instantiate for each section. This is what allows you to use `AmphibiousOptions` (which carries CPG and muscle fields) instead of the minimal `AnimatOptions`.
 
@@ -78,12 +78,12 @@ The `loaders` section tells `farms_sim` which Python class to instantiate for ea
 | `experiment_data` | `AmphibiousExperimentData` | Container for all animat/arena data |
 | `animats_data` | `AmphibiousData` | Per-animat data arrays (sensors, joints) |
 
-!!! important "Custom Controllers Still Need AmphibiousOptions"
+!!! note "Custom Controllers Still Need AmphibiousOptions"
     Even if you write your own controller, keep `AmphibiousOptions` in the loaders as long as you use the CPG network section in `animat_config.yaml`. Only switch to `AnimatOptions` if you remove the `network:` section entirely.
 
 ---
 
-## `simulation_config.yaml`, Physics & Logging
+## `simulation_config.yaml`: Physics & Logging
 
 ```yaml
 # experiments/zbot_swimming/simulation_config.yaml
@@ -166,7 +166,7 @@ extensions:
 | `integrator: implicitfast` | Implicit fast | MuJoCo's semi-implicit integrator, good for stiff joints |
 | `cone: elliptic` | Elliptic friction cone | More realistic than pyramidal but costs more computation |
 
-#### Simulation Extensions, What's Wired Up by Default
+#### Simulation Extensions Wired Up by Default
 
 Extensions are simulation-level hooks that run **globally** (not per-animat). They execute in the order listed:
 
@@ -182,14 +182,14 @@ Extensions are simulation-level hooks that run **globally** (not per-animat). Th
 The four extensions above are only the ones the default `zbot_swimming` and
 `zbot_bout_glide` configs happen to enable. FARMS ships several more
 `TaskExtension`s that slot into the same `simulation_config.yaml`
-`extensions:` list without touching any Python, verified against
+`extensions:` list without touching any Python (verified against
 `farms_mujoco/farms_mujoco/simulation/extensions.py` and
-`farms_mujoco/farms_mujoco/sensors/camera.py`. Everything below is written
-against the Zbot's real link names (`Head`, `Segment1`–`Segment6`,
+`farms_mujoco/farms_mujoco/sensors/camera.py`). Everything below is written
+against the Zbot's real link names (`Head`, `Segment1` to `Segment6`,
 `TailSegment`) so it can be copy-pasted straight into
 `experiments/zbot_swimming/simulation_config.yaml`.
 
-##### `CameraRecording`, offscreen video export
+##### `CameraRecording`: offscreen video export
 
 Unlike `CameraFollower`, which only moves the interactive viewer camera,
 `CameraRecording` (`farms_mujoco.sensors.camera.CameraRecording`) renders
@@ -318,7 +318,7 @@ arrays out of `AnimatData.sensors` in a controller or `analysis.py`, and
 extension reference (including `SwimmingExtension`, which lives in
 `animat_config.yaml` rather than `simulation_config.yaml`).
 
-## `arena_config.yaml`, World and Water
+## `arena_config.yaml`: World and Water
 
 ```yaml
 # experiments/zbot_swimming/arena_config.yaml (shortened)
@@ -364,7 +364,7 @@ listed in the [Configuration reference](../reference/env/configuration-reference
 
 ---
 
-## `animat_config.yaml`, The Robot Config
+## `animat_config.yaml`: The Robot Config
 
 This is the largest and most important file. It is split into four logical sections: **spawn**, **morphology**, **control**, and **extensions**.
 
@@ -438,7 +438,7 @@ readability (`farms_core.model.options.LinkOptions`,
     is below `$\rho V$` of its geoms. See the buoyancy note of
     [The Zbot Model](zbot-model.md).
 
-### Control, Sensors, Motors, and CPG Network
+### Control: Sensors, Motors, and CPG Network
 
 #### Sensors
 
@@ -716,7 +716,7 @@ parameter does not behave as expected:
     (`animat_0_options.yaml`, ...) are snapshots for reproducibility and are
     never read back: edit `animat_config.yaml` and run again.
 
-## `analysis.py`, Post-Processing
+## `analysis.py`: Post-Processing
 
 After the simulation, run:
 

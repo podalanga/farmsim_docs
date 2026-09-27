@@ -2,7 +2,7 @@
 
 Options classes extending `farms_core` for amphibious animat configuration.
 
-This module provides configuration classes for the FARMS amphibious models. It extends `farms_core` by adding options specific to segmented amphibious bodies and multi-legged morphologies. Additionally, it defines the parameters for the central pattern generator (CPG) network, sensor topologies, and provides a pure kinematics controller mode for replay experiments.
+This module provides configuration classes for the FARMS amphibious models. It extends `farms_core` with options specific to segmented amphibious bodies and multi-legged morphologies. It also defines the parameters for the central pattern generator (CPG) network, sensor topologies, and provides a pure kinematics controller mode for replay experiments.
 
 ---
 
@@ -25,7 +25,7 @@ class DriveKind(str, Enum):
 
 ## `AmphibiousOptions`
 
-Inherits from `AnimatOptions`, see [farms_core_options](../core/core-options.md). Core configuration for an amphibious animat, encompassing morphology, spawning, control, and physics extensions.
+Inherits from `AnimatOptions` (see [farms_core_options](../core/core-options.md)). Core configuration for an amphibious animat: morphology, spawning, control, and physics extensions.
 
 ```python
 def __init__(self, sdf: str, **kwargs):
@@ -130,7 +130,7 @@ def __init__(self, **kwargs):
 | `drive2joint` | `list` | `None` | Mapping of drives to joints. |
 
 !!! note
-    The constructor relies heavily on `from_options` and `defaults_from_convention` to extract and populate network parameters directly from kwargs.
+    The constructor relies on `from_options` and `defaults_from_convention` to extract and populate network parameters directly from kwargs.
 
 ### Network Parameters
 Common variables extracted from dictionaries and mapped to the network structure include:

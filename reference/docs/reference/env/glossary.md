@@ -1,6 +1,6 @@
 # Glossary
 
-This glossary defines core domain terminology used across the FARMS framework and cross-references where these concepts are actually implemented in the codebase.
+This glossary defines the terms used in FARMS and points to where each one is implemented in the code.
 
 ## A
 
@@ -39,7 +39,7 @@ An `IntEnum` defining the modes by which joints and actuators are driven. Values
 ## D
 
 **dm_control**
-Google DeepMind's software stack for physics-based simulation and Reinforcement Learning environments, utilizing MuJoCo. FARMS heavily leverages this instead of raw MuJoCo bindings.
+Google DeepMind's software stack for physics-based simulation and Reinforcement Learning environments, built on MuJoCo. FARMS uses it instead of the raw MuJoCo bindings.
 *Implementation*: The entire `farms_mujoco` backend is built around `dm_control.rl.control.Task` and `dm_control.rl.control.Environment`. See `farms_mujoco/simulation/task.py` and `farms_mujoco/simulation/simulation.py`.
 
 **Descending Drive**

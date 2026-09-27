@@ -61,11 +61,11 @@ Converts XYZ Euler angles to MuJoCo quaternion. Uses scipy's `Rotation` class wi
 
 ### `get_local_transform(parent_pose, child_pose)`
 
-Computes the local transform of a child link relative to its parent. Returns `(local_pos, local_euler)`, the position and XYZ Euler angles of the link in the parent's frame.
+Computes the local transform of a child link relative to its parent. Returns `(local_pos, local_euler)`: the position and XYZ Euler angles of the link in the parent's frame.
 
 If `parent_pose` is `None`, the parent transform is identity (world frame).
 
-## `mjc_add_link()`, per-link conversion
+## `mjc_add_link()`: per-link conversion
 
 ```python
 def mjc_add_link(mjcf_model, mjcf_map, sdf_link, prefix='', **kwargs):
@@ -160,7 +160,7 @@ body.add('inertial',
 
 Mass and inertia are clamped to `MIN_MASS` (1e-15) and `MIN_INERTIA` (1e-15) to avoid MuJoCo issues with zero-inertia bodies. The `fullinertia` format is `[Ixx, Iyy, Izz, Ixy, Ixz, Iyz]`.
 
-!!! note "The inertial `quat` is never set, the tensor is pre-rotated instead"
+!!! note "The inertial `quat` is never set; the tensor is pre-rotated instead"
     The source has a commented-out `quat=euler2mjcquat(inertial.pose[3:])` line with the
     note `# Not working in MuJoCo?`. Instead of relying on MJCF's `<inertial quat=.../>`
     to orient the inertia tensor, the code rotates the full 3×3 inertia tensor in Python
@@ -171,13 +171,13 @@ Mass and inertia are clamped to `MIN_MASS` (1e-15) and `MIN_INERTIA` (1e-15) to 
     ```
     and only ever emits `fullinertia` in the body's own (unrotated) frame. This means:
     the eigenvalue-positivity assertion (`eigvals > 0`) runs on the *un-rotated* diagonal
-    matrix built from `inertial.inertias`, then the rotation is applied afterward, so a
+    matrix built from `inertial.inertias`, and the rotation is applied afterward. A
     physically valid (positive-definite) tensor stays valid under rotation, but if you
     ever add a code path that sets `quat=` on the `inertial` element directly, you will
     double-rotate the tensor. This is the same root bug pattern documented for `zbot`'s
     SDF/MuJoCo inertia export (see the SDF fidelity notes in `reference/core/farms-core.md`):
     diagonalizing to principal axes and then discarding or duplicating the frame
-    rotation silently corrupts mass distribution. Here it is done correctly, this note
+    rotation silently corrupts mass distribution. Here it is done correctly. This note
     exists to stop a future edit from "fixing" it by uncommenting the `quat=` line.
 
 ## `add_link_recursive()`
@@ -201,7 +201,7 @@ def add_link_recursive(mjcf_model, mjcf_map, sdf, **kwargs):
 
 Recursively traverses the SDF link tree, adding each link and its children. The `sdf.get_children(link=...)` and `sdf.get_parent_joint(link=...)` methods from `ModelSDF` provide the tree structure.
 
-## `sdf2mjcf()`, full model conversion
+## `sdf2mjcf()`: full model conversion
 
 ```python
 def sdf2mjcf(sdf, **kwargs) -> (mjcf.RootElement, Dict):
@@ -296,7 +296,7 @@ for pair_i, (link1, link2) in enumerate(animat_options.morphology.self_collision
 
 Creates explicit contact pairs for self-collisions defined in the animat options. `condim=6` enables full 6-DOF contact (friction + torsional + rolling).
 
-## `setup_mjcf_xml()`, complete scene assembly
+## `setup_mjcf_xml()`: complete scene assembly
 
 ```python
 def setup_mjcf_xml(experiment_options, **kwargs) -> (mjcf.RootElement, list, dict):
@@ -310,7 +310,7 @@ Converts the arena SDF to MJCF with `fixed_base=True`. Sets the arena position f
 
 **Step 2: Water**
 
-If `arena_options.water.height` is set, converts the water SDF to MJCF. The water body is positioned at the water surface height. Water has `contype=0, conaffinity=0` (no collision, it's visual only).
+If `arena_options.water.height` is set, converts the water SDF to MJCF. The water body is positioned at the water surface height. Water has `contype=0, conaffinity=0` (no collision; it is visual only).
 
 **Step 3: Animats**
 
@@ -318,7 +318,7 @@ For each animat:
 - Reads the animat SDF
 - Calls `sdf2mjcf` with `prefix=get_prefix(animat_i)`, `use_actuators=True`, `use_sensors=True`
 - Sets `contype=2^(animat_i+1)` so each animat has a unique collision group
-- `conaffinity=2*31-1` (note: this is `2*31-1 = 61`, NOT `2^31-1`, this is likely a bug, should be `2**31-1`)
+- `conaffinity=2*31-1` (note: this is `2*31-1 = 61`, not `2^31-1`; this is likely a bug and should be `2**31-1`)
 
 **Step 4: Compiler options**
 
@@ -405,7 +405,7 @@ elif isinstance(collision, Ellipsoid):
 
 2. Ensure the SDF parser (`farms_core/io/sdf.py`) can parse the new geometry type.
 
-3. No changes needed to `sdf2mjcf` or `setup_mjcf_xml`, they call `mjc_add_link` which handles all geometry types.
+3. No changes needed to `sdf2mjcf` or `setup_mjcf_xml`: they call `mjc_add_link` which handles all geometry types.
 
 ## How to integrate: adding a new actuator type
 
@@ -431,38 +431,38 @@ if use_custom_actuator:
 
 3. In `ExperimentTask.initialize_control`, add the actuator name mapping.
 
-## Common failure modes
+## Troubleshooting
 
-### 1. `conaffinity` bug
+### `conaffinity` bug
 
 Line 1398 and 1448: `conaffinity=2*31-1` (which is 61) instead of `2**31-1` (which is 2147483647). This means animats only collide with collision group 61, not all groups. This is likely a typo but may affect collision behavior.
 
-### 2. Missing joints in SDF
+### Missing joints in SDF
 
 If `animat_options.control.joints_names()` references a joint that doesn't exist in the SDF, the assertion at line 965 fails: `Joint "{joint_name}" required by animat options not found in newly created MJCF file.`
 
-### 3. Zero inertia bodies
+### Zero inertia bodies
 
 MuJoCo requires non-zero mass and inertia. The `MIN_MASS` and `MIN_INERTIA` constants (1e-15) prevent this, but if a link has no inertial properties in the SDF, the computed inertia may be wrong.
 
-### 4. Spawn mode joint count mismatch
+### Spawn mode joint count mismatch
 
 If the spawn mode creates N root joints but the keyframe setup expects a different count, the qpos/qvel arrays will be misaligned. The keyframe code handles free joints (7 qpos, 6 qvel) and regular joints (1 qpos, 1 qvel), but multi-DOF spawn modes create intermediate bodies with their own joints.
 
-### 5. Mesh file path issues
+### Mesh file path issues
 
 `mjcf2str` with `remove_temp=True` strips directory prefixes from mesh paths. If the mesh files are not in the working directory when MuJoCo loads the XML, loading will fail.
 
-## What NOT to assume
+## Caveats
 
-1. **`get_prefix` uses `a{i}_` format**, NOT `animat_{i}_`. The `ExperimentTask` uses `get_prefix` for naming, so all MuJoCo names use the `a{i}_` prefix.
+- `get_prefix` uses `a{i}_` format, not `animat_{i}_`. The `ExperimentTask` uses `get_prefix` for naming, so all MuJoCo names use the `a{i}_` prefix.
 
-2. **Three actuators are ALWAYS created per joint** (position, velocity, torque), regardless of the motor's `control_types`. The `ExperimentTask` later disables unused actuators via force limiting.
+- Three actuators are always created per joint (position, velocity, torque), regardless of the motor's `control_types`. The `ExperimentTask` later disables unused actuators via force limiting.
 
-3. **The keyframe is named `"initial"`** and has `time=0.0`. `ExperimentTask.initialize_episode` resets to `keyframe_id=0`, which is this keyframe.
+- The keyframe is named `"initial"` and has `time=0.0`. `ExperimentTask.initialize_episode` resets to `keyframe_id=0`, which is this keyframe.
 
-4. **`inertiafromgeom=False`** means MuJoCo uses the inertial properties from the SDF, not computed from geometry. If the SDF inertial properties are wrong, the simulation will have wrong dynamics.
+- `inertiafromgeom=False` means MuJoCo uses the inertial properties from the SDF, not computed from geometry. If the SDF inertial properties are wrong, the simulation will have wrong dynamics.
 
-5. **`fusestatic=True**` means MuJoCo fuses static bodies into their parents for efficiency. This changes the body count but not the dynamics.
+- `fusestatic=True` means MuJoCo fuses static bodies into their parents for efficiency. This changes the body count but not the dynamics.
 
-6. **The `conaffinity` value `2*31-1`** is 61, not 2^31-1. This is likely a bug but has been in the codebase for a long time. Do not assume it means "collide with everything."
+- The `conaffinity` value `2*31-1` is 61, not 2^31-1. This is likely a bug but has been in the codebase for a long time. Do not assume it means "collide with everything."

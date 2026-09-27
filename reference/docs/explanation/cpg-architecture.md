@@ -118,7 +118,7 @@ example position control for the body and Ekeberg muscles for the legs.
 - Default frequencies and amplitudes
 - Drive names and kinds
 
-This allows minimal YAML configuration, specify only the morphology
+This allows minimal YAML configuration: specify only the morphology
 (`n_joints_body`, `n_legs`, `n_dof_legs`) and the convention generates the full
 network.
 

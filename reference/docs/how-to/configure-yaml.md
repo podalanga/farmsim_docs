@@ -38,12 +38,12 @@ loaders:
 ```
 
 `animats` and `arenas` are lists because an experiment can spawn multiple
-animats/arenas, `loaders.animats_options`/`loaders.arenas_options` must
+animats/arenas. `loaders.animats_options`/`loaders.arenas_options` must
 have exactly as many entries, matched by index.
 
 !!! warning "This is a different mechanism from extension `loader:`/`config:` pairs"
     Individual entries in an `extensions:` list (see below) use an inline
-    `{loader, config}` pair instead, that's `ExtensionOptions`, resolved by
+    `{loader, config}` pair instead. That is `ExtensionOptions`, resolved by
     whatever creates the extensions (e.g. `ExperimentTask`), not by
     `ExperimentOptions.load()`. See
     [Options and YAML Design](../explanation/options-yaml-design.md) for
@@ -157,7 +157,7 @@ Each extension entry has:
 `CameraFollower` moves the **live interactive viewer's** camera only (no
 effect headless, no effect on exported video). `CameraRecording` is a fully
 independent offscreen renderer that produces an actual video file and works
-identically whether or not a viewer window is open, use it whenever you
+identically whether or not a viewer window is open. Use it whenever you
 need output you can share, not just a nicer live view. See
 [Use Built-in Extensions](use-extensions.md) for the full extension catalog,
 every config field, and known gotchas for each one (including a documented
@@ -170,7 +170,7 @@ every config field, and known gotchas for each one (including a documented
 ## Multiple animats
 
 To simulate multiple animats, add filenames to `animats` **and** a matching
-loader class to `loaders.animats_options`, at the same index, the two lists
+loader class to `loaders.animats_options` at the same index. The two lists
 are matched by position, not by any key inside the animat entry itself:
 
 ```yaml

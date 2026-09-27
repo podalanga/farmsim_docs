@@ -1,4 +1,4 @@
-# Custom CPG Controller, Step-by-step guide
+# Custom CPG Controller: step-by-step guide
 
 This guide builds a Central Pattern Generator (CPG) controller for the Zbot
 from scratch, by subclassing `AnimatController`: first an open-loop

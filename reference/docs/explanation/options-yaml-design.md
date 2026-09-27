@@ -1,6 +1,6 @@
 # Options and YAML Design
 
-This document explains the design of FARMS' configuration system, how YAML
+This document explains the design of FARMS' configuration system: how YAML
 files are loaded into Python objects, how the `Options` base class works, and
 why dotted-path loaders are used.
 
@@ -18,9 +18,9 @@ class Options(dict):
         """Save to YAML using pyobject2yaml()."""
 ```
 
-All configuration classes extend `Options`, `SimulationOptions`,
+All configuration classes extend `Options` (`SimulationOptions`,
 `AnimatOptions`, `ArenaOptions`, `ExperimentOptions`, and their amphibious
-subclasses. This provides:
+subclasses). This provides:
 
 - **Serialization**: any options object can be saved to and loaded from YAML
 - **Dict compatibility**: options behave as dicts, allowing flexible
@@ -31,7 +31,7 @@ subclasses. This provides:
 ## YAML loading mechanism
 
 `yaml2pyobject()` (`farms_core/io/yaml.py`) is **not** a smart, `loader`-aware
-deserializer, it's a one-line wrapper around `yaml.load()`. It returns a
+deserializer. It is a one-line wrapper around `yaml.load()`. It returns a
 plain nested dict/list/scalar tree with no knowledge of `Options` classes at
 all:
 
@@ -44,7 +44,7 @@ def yaml2pyobject(filename: str) -> Any:
 
 `Options.load()` (`farms_core/options.py`) does the actual object
 construction, by handing that dict straight to the class's own `__init__` as
-kwargs, no dotted-path resolution happens here either:
+kwargs. No dotted-path resolution happens here either:
 
 ```python
 @classmethod
@@ -92,7 +92,7 @@ smaller, unrelated mechanism used for the `extensions:` lists inside
 `simulation_config.yaml` and `animat_config.yaml`. Each entry is an inline
 `{loader, config}` pair, and it's the *caller* (e.g. `ExperimentTask`) that
 calls `import_item(extension.loader)` and then `.from_options(config=
-extension.config, ...)`, `ExtensionOptions.__init__` itself just stores the
+extension.config, ...)`. `ExtensionOptions.__init__` itself only stores the
 two fields:
 
 ```yaml
@@ -103,7 +103,7 @@ extensions:
 ```
 
 These two mechanisms look similar (`loader:` appears in both) but are
-independent code paths with different call signatures, don't assume one
+independent code paths with different call signatures. Do not assume one
 generic "loader resolution" pass handles all of it.
 
 ## The from_options() pattern

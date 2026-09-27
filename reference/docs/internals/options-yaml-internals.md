@@ -70,7 +70,7 @@ __setattr__ = dict.__setitem__
 
 These two lines redirect attribute access to dictionary operations. `options.key = value` is equivalent to `options['key'] = value`.
 
-The explicit `__getattr__` method is a fallback that converts `KeyError` to `AttributeError` for missing keys. This is important for `hasattr()` checks and pickling.
+The explicit `__getattr__` method is a fallback that converts `KeyError` to `AttributeError` for missing keys. `hasattr()` checks and pickling depend on this.
 
 ### `to_dict()`
 
@@ -94,7 +94,7 @@ def load(cls, filename, strict=True):
     return cls(**yaml2pyobject(filename), **kwargs)
 ```
 
-Loads a YAML file and constructs an `Options` instance. The `strict` parameter is passed as a kwarg to the constructor, if `strict=False`, the constructor should accept unknown keys without raising.
+Loads a YAML file and constructs an `Options` instance. The `strict` parameter is passed as a kwarg to the constructor. If `strict=False`, the constructor should accept unknown keys without raising.
 
 ### `save(filename)`
 
@@ -178,7 +178,7 @@ def pyobject2yaml(filename, pyobject, mode='w+'):
             Dumper=YamlDumper)
 ```
 
-Simpler than `write_yaml`, no `explicit_start`, `indent`, or `width` settings. Used by `Options.save()`.
+Simpler than `write_yaml`: no `explicit_start`, `indent`, or `width` settings. Used by `Options.save()`.
 
 ### `yaml2pyobject(filename)`
 
@@ -189,7 +189,7 @@ def yaml2pyobject(filename):
     return options
 ```
 
-Simpler than `read_yaml`, same functionality but used by `Options.load()`.
+Simpler than `read_yaml`. Same functionality but used by `Options.load()`.
 
 ### `defaultdict` representer
 
@@ -307,7 +307,7 @@ ExperimentOptions (Options)         # loaded by ExperimentOptions.load(), see be
 ```
 
 Every box above marked `{loader: str, config: dict}` is an `ExtensionOptions`
-instance, a small, generic, inline mechanism. `loaders: ExperimentLoadOptions`
+instance (a small, generic, inline mechanism). `loaders: ExperimentLoadOptions`
 at the bottom is a **different**, top-level-only mechanism: it's not nested
 inside `simulation`/`animats`/`arenas`, and its four/five fields point at
 whole `Options` subclasses (and data classes) rather than extensions. See
@@ -318,7 +318,7 @@ whole `Options` subclasses (and data classes) rather than extensions. See
 ### Extensions: inline `{loader, config}`, resolved by the caller
 
 `ExtensionOptions` (`farms_core/extensions/extensions.py`) only stores its
-two fields, it does **not** resolve the dotted path itself:
+two fields. It does **not** resolve the dotted path itself:
 
 ```python
 class ExtensionOptions(Options):
@@ -362,7 +362,7 @@ overridden to do the `loaders:`-driven resolution:
 ### Constructor chain
 
 `ExperimentOptions.__init__` itself is much simpler than the loading logic
-above, it just assigns whatever it's handed (already-parsed options
+above: it assigns whatever it's handed (already-parsed options
 objects, by the time `.load()` calls it a second time, or already-`Options`
 instances if constructed directly in Python):
 
@@ -380,16 +380,16 @@ class ExperimentOptions(Options):
 
 Sub-options classes (`SimulationOptions`, `AnimatOptions`, etc.) each follow
 the more typical pattern of popping their own fields from `**kwargs` and
-constructing their own nested `Options` objects, see, e.g.,
+constructing their own nested `Options` objects (see, e.g.,
 `SimulationOptions.__init__` building `RuntimeSimulationOptions`,
 `PhysicsSimulationOptions`, `MuJoCoSimulationOptions`, and
-`PybulletSimulationOptions` from the corresponding sub-dicts.
+`PybulletSimulationOptions` from the corresponding sub-dicts).
 
 ### Strict mode
 
 Most constructors accept a `strict` parameter (default `True`). When `strict=True`, unknown kwargs raise an exception. When `strict=False` (used by `Options.load(filename, strict=False)`), unknown kwargs are silently ignored.
 
-This is important for backward compatibility: if a YAML file has extra fields that the current code doesn't recognize, loading with `strict=False` will succeed.
+This keeps backward compatibility: if a YAML file has extra fields that the current code doesn't recognize, loading with `strict=False` will succeed.
 
 ### `from_options` pattern
 
@@ -476,21 +476,21 @@ extensions:
 
 3. **How it's loaded**: `ExperimentTask.extract_extensions()` calls `import_item(extension.loader)` to resolve the class, then calls `.from_options(config=extension.config, ...)`.
 
-## Common failure modes
+## Troubleshooting
 
-### 1. Unknown kwargs with strict=True
+### Unknown kwargs with strict=True
 
 If a YAML file contains a key that the options class doesn't recognize, and `strict=True` (default), the constructor raises `Exception(f'Unknown kwargs: {kwargs}')`. This is the most common error when upgrading FARMS or using custom YAML files.
 
-**Fix**: Either add the field to the options class, or load with `strict=False`.
+Either add the field to the options class, or load with `strict=False`.
 
-### 2. IntEnum serialization
+### IntEnum serialization
 
 `IntEnum` values are serialized as integers, not as their names. This means a YAML file will contain `0` instead of `'position'` for `ControlType.POSITION`. When reading the YAML back, you get an integer, not an enum value.
 
-**Fix**: Convert explicitly: `ControlType(value)` to get the enum from an integer.
+Convert explicitly: `ControlType(value)` to get the enum from an integer.
 
-### 3. List of Options serialization
+### List of Options serialization
 
 When a list contains `Options` instances, `to_dict()` recursively converts each element. But when loading, the constructor must explicitly iterate over the list and create `Options` instances from each dict:
 
@@ -500,24 +500,24 @@ self.items = [MyItemOptions(**item) for item in kwargs.pop('items', [])]
 
 If you forget this, `self.items` will be a list of plain dicts, not `Options` instances, and attribute access will fail.
 
-### 4. `rpartition('.')` for import paths
+### `rpartition('.')` for import paths
 
-`import_item` uses `rpartition('.')` which splits at the LAST dot. This means `'farms_mujoco.swimming.extension.SwimmingExtension'` correctly splits into module `farms_mujoco.swimming.extension` and item `SwimmingExtension`. But if the class name contains a dot (which is invalid in Python), it will fail.
+`import_item` uses `rpartition('.')` which splits at the last dot. This means `'farms_mujoco.swimming.extension.SwimmingExtension'` correctly splits into module `farms_mujoco.swimming.extension` and item `SwimmingExtension`. But if the class name contains a dot (which is invalid in Python), it will fail.
 
-### 5. `defaultdict` representer
+### `defaultdict` representer
 
 The `defaultdict` representer is registered globally. If you use `defaultdict` in your options, it will be serialized as a regular dict. But when loading, you get a regular dict, not a `defaultdict`.
 
-## What NOT to assume
+## Caveats
 
-1. **`Options` is a dict, not a dataclass.** It inherits from `dict` and uses `__getitem__`/`__setitem__`. This means `isinstance(options, dict)` is `True`, and all dict methods work.
+- `Options` is a dict, not a dataclass. It inherits from `dict` and uses `__getitem__`/`__setitem__`. This means `isinstance(options, dict)` is `True`, and all dict methods work.
 
-2. **`strict=True` is the default.** Most constructors raise on unknown kwargs. Use `strict=False` for backward-compatible loading.
+- `strict=True` is the default. Most constructors raise on unknown kwargs. Use `strict=False` for backward-compatible loading.
 
-3. **`IntEnum` values are serialized as integers.** The YAML file will contain `0`, not `'POSITION'`. This is by design (for MuJoCo compatibility) but can be confusing.
+- `IntEnum` values are serialized as integers. The YAML file will contain `0`, not `'POSITION'`. This is by design (for MuJoCo compatibility) but can be confusing.
 
-4. **The `loader` field is a dotted Python path, not a file path.** `import_item` uses `importlib.import_module`, which requires a Python module path, not a filesystem path.
+- The `loader` field is a dotted Python path, not a file path. `import_item` uses `importlib.import_module`, which requires a Python module path, not a filesystem path.
 
-5. **`config` in `ExtensionOptions` is typed as `list[str]` in the code but used as `dict` in practice.** The type annotation in `ExtensionOptions.__init__` says `self.config: list[str] = kwargs.pop('config')`, but the actual YAML contains a dict. This is a type annotation error in the source code.
+- `config` in `ExtensionOptions` is typed as `list[str]` in the code but used as `dict` in practice. The type annotation in `ExtensionOptions.__init__` says `self.config: list[str] = kwargs.pop('config')`, but the actual YAML contains a dict. This is a type annotation error in the source code.
 
-6. **YAML key order is preserved.** `sort_keys=False` in `write_yaml` and `pyobject2yaml` ensures the YAML output matches the insertion order. This is important for human-readable configuration files.
+- YAML key order is preserved. `sort_keys=False` in `write_yaml` and `pyobject2yaml` ensures the YAML output matches the insertion order. This keeps configuration files readable.

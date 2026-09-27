@@ -42,10 +42,10 @@ $$
 $$
 
 Where:
-- $\delta_j$, joint offset (from CPG state `offsets(iteration)`)
-- $\theta$, current joint position (sensor reading)
-- $g$, transform gain (`motor.transform.gain`)
-- $b$, transform bias (`motor.transform.bias`)
+- $\delta_j$: joint offset (from CPG state `offsets(iteration)`)
+- $\theta$: current joint position (sensor reading)
+- $g$: transform gain (`motor.transform.gain`)
+- $b$: transform bias (`motor.transform.bias`)
 
 The total torque is:
 
@@ -92,11 +92,11 @@ cpdef void step(self, unsigned int iteration):
 
 | Enum | Parameter | Physics Role | Typical Range |
 |------|-----------|-------------|---------------|
-| `ALPHA=0` | α | Active torque gain | 1–100 N·m |
-| `BETA=1` | β | Stiffness coefficient | 1–50 N·m/rad |
-| `GAMMA=2` | γ | Passive stiffness ratio | 0.1–5 |
-| `DELTA=3` | δ | Viscous damping | 0.01–5 N·m·s/rad |
-| `EPSILON=4` | ε | Coulomb friction | 0–2 N·m |
+| `ALPHA=0` | α | Active torque gain | 1-100 N·m |
+| `BETA=1` | β | Stiffness coefficient | 1-50 N·m/rad |
+| `GAMMA=2` | γ | Passive stiffness ratio | 0.1-5 |
+| `DELTA=3` | δ | Viscous damping | 0.01-5 N·m·s/rad |
+| `EPSILON=4` | ε | Coulomb friction | 0-2 N·m |
 
 These are set in `AmphibiousMuscleSetOptions` per joint, and assembled in `MusclesMap`:
 

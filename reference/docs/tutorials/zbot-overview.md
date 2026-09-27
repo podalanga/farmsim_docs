@@ -1,4 +1,4 @@
-# Zbot, Bio-inspired eel-like swimming robot
+# Zbot: an eel-like swimming robot
 
 The **Zbot** is a bio-inspired, eel-like underwater robot developed for research in swimming locomotion and neural control. It consists of a rigid **Head** module followed by six serially-connected **body segments** (`Segment1` to `Segment6`), connected by six revolute joints (`joint_1` to `joint_6`), and a **TailSegment** fixed to the last segment. Undulation of these joints generates the travelling wave that propels the robot forward.
 
@@ -29,7 +29,7 @@ Head → [joint_1] → Segment1 → [joint_2] → Segment2 → [joint_3]
 | Property | Value |
 |----------|-------|
 | Number of body links | 8 (Head + 6 Segments + TailSegment) |
-| Number of revolute joints | 6 (`joint_1` – `joint_6`) |
+| Number of revolute joints | 6 (`joint_1` to `joint_6`) |
 | Head mass | 1.9 kg |
 | Segment mass | ~0.16 kg each |
 | Link `density` option | 950 kg/m³ (only used by the legacy buoyancy ramp, see [Zbot Model](zbot-model.md#head)) |
@@ -52,19 +52,19 @@ Head → [joint_1] → Segment1 → [joint_2] → Segment2 → [joint_3]
 
 ## How to Read This Section
 
-If you are implementing a custom CPG controller, follow this order. Do not skip ahead, each step builds on the previous one.
+If you are implementing a custom CPG controller, follow this order. Do not skip ahead: each step builds on the previous one.
 
-**Step 1, This page** *(you are here)*
+**Step 1: this page** *(you are here)*
 Get oriented. Understand the robot anatomy, the system diagram, and what each page covers.
 
-**Step 2, [Swimming Experiment](zbot-experiment.md)**
+**Step 2: [Swimming Experiment](zbot-experiment.md)**
 Read the YAML configs carefully before writing any Python. You need to understand how the animat `extensions`, `equation`, `motors`, and `loaders` interact; most bugs come from misconfigured YAML, not the controller code itself.
 
-**Step 3, [`AnimatController` API](../reference/core/core-control.md)**
+**Step 3: [`AnimatController` API](../reference/core/core-control.md)**
 Study the base class contract: constructor arguments, `from_options()`, `positions()`, `torques()`, and the `ControlType` enum. This is what your class must implement.
 
-**Step 4, [Custom CPG Controller](zbot-custom-controller.md)**
-Now implement. Follow Steps 1–4 in that guide (simple sine CPG) and get it running before touching the ODE version.
+**Step 4: [Custom CPG Controller](zbot-custom-controller.md)**
+Now implement. Follow Steps 1 to 4 in that guide (simple sine CPG) and get it running before touching the ODE version.
 
 ---
 
@@ -72,10 +72,10 @@ Now implement. Follow Steps 1–4 in that guide (simple sine CPG) and get it run
 
 ---
 
-**Step 5, [`Sensor Data Arrays` API](../reference/core/core-sensors.md)**
+**Step 5: [`Sensor Data Arrays` API](../reference/core/core-sensors.md)**
 Read this when you are ready to add closed-loop sensor feedback. It documents what is inside `sensors.joints`, `sensors.links`, `sensors.xfrc`, and which `sc.*` index maps to each channel.
 
-**Step 6, [Mathematical Models](../explanation/mathematical-models.md)**
+**Step 6: [Mathematical Models](../explanation/mathematical-models.md)**
 Go here if your CPG behaviour does not match expectations. It has the actual phase/amplitude ODE equations and the Ekeberg torque derivation to reason about frequencies, phase lags, and amplitudes.
 
 ---

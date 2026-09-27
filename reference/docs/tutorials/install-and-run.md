@@ -15,7 +15,7 @@ the Zbot undulatory swimming robot. It follows
     - `experiments/zbot_bout_glide/run_sim.py`: experiment entry point
 
 FARMS requires SSH access to GitHub to clone the repository and its
-submodules, set up an SSH key registered on GitHub before starting
+submodules. Set up an SSH key registered on GitHub before starting
 either path below.
 
 ### Step 0: Set up an SSH key (skip if you already have one)
@@ -39,7 +39,7 @@ passphrase (recommended) or press Enter for none. This creates a
 **private key** (`id_ed25519`, never share it) and a **public key**
 (`id_ed25519.pub`, this one goes to GitHub). On older systems without
 ed25519 support, use `ssh-keygen -t rsa -b 4096 -C "your_email@example.com"`
-instead, which produces `id_rsa` / `id_rsa.pub`, if you go this route,
+instead, which produces `id_rsa` / `id_rsa.pub`. If you go this route,
 remember Step 3 below (Windows) and `docker_config/windows/docker-compose.yml`
 default to `id_ed25519` and need editing to point at `id_rsa`.
 
@@ -71,10 +71,10 @@ If you instead get `Permission denied (publickey)`:
 
 1. Confirm the key file permissions: `chmod 600 ~/.ssh/id_ed25519`,
    `chmod 644 ~/.ssh/id_ed25519.pub`, `chmod 700 ~/.ssh`.
-2. Confirm the public key is actually saved under **Settings → SSH keys**
+2. Confirm the public key is saved under **Settings → SSH keys**
    on GitHub.
 3. Run `ssh -vT git@github.com 2>&1 | grep "Offering\|Authenticated"` to
-   see which key is actually being tried.
+   see which key is being tried.
 
 !!! tip "Multiple GitHub accounts"
     If you use more than one GitHub account, add per-host aliases to
@@ -92,7 +92,7 @@ If you instead get `Permission denied (publickey)`:
     then clone using the alias, e.g. `git clone git@github-personal:podalanga/farms_zbot.git`.
 
 This key is used both for the `git clone` below and for the Docker build's
-SSH forwarding (Method 1, Step 3), no separate setup is needed for Docker
+SSH forwarding (Method 1, Step 3). No separate setup is needed for Docker
 beyond what Step 3 covers for your OS.
 
 **Docker is the recommended approach.** It handles the compiler, OpenGL
@@ -104,8 +104,8 @@ on the host.
 
 ## Method 1: Docker
 
-Docker encapsulates the whole FARMS environment, system libraries,
-OpenGL drivers, Python packages, and Cython extensions, inside a
+Docker encapsulates the whole FARMS environment (system libraries,
+OpenGL drivers, Python packages, and Cython extensions) inside a
 `python:3.12-slim`-based image. No manual dependency management is
 required.
 
@@ -127,7 +127,7 @@ cd farms_zbot
 ```
 
 You do **not** need to run `git lfs pull` or `git submodule update`
-yourself, the container build does both for you in Step 4, using SSH
+yourself. The container build does both for you in Step 4, using SSH
 forwarding rather than your host's already-checked-out state.
 
 ### Step 2 (Linux only): Allow X11 forwarding from Docker
@@ -149,15 +149,15 @@ MuJoCo's viewer needs an X display server on Windows. Install and launch
 3. **Extra settings**:
    - ☑ Clipboard
    - ☑ Primary Selection
-   - ☐ **Native OpenGL**, **must be unchecked**
-   - ☑ **Disable access control**, **must be checked**
-4. Click **Finish**, VcXsrv starts in the system tray
+   - ☐ **Native OpenGL** (**must be unchecked**)
+   - ☑ **Disable access control** (**must be checked**)
+4. Click **Finish**. VcXsrv starts in the system tray
 
 !!! warning
     If **Native OpenGL** is enabled, or **Disable access control** is left
     unchecked, the MuJoCo viewer will fail to connect to the display. The
     Windows compose file sets `DISPLAY=host.docker.internal:0` to route
-    X11 to VcXsrv on the host, this only works with both settings
+    X11 to VcXsrv on the host. This only works with both settings
     correct.
 
 Docker on Windows with GPU passthrough requires WSL 2 as the active
@@ -187,7 +187,7 @@ ssh-add -l                    # verify: should list your key's fingerprint
 ```
 
 **Windows** (`docker_config/windows/docker-compose.yml` does **not** rely
-on agent forwarding, it explicitly maps a key *file* instead:
+on agent forwarding. It explicitly maps a key *file* instead:
 `ssh: - default=${USERPROFILE}/.ssh/id_ed25519`, with an inline comment in
 the compose file itself explaining that Windows `ssh-agent` forwarding
 into BuildKit is unreliable):
@@ -199,7 +199,7 @@ Test-Path $env:USERPROFILE\.ssh\id_ed25519
 
 If your key is RSA rather than ed25519, edit the `ssh:` line in
 `docker_config/windows/docker-compose.yml` to point at
-`${USERPROFILE}/.ssh/id_rsa` before building, the file path is hardcoded
+`${USERPROFILE}/.ssh/id_rsa` before building. The file path is hardcoded
 in that compose file, unlike the Linux side which just forwards whatever
 your agent already has loaded.
 
@@ -242,10 +242,10 @@ The build (see the Dockerfiles for the exact layer order):
    across rebuilds.
 7. Runs `python setup_farms.py` from `/app/farms`, inside the venv, with
    a `uv` package cache mounted so unchanged dependencies aren't
-   re-fetched on rebuild. See "What `setup_farms.py` actually does"
-   below, it's identical on both paths.
+   re-fetched on rebuild. See "What `setup_farms.py` does"
+   below; it is identical on both paths.
 
-First build is typically 5–15 minutes depending on network and hardware.
+First build is typically 5 to 15 minutes depending on network and hardware.
 Rebuilds after a source change are faster: the cache mounts mean only
 changed packages are rebuilt.
 
@@ -259,13 +259,13 @@ docker exec -it zbot_farms_linux bash
 docker exec -it zbot_farms_windows bash
 ```
 
-The container starts in `/app` with the venv already on `PATH`, no
-activation step needed. `experiments/`, `models/`, and
+The container starts in `/app` with the venv already on `PATH`, so no
+activation step is needed. `experiments/`, `models/`, and
 `farms/farms_mujoco/` are bind-mounted from the host (see the
 `volumes:` block in each compose file), so edits to those directories on
 your machine are reflected inside the container immediately, and
 simulation output written inside the container lands directly on your
-local filesystem. Other `farms/*` packages are **not** bind-mounted, they
+local filesystem. Other `farms/*` packages are **not** bind-mounted. They
 are baked into the image from the build, so changes to `farms_core`,
 `farms_sim`, or `farms_amphibious` require a rebuild.
 
@@ -309,7 +309,7 @@ directly and iterate on the host.
 | C/C++ compiler | Needed to build the Cython extensions in `farms_amphibious` and `farms_mujoco` |
 | SSH key on GitHub | Required for the submodule clone |
 
-**Windows, Visual C++ Build Tools:** Cython extensions require the MSVC
+**Windows: Visual C++ Build Tools.** Cython extensions require the MSVC
 compiler.
 
 1. Download [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
@@ -351,7 +351,7 @@ git submodule update --init --recursive
     directories are empty and the install fails with a confusing "no such
     file" error rather than an obvious submodule warning. If mesh files
     later look wrong or a `.stl` is a few hundred bytes, it's almost
-    always this step being skipped, not `git submodule`, `git lfs pull`
+    always this step being skipped, not `git submodule`. `git lfs pull`
     is a separate command and easy to forget.
 
 ### Step 3: Create and activate a virtual environment
@@ -366,7 +366,7 @@ source .venv/bin/activate
 .venv\Scripts\Activate.ps1
 ```
 
-Always use a virtual environment, installing FARMS into the system
+Always use a virtual environment. Installing FARMS into the system
 Python is not supported.
 
 ### Step 4: Install the FARMS packages
@@ -376,27 +376,27 @@ cd farms
 python setup_farms.py
 ```
 
-#### What `setup_farms.py` actually does
+#### What `setup_farms.py` does
 
 !!! note "Reads `pyproject.toml`, not `requirements.txt`"
     `setup_farms.py` opens `<package>/pyproject.toml` with `tomllib` and
     reads `[project.dependencies]` directly. A package without a
     `pyproject.toml` is silently skipped in that pass.
 
-For each package, in order, `farms_core` → `farms_mujoco` →
+The packages are handled in order, `farms_core` → `farms_mujoco` →
 `farms_sim` → `farms_amphibious` (this order matters: `farms_mujoco`
-imports `farms_core`, and so on), the script runs in **two separate
+imports `farms_core`, and so on). The script runs in **two separate
 passes across all four packages**, not one pass per package:
 
 1. **Dependency pass** (all four packages): for each package, reads
    `[project.dependencies]` from its `pyproject.toml` via `tomllib` and
-   installs them with plain `uv pip install <deps>`, no `-e`, no local
-   build. This lets `uv` resolve and cache the dependency graph without
+   installs them with plain `uv pip install <deps>` (no `-e`, no local
+   build). This lets `uv` resolve and cache the dependency graph without
    triggering a build of the (fast-changing) FARMS source itself.
 2. **Editable-install pass** (all four packages): runs
    `uv pip install --no-build-isolation --config-settings
    editable_mode=compat -e <package> -v` for each package in turn. This is
-   where the Cython `.pyx` files actually get compiled to `.pyd`/`.so`.
+   where the Cython `.pyx` files get compiled to `.pyd`/`.so`.
    Keeping this separate from pass 1 means a source change in one package
    doesn't force `uv` to redo dependency resolution for the others.
 
@@ -406,7 +406,7 @@ before doing anything else.
 !!! note "`--no-build-isolation` needs build tools already in your venv"
     Because pass 2 uses `--no-build-isolation`, `uv` does **not**
     automatically install each package's declared build dependencies into
-    an isolated environment first, it assumes `setuptools`, `wheel`, and
+    an isolated environment first. It assumes `setuptools`, `wheel`, and
     Cython are already importable in your active venv. If you hit a build
     error mentioning a missing build backend:
     ```bash
@@ -516,7 +516,7 @@ files), rerun `python farms/setup_farms.py` to reinstall dependencies and
 recompile Cython extensions.
 
 **Docker**: rerun `docker compose -f docker_config/<platform>/docker-compose.yml
-up --build -d`, the cache mounts mean only what changed actually
+up --build -d`. The cache mounts mean only what changed
 rebuilds.
 
 ## Troubleshooting
@@ -525,8 +525,8 @@ rebuilds.
 : SSH isn't reaching the build. On Linux, confirm your agent has the key
   loaded (`ssh-add -l`) *before* running `docker compose up --build`. On
   Windows, confirm the key file path in `docker_config/windows/
-  docker-compose.yml`'s `ssh:` line actually matches your key
-  (`id_ed25519` by default), Windows does not use the agent for this.
+  docker-compose.yml`'s `ssh:` line matches your key
+  (`id_ed25519` by default). Windows does not use the agent for this.
 
 **Docker on Windows: the MuJoCo viewer window never appears**
 : Check, in order: VcXsrv is running (tray icon present); **Native
@@ -535,26 +535,26 @@ rebuilds.
   `environment:` block.
 
 **Native: Cython compilation fails on Windows**
-: `error: Microsoft Visual C++ 14.0 or greater is required`, the C++
+: `error: Microsoft Visual C++ 14.0 or greater is required`: the C++
   Build Tools aren't installed or aren't on `PATH`. Install Visual Studio
   Build Tools (2017+) and rerun `setup_farms.py` from a **Developer
   PowerShell**.
 
 **`setup_farms.py` fails immediately with a missing `pyproject.toml`**
-: Git submodules weren't initialised, repeat Step 2 (native) / rebuild
+: Git submodules weren't initialised. Repeat Step 2 (native) / rebuild
   after fixing SSH access (Docker).
 
 **Mesh files fail to load, or `.stl` files are a few hundred bytes**
 : Git LFS objects weren't fetched. Native: `git lfs install && git lfs
   pull` from the repository root. Docker: this is done for you during the
-  build, if it's still happening, the build likely failed at the LFS
+  build. If it's still happening, the build likely failed at the LFS
   step; check the build log.
 
 **`ModuleNotFoundError: No module named 'farms_core'`**
 : Native: the virtual environment isn't activated, or `setup_farms.py`
-  wasn't run (or failed partway), activate the venv and rerun the
+  wasn't run (or failed partway). Activate the venv and rerun the
   script. Docker: `setup_farms.py` likely failed partway through the
-  image build, check the `docker compose up --build` output for the
+  image build. Check the `docker compose up --build` output for the
   failing package and rebuild after fixing it.
 
 ## Next steps

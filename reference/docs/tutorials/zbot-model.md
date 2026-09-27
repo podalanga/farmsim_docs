@@ -1,4 +1,4 @@
-# Zbot Model, SDF geometry and physical properties
+# Zbot Model: SDF geometry and physical properties
 
 The Zbot's physical description lives in the SDF file at:
 
@@ -86,7 +86,7 @@ Masses, inertias and geometry come from `models/zbot/sdf/zbot.sdf`; densities an
 !!! note "Buoyancy comes from the geometry, not from `density`"
     With the default `cob_method: exact`, buoyancy is `rho_water * g * V`, where `V` is the submerged volume of the link's collision geoms: it depends on the geometry only, and whether the robot floats depends on its mass (from the SDF) compared with `rho_water * V`. The link `density` is only used by the legacy `cob_method: ramp`. The collision geoms of a link overlap (for example the segments' cylinder and boxes), and `exact` counts the overlapping volume twice, which makes the zbot float. With the true union volume (`cob_method: lut` or `cob_overlap: scale`) the zbot is slightly heavier than the water it displaces. Use `farms/farms_mujoco/benchmarks/inspect_buoyancy.py` to print the buoyancy budget of each link. See [MuJoCo Swimming](../reference/mujoco/mujoco-swimming.md).
 
-### Body Segments (Segment1 – Segment6)
+### Body Segments (Segment1 to Segment6)
 
 All six body segments share identical inertia and drag properties.
 
@@ -111,7 +111,7 @@ All six body segments share identical inertia and drag properties.
 | Drag coefficients (linear) | **`[-10.0, -10.0, -0.1]`** kg/m |
 | Drag coefficients (angular) | as the Head |
 
-!!! important "Why the tail has higher drag"
+!!! note "Why the tail has higher drag"
     The legacy drag model is per axis: `F_i = viscosity * c_i * v_i * |v_i|` in the link frame. The tail's lateral coefficient (`-10.0`, 2.5 times the body segments) represents the caudal fin: the large lateral resistance of the tail is what generates reactive thrust when it undulates. Increasing it amplifies thrust, reducing it weakens it.
 
 ---
@@ -177,7 +177,7 @@ motors:
       friction_coefficient: 0
 ```
 
-### `equation: position_muscle`, what this means
+### `equation: position_muscle`: what this means
 
 `equation` selects how the `AmphibiousController` turns the CPG state into a joint command (`position_muscle`, `position_phase`, `ekeberg_muscle`, `ekeberg_muscle_explicit` or `passive`). With `position_muscle` (`farms_amphibious/control/position_muscle_cy.pyx`), the position command of the joint is computed from the outputs `n_L`, `n_R` of its two oscillators and the drive-dependent offset:
 

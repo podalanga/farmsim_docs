@@ -159,7 +159,7 @@ Maps muscle parameters and oscillator indices for each joint that uses a muscle-
 
 ### Oscillator indices
 
-Each joint with a muscle-based equation has TWO oscillators (opposing muscles): `osc1` and `osc2`. The `osc_indices` array has shape `[2, n_joints]`:
+Each joint with a muscle-based equation has two oscillators (opposing muscles): `osc1` and `osc2`. The `osc_indices` array has shape `[2, n_joints]`:
 - `osc_indices[0][i]`: Index of the first oscillator (muscle) for joint `i`
 - `osc_indices[1][i]`: Index of the second oscillator (muscle) for joint `i`
 
@@ -197,7 +197,7 @@ cdef class PositionPhaseCy(JointsControlCy):
 | `threshold` | float | 0 | Amplitude threshold for swim/walk gait switching |
 | `**kwargs` | n/a | n/a | Passed to `JointsControlCy`: `joints_names`, `joints_data`, `indices`, `gain`, `bias` |
 
-### `step(iteration)`, complete walkthrough
+### `step(iteration)`: complete walkthrough
 
 ```cython
 cpdef void step(self, unsigned int iteration):
@@ -243,7 +243,7 @@ cpdef void step(self, unsigned int iteration):
 
 The `threshold` parameter (set to `1e-2` in `AmphibiousController.__init__`) determines the swim/walk transition:
 
-- **Swimming** (`amplitudes[osc_i_0] < threshold`): The desired angle is just the joint offset. The phase is NOT used, the joint holds a static position. This is because swimming uses axial undulation controlled by other joints, and the limbs stay retracted.
+- **Swimming** (`amplitudes[osc_i_0] < threshold`): The desired angle is just the joint offset. The phase is not used and the joint holds a static position. This is because swimming uses axial undulation controlled by other joints, and the limbs stay retracted.
 
 - **Walking** (`amplitudes[osc_i_0] >= threshold`): The desired angle is the oscillator phase PLUS the joint offset. The phase drives the oscillatory motion of the limb.
 
@@ -264,7 +264,7 @@ assert osc_i_0 < len(phases)
 assert osc_i_1 >= len(phases)
 ```
 
-The first assertion checks that the primary oscillator index is valid. The second assertion checks that the secondary oscillator index is **out of range**, this is intentional. `PositionPhaseCy` uses only ONE oscillator per joint (the phase oscillator), not a pair. The second index should be the sentinel value `np.iinfo(np.uintc).max`.
+The first assertion checks that the primary oscillator index is valid. The second assertion checks that the secondary oscillator index is **out of range**. This is intentional. `PositionPhaseCy` uses only one oscillator per joint (the phase oscillator), not a pair. The second index should be the sentinel value `np.iinfo(np.uintc).max`.
 
 ### Final position command
 
@@ -311,7 +311,7 @@ cdef enum:
 
 These are the indices into the `parameters` array (from `MusclesMap.arrays`).
 
-### `step(iteration)`, complete walkthrough
+### `step(iteration)`: complete walkthrough
 
 ```cython
 cpdef void step(self, unsigned int iteration):
@@ -366,9 +366,9 @@ cpdef void step(self, unsigned int iteration):
 
 ### Neural signals
 
-- `neural_diff = activations[osc_1] - activations[osc_0]`: The difference between the two opposing muscle activations. This drives the active torque, when one muscle is more active than the other, it creates a net torque.
+- `neural_diff = activations[osc_1] - activations[osc_0]`: The difference between the two opposing muscle activations. This drives the active torque: when one muscle is more active than the other, it creates a net torque.
 
-- `neural_sum = activations[osc_0] + activations[osc_1]`: The total activation. This drives the active stiffness, co-contraction of both muscles increases joint stiffness without changing the net torque.
+- `neural_sum = activations[osc_0] + activations[osc_1]`: The total activation. This drives the active stiffness: co-contraction of both muscles increases joint stiffness without changing the net torque.
 
 ### Position error
 
@@ -392,7 +392,7 @@ The position error is computed in **convention space** (not SDF space). The curr
 
 **Total torque**: `active_torque + active_stiffness + passive_stiffness + damping + friction`
 
-Note: The `active_stiffness` is stored in `JOINT_TORQUE_ACTIVE` (commented out in the code: `#  + active_stiffness`), but only `active_torque` is actually logged there. The `active_stiffness` is part of the total torque but logged separately.
+Note: The `active_stiffness` is stored in `JOINT_TORQUE_ACTIVE` (commented out in the code: `#  + active_stiffness`), but only `active_torque` is logged there. The `active_stiffness` is part of the total torque but logged separately.
 
 ### Spring and damping coefficients
 
@@ -424,7 +424,7 @@ cdef inline double sign(double value):
         return 1
 ```
 
-Note: `sign(0)` returns `1`, not `0`. This is a slight asymmetry, at zero velocity, friction is positive. This differs from `np.sign(0) = 0`.
+Note: `sign(0)` returns `1`, not `0`. This is a slight asymmetry: at zero velocity, friction is positive. This differs from `np.sign(0) = 0`.
 
 ## `PassiveJointCy`
 
@@ -479,7 +479,7 @@ def step(self, iteration, time, timestep):
             net2joints.step(iteration)
 ```
 
-The order is critical: **drive → network → handlers**. The drive sets the drive signal, the network integrates the CPG using that drive, and the handlers compute motor commands from the CPG state.
+The order matters: **drive → network → handlers**. The drive sets the drive signal, the network integrates the CPG using that drive, and the handlers compute motor commands from the CPG state.
 
 ### How equations_dict selects handlers
 
@@ -581,44 +581,44 @@ control:
 
 Each joint can have a different equation. The `control_types` list determines which MuJoCo actuators are created for that joint.
 
-## Common failure modes
+## Troubleshooting
 
-### 1. Oscillator index mismatches
+### Oscillator index mismatches
 
 If `MusclesMap.osc_indices` references oscillator names that don't exist in `animat_data.network.oscillators.names`, the index is set to `np.iinfo(np.uintc).max`. This will cause out-of-bounds array access in `EkebergMuscleCy.step()` when accessing `self.activations[osc_0]`.
 
-**Fix**: Ensure muscle YAML `osc1` and `osc2` names match oscillator names in the network YAML.
+Ensure muscle YAML `osc1` and `osc2` names match oscillator names in the network YAML.
 
-### 2. Transform gain/bias errors
+### Transform gain/bias errors
 
 If the `transform.gain` and `transform.bias` in the motor YAML don't match the SDF joint convention, the Cython handlers will compute incorrect positions and commands. Symptoms: joints move to wrong angles or oscillate around the wrong center.
 
-**Fix**: Verify that `convention_angle = (sdf_angle - bias) / gain` produces the expected convention-space angle. For most joints, gain=1 and bias=0.
+Verify that `convention_angle = (sdf_angle - bias) / gain` produces the expected convention-space angle. For most joints, gain=1 and bias=0.
 
-### 3. Threshold for gait switching
+### Threshold for gait switching
 
 The `threshold` parameter in `PositionPhaseCy` (set to `1e-2`) determines when a joint switches from swimming to walking mode. If the CPG amplitudes don't cross this threshold, the joint stays in swimming mode (no phase-driven motion).
 
-**Fix**: Adjust the threshold or check that the CPG amplitudes are reaching the expected values.
+Adjust the threshold or check that the CPG amplitudes are reaching the expected values.
 
-### 4. `sign(0) = 1` in Ekeberg model
+### `sign(0) = 1` in Ekeberg model
 
 The `sign()` function returns 1 for zero velocity, not 0. This means friction is always applied, even when the joint is stationary. At zero velocity, the friction force is `epsilon` (positive), which can cause a small persistent torque.
 
-### 5. Missing `farms_muscle` for rigid tendon muscles
+### Missing `farms_muscle` for rigid tendon muscles
 
-If `farms_muscle` is not installed, the MuJoCo muscle callbacks are not set. This affects any actuators that use MuJoCo's built-in muscle model, but NOT the Cython handlers (which compute their own torques).
+If `farms_muscle` is not installed, the MuJoCo muscle callbacks are not set. This affects any actuators that use MuJoCo's built-in muscle model, but not the Cython handlers (which compute their own torques).
 
-## What NOT to assume
+## Caveats
 
-1. **The 0.5 normalization factor** is NOT present in the Ekeberg model. The neural output from `state.outputs()` is `0.5 * amplitude * (1 + cos(phase))` (computed elsewhere), so by the time it reaches `EkebergMuscleCy`, it's already normalized.
+- The 0.5 normalization factor is not present in the Ekeberg model. The neural output from `state.outputs()` is `0.5 * amplitude * (1 + cos(phase))` (computed elsewhere), so by the time it reaches `EkebergMuscleCy`, it's already normalized.
 
-2. **The `threshold` default is NOT 0 in practice.** Although the constructor defaults to 0, `AmphibiousController.__init__` explicitly passes `threshold=1e-2`.
+- The `threshold` default is not 0 in practice. Although the constructor defaults to 0, `AmphibiousController.__init__` explicitly passes `threshold=1e-2`.
 
-3. **`PositionPhaseCy` uses only ONE oscillator per joint.** The second oscillator index should be the sentinel value `max_uint`. The assertion `assert osc_i_1 >= len(phases)` verifies this.
+- `PositionPhaseCy` uses only one oscillator per joint. The second oscillator index should be the sentinel value `max_uint`. The assertion `assert osc_i_1 >= len(phases)` verifies this.
 
-4. **`EkebergMuscleCy` writes FIVE torque components** but only the total is used for the torque command. The individual components are logged for debugging/analysis.
+- `EkebergMuscleCy` writes five torque components but only the total is used for the torque command. The individual components are logged for debugging/analysis.
 
-5. **The `equations` tuple is `[POSITION, VELOCITY, TORQUE]`.** The order corresponds to `ControlType` enum values (POSITION=0, VELOCITY=1, TORQUE=2). Do not change this order.
+- The `equations` tuple is `[POSITION, VELOCITY, TORQUE]`. The order corresponds to `ControlType` enum values (POSITION=0, VELOCITY=1, TORQUE=2). Do not change this order.
 
-6. **`passive` joints do NOT have oscillators.** They are controlled purely by stiffness, damping, and friction. They appear in the torque control path but not in the CPG network.
+- `passive` joints do not have oscillators. They are controlled purely by stiffness, damping, and friction. They appear in the torque control path but not in the CPG network.
