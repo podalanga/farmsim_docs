@@ -113,7 +113,7 @@ MuJoCo, builds a `farms_mujoco.simulation.simulation.Simulation` with
 3. **Environment creation**: a dm_control `Environment` wraps the task and the
    physics.
 
-!!! important "Controllers are extensions"
+!!! note "Controllers are extensions"
     A controller only runs if it is listed in the animat's `extensions:`
     (for example `loader: controller.zbot_controller.ZbotCPGController`).
     The `control.controller_loader` option is still parsed but is not used to

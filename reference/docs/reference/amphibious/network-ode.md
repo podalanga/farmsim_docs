@@ -79,7 +79,7 @@ Copies the drive array values from the current iteration to the next. Drive valu
 def step(self, iteration: int, time: float, timestep: float, checks: bool = False, strict: bool = False)
 ```
 
-Full orchestration of the neural integration step. Handles multi-rate execution, robust error recovery, and forward drive propagation.
+Full orchestration of the neural integration step. Handles multi-rate execution, error recovery, and forward drive propagation.
 
 - **Iteration 0**: Only calls `copy_next_drive(iteration)`.
 - **Modulo skip**: If `iteration % modulo != 0`, copies the previous state forward without integrating.
@@ -97,8 +97,8 @@ Full orchestration of the neural integration step. Handles multi-rate execution,
     `strict=True` integration-failure path
     (`farms_amphibious/control/network.py`), but no class or import named
     `IntegrationException` exists anywhere in this repository. Calling
-    `step(..., strict=True)` when integration actually fails will raise a
-    `NameError` instead of the intended, catchable exception, callers
+    `step(..., strict=True)` when integration fails will raise a
+    `NameError` instead of the intended, catchable exception, so callers
     cannot `except IntegrationException` around this call. This is the same
     class of "referenced but never defined" bug already flagged for
     `get_amphibious_controller`/`drive_from_config`; see

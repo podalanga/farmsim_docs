@@ -1,6 +1,6 @@
 # farms_mujoco.simulation
 
-MuJoCo physics backend, MJCF generation, task lifecycle, sensor maps, and visual extensions.
+MuJoCo physics backend: MJCF generation, task lifecycle, sensor maps, and visual extensions.
 
 ## Overview
 
@@ -65,7 +65,7 @@ The following `TaskExtension` subclasses provide simulation utilities and render
     FARMS has three separate ways to put a camera or a visible marker in
     the scene, and they don't interoperate:
 
-    1. **MJCF-embedded cameras** (`add_cameras()` in `mjcf.py`), real
+    1. **MJCF-embedded cameras** (`add_cameras()` in `mjcf.py`): real
        `<camera>` elements baked into the compiled model at build time
        (see below), fixed relative poses (several `mode="trackcom"`),
        selectable by MuJoCo `camera_id` for `physics.render(camera_id=...)`.
@@ -89,7 +89,7 @@ The following `TaskExtension` subclasses provide simulation utilities and render
 
 `farms_mujoco/simulation/mjcf.py::add_cameras(link, dist, rot,
 simulation_options)` attaches four `<camera>` elements directly to a given
-MJCF body during model construction, not a runtime extension, no YAML
+MJCF body during model construction. It is not a runtime extension and has no YAML
 config. For each animat's base link it adds, in order: three
 `mode="trackcom"` cameras (front/top-down-ish, side, and a third side angle)
 and one `mode="fixed"` camera at the same pose as the third. Each is named
@@ -119,7 +119,7 @@ every `after_step()`: adds `angular_velocity * dt` to `viewer.cam.azimuth`
 tracked animat's global CoM (`motion_filter = min(1, 10*timestep)`, applied
 fresh each call rather than stored). `initialize_episode()` is a no-op
 unless `task.viewer` is truthy, so this extension has **no effect** running
-headless or during `CameraRecording` offscreen export, it only moves the
+headless or during `CameraRecording` offscreen export. It only moves the
 camera you'd see in an open interactive window.
 
 | Name | Type | Default | Description |
@@ -132,7 +132,7 @@ camera you'd see in an open interactive window.
 
 ### CameraRecording
 
-Source: `farms_mujoco/sensors/camera.py`, a **separate mechanism** from
+Source: `farms_mujoco/sensors/camera.py`. This is a **separate mechanism** from
 `CameraFollower`, unrelated to `task.viewer`. It owns its own
 `mujoco.MjvCamera` (created with `type = mjCAMERA_FREE` when no `camera` id
 is given) and an offscreen `mujoco.Renderer(physics.model.ptr, width,
@@ -170,7 +170,7 @@ extension is created from YAML. A frame is captured every
     `add_cameras()` by id instead of the default free camera). But
     `initialize_episode()` only builds `self.renderer` and converts
     `self.camera` into a full `mujoco.MjvCamera` inside its `if self.camera
-    is None:` branch, supplying a `camera` id skips that branch entirely,
+    is None:` branch, so supplying a `camera` id skips that branch entirely,
     leaving `self.renderer` as `None`. Then, for `viewer != 'dm_control'`
     (the default `viewer: MuJoCo` used throughout the Zbot experiments),
     `before_step()` unconditionally runs `self.camera.azimuth +=
@@ -181,9 +181,9 @@ extension is created from YAML. A frame is captured every
     where `physics.render(camera_id=self.camera)` is used instead and
     doesn't hit this code path.
 
-!!! note "Works headless, this is the tool for a moving camera in exported video"
+!!! note "Works headless: use this for a moving camera in exported video"
     Unlike `CameraFollower`, `CameraRecording` doesn't depend on
-    `task.viewer` at all, it renders directly from `physics.model`/
+    `task.viewer` at all. It renders directly from `physics.model`/
     `physics.data` through its own `mujoco.Renderer`. Use it (not
     `CameraFollower`) whenever the goal is a moving/orbiting camera baked
     into an output video file rather than an interactive session.

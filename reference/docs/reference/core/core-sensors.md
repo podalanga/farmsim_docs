@@ -4,7 +4,7 @@ Pre-allocated sensor data arrays for all animat sensor modalities.
 
 ## Overview
 
-The `farms_core.sensors.data` module forms the backbone of data collection and telemetry within FARMS. It allocates static data buffers based on the expected number of simulation iterations, ensuring zero-overhead data logging that bridges Python and C structs (like MuJoCo's physics engine) without allocations during the main loop.
+The `farms_core.sensors.data` module handles data collection in FARMS. It allocates static data buffers sized by the expected number of simulation iterations, so logging does no allocation during the main loop and the buffers can be shared between Python and C code (such as the MuJoCo bindings).
 
 ---
 

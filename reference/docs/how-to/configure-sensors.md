@@ -1,6 +1,6 @@
 # Add and Configure Sensors
 
-This guide explains how to configure sensors in FARMS, what sensor types are
+This guide explains how to configure sensors in FARMS: what sensor types are
 available, how to declare them in YAML, and how to access sensor data in code.
 
 ## Sensor types
@@ -57,14 +57,14 @@ model definition.
     contact reaction on each named link (contact with anything); a list of
     `[link_a, link_b]` pairs restricts tracking to contacts between that
     specific pair of links. Mixing forms across a single YAML `contacts:`
-    list is only as safe as whatever consumes it downstream, check
+    list is only as safe as whatever consumes it downstream. Check
     `AmphibiousSensorsOptions.defaults_from_convention()` or your loader
     before relying on mixed forms.
 
 ### Column layout per category
 
 See the table above for the authoritative column counts and shapes, taken
-directly from `sc` in `sensor_convention.pyx`, do not re-derive them from
+directly from `sc` in `sensor_convention.pyx`. Do not re-derive them from
 memory, as they don't map onto an obvious "3 position + 3 velocity" pattern
 for every category (joints and contacts in particular carry several extra
 derived/decomposed fields beyond the raw physical quantities).

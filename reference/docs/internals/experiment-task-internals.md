@@ -458,7 +458,7 @@ for mtr_opts in animat_options.control.motors:
                 physics.named.model.actuator_forcerange[...] = [0, 0]
 ```
 
-For joints that are NOT position-controlled, the position and velocity actuators are force-limited to [0, 0] (effectively disabled). This ensures that only the torque actuator drives these joints.
+For joints that are not position-controlled, the position and velocity actuators are force-limited to [0, 0] (effectively disabled). This ensures that only the torque actuator drives these joints.
 
 ## `after_step(physics)`
 
@@ -526,38 +526,38 @@ To add a new control type (for example a hypothetical `ACCELERATION` member of `
 3. In `ExperimentTask.initialize_control()`, add the actuator map for the new type.
 4. Implement the corresponding method in the controller (e.g., `controller.springrefs()`).
 
-## Common failure modes
+## Troubleshooting
 
-### 1. Extension ordering
+### Extension ordering
 
 Extensions are called in order: simulation extensions first, then animat extensions. If an animat extension depends on a simulation extension being initialized first, the ordering must be correct. The YAML determines the order within each category.
 
-### 2. Buffer overflow
+### Buffer overflow
 
 When `buffer_size = 1`, data is overwritten every step. If an extension tries to read data from a previous iteration that was already overwritten, it will get the current iteration's data instead. This is usually fine but can cause subtle bugs in data-dependent control logic.
 
-### 3. Sensor map mismatches
+### Sensor map mismatches
 
 If the SDF model is modified (links/joints added or removed) but the FARMS data containers are not re-allocated, `physics2data()` will fail with array shape mismatches. Always call `ExperimentData.from_options()` after model changes.
 
-### 4. Actuator name not found
+### Actuator name not found
 
 `initialize_control()` asserts that every joint's actuator name exists in `ctrl_names`. If the MJCF builder doesn't create an actuator for a joint (e.g., due to a naming mismatch), the assertion fails with a descriptive error.
 
-### 5. `farms_muscle` not installed
+### `farms_muscle` not installed
 
 If `farms_muscle` is not installed, the try/except at import catches the `ImportError` and logs a warning. The simulation will run but without rigid tendon muscle callbacks. This may cause incorrect muscle dynamics.
 
-## What NOT to assume
+## Caveats
 
-1. **`before_step` is NOT called once per physics step.** When `substeps > 1`, it's called once per control step, but the physics engine runs multiple substeps. Extensions with `substep=True` get called on every substep.
+- `before_step` is not called once per physics step. When `substeps > 1`, it's called once per control step, but the physics engine runs multiple substeps. Extensions with `substep=True` get called on every substep.
 
-2. **`iteration` and `sim_iteration` are different.** `iteration` increments on full control steps, `sim_iteration` on every physics substep. Use `task.iteration % task.buffer_size` for data array indexing.
+- `iteration` and `sim_iteration` are different. `iteration` increments on full control steps, `sim_iteration` on every physics substep. Use `task.iteration % task.buffer_size` for data array indexing.
 
-3. **The `base_links` parameter is unused.** The constructor accepts it but the TODO comment says "Unused?". Do not rely on it.
+- The `base_links` parameter is unused. The constructor accepts it but the TODO comment says "Unused?". Do not rely on it.
 
-4. **`initialize_episode` only runs once.** Subsequent calls just reset iteration counters. Set `self.initialized = False` for full re-initialization.
+- `initialize_episode` only runs once. Subsequent calls just reset iteration counters. Set `self.initialized = False` for full re-initialization.
 
-5. **Actuator naming is strict.** The format `actuator_{type}_{prefix}{joint}` is enforced by assertions. Any deviation will cause `initialize_control` to fail.
+- Actuator naming is strict. The format `actuator_{type}_{prefix}{joint}` is enforced by assertions. Any deviation will cause `initialize_control` to fail.
 
-6. **Force limiting is applied to non-position joints.** If a joint is torque-controlled, its position and velocity actuators are force-limited to zero. This is a design choice to prevent conflicting control inputs.
+- Force limiting is applied to non-position joints. If a joint is torque-controlled, its position and velocity actuators are force-limited to zero. This is a design choice to prevent conflicting control inputs.

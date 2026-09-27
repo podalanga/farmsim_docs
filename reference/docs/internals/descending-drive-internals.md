@@ -262,7 +262,7 @@ def set_right_drives(self, iteration: int, values, brain: bool = True):
             self.drives.array[iteration, index] = values[index]
 ```
 
-`set_left_drives` / `set_right_drives` write `values[index]` to ALL left/right spine drives. If `brain=True` (default), brain drives are also written. The `values` array must be indexed by the same drive indices.
+`set_left_drives` / `set_right_drives` write `values[index]` to all left/right spine drives. If `brain=True` (default), brain drives are also written. The `values` array must be indexed by the same drive indices.
 
 ```python
 def set_left_drive(self, iteration: int, value: float, brain: bool = True):
@@ -272,11 +272,11 @@ def set_right_drive(self, iteration: int, value: float, brain: bool = True):
     self.set_right_drives(iteration, value * self._drives_vector, brain)
 ```
 
-`set_left_drive` / `set_right_drive` set ALL left/right drives to a single scalar value by multiplying with `_drives_vector` (all ones).
+`set_left_drive` / `set_right_drive` set all left/right drives to a single scalar value by multiplying with `_drives_vector` (all ones).
 
 ### The `brain` parameter
 
-When `brain=True` (default), drive values are written to BOTH brain and spine indices. When `brain=False`, only spine drives are updated, leaving brain drives at their previous value. This is useful for distributed control where brain and spine drives may be set independently.
+When `brain=True` (default), drive values are written to both brain and spine indices. When `brain=False`, only spine drives are updated, leaving brain drives at their previous value. This is useful for distributed control where brain and spine drives may be set independently.
 
 ## OrientationFollower
 
@@ -337,7 +337,7 @@ self.drive_types = [
 
 This classifies every drive index as brain-left, brain-right, spine-left, spine-right, or None. Drives classified as None (e.g., leg drives) are not affected by the orientation follower.
 
-### `step()`, complete walkthrough
+### `step()`: complete walkthrough
 
 ```python
 def step(self, iteration: int, time: float, timestep: float):
@@ -475,7 +475,7 @@ def write_to_brain(self, iteration):
         )
 ```
 
-Writes the computed intention directly to brain drive indices. Uses `min(iteration, n_iterations-1)` to prevent array index overflow on the last iteration. Note: this writes the low-pass filtered `self.fwds` values, NOT the `intention` list.
+Writes the computed intention directly to brain drive indices. Uses `min(iteration, n_iterations-1)` to prevent array index overflow on the last iteration. Note: this writes the low-pass filtered `self.fwds` values, not the `intention` list.
 
 ## DistributedOrientationFollower
 
@@ -488,7 +488,7 @@ class DistributedOrientationFollower(OrientationFollower):
         self.contact_value = 0
 ```
 
-Extends `OrientationFollower` with a more sophisticated forward control that distributes contact information across drives.
+Extends `OrientationFollower` with a forward control that distributes contact information across drives.
 
 ### `get_foward_control()` override
 
@@ -522,7 +522,7 @@ def get_foward_control(self, iteration, timestep):
 3. Computes per-drive contact reactions using `self.drives.contacts_indices`, which maps each drive to relevant contact sensors.
 4. Adjusts individual drives based on local contact information: drives associated with contacts above the threshold get reduced to 2.9 (intermediate between walk=2 and swim=4), while drives without contacts get increased to 3.1.
 
-**Note**: `self.contacts_values` is used but NOT initialized in `__init__`. This is likely a bug, it should be initialized as `np.zeros(self.n_drives)` or similar. It relies on the parent class or external initialization.
+**Note**: `self.contacts_values` is used but not initialized in `__init__`. This is likely a bug: it should be initialized as `np.zeros(self.n_drives)` or similar. It relies on the parent class or external initialization.
 
 ## Factory function: `get_orientation_follower_kwargs()`
 
@@ -546,7 +546,7 @@ def get_orientation_follower_kwargs(drive_config, animat_data, simulation_option
 
 **Potential map types**: `line`, `circle`, `ellipsoid`, `disline` (alias for line), `discircle` (alias for circle). An unknown type raises a `KeyError`.
 
-**Mutates input**: `drive_config.pop('potential_map')` and `potential_config.pop('type')` modify the input dictionaries. This is a destructive operation, the `drive_config` dict will be missing `potential_map` after this call, and all remaining keys are unpacked as kwargs to the OrientationFollower constructor.
+**Mutates input**: `drive_config.pop('potential_map')` and `potential_config.pop('type')` modify the input dictionaries. This is a destructive operation: the `drive_config` dict will be missing `potential_map` after this call, and all remaining keys are unpacked as kwargs to the OrientationFollower constructor.
 
 ## How to integrate: creating a custom PotentialMap
 
@@ -606,48 +606,48 @@ class SpeedController(DescendingDrive):
         self.set_right_drive(iteration, self.forward_speed)
 ```
 
-## Common failure modes
+## Troubleshooting
 
-### 1. PID instability
+### PID instability
 
 If `pid_p` is too high, the turn command oscillates violently. Symptoms: the animat spirals or zig-zags instead of following the path.
 
-**Fix**: Reduce `pid_p` (default 0.2), increase `pid_d` for damping, or tighten `output_limits`.
+Reduce `pid_p` (default 0.2), increase `pid_d` for damping, or tighten `output_limits`.
 
-### 2. Contact threshold too high/low
+### Contact threshold too high/low
 
 If `contact_threshold` is too high, the animat never switches to walking gait even when on ground. If too low, it switches to walking in water.
 
-**Fix**: Set `contact_threshold` based on the expected contact force magnitude. For ground contact, typical values are 1–10 N (depending on animat mass). For `DistributedOrientationFollower`, the threshold is multiplied by 9.81, so use mass-equivalent values.
+Set `contact_threshold` based on the expected contact force magnitude. For ground contact, typical values are 1-10 N (depending on animat mass). For `DistributedOrientationFollower`, the threshold is multiplied by 9.81, so use mass-equivalent values.
 
-### 3. Drive values out of range
+### Drive values out of range
 
-The CPG oscillator parameters (frequency, amplitude) are functions of the drive value. Drive values outside the expected range (typically 0–5) may produce undefined behavior, frequencies may become zero or negative, amplitudes may saturate.
+The CPG oscillator parameters (frequency, amplitude) are functions of the drive value. Drive values outside the expected range (typically 0 to 5) may produce undefined behavior: frequencies may become zero or negative, and amplitudes may saturate.
 
-**Fix**: Use `output_limits` on the PID to clamp the turn command. Check the drive-dependent function parameters in the YAML to ensure they cover the range of drive values you produce.
+Use `output_limits` on the PID to clamp the turn command. Check the drive-dependent function parameters in the YAML to ensure they cover the range of drive values you produce.
 
-### 4. `contacts_values` not initialized in DistributedOrientationFollower
+### `contacts_values` not initialized in DistributedOrientationFollower
 
-`DistributedOrientationFollower.get_foward_control()` uses `self.contacts_values` which is NOT initialized in `__init__`. This will raise `AttributeError` on the first call unless it was set elsewhere.
+`DistributedOrientationFollower.get_foward_control()` uses `self.contacts_values` which is not initialized in `__init__`. This will raise `AttributeError` on the first call unless it was set elsewhere.
 
-**Fix**: Add `self.contacts_values = np.zeros(self.n_drives)` to `DistributedOrientationFollower.__init__()`.
+Add `self.contacts_values = np.zeros(self.n_drives)` to `DistributedOrientationFollower.__init__()`.
 
-### 5. Drive array not propagated
+### Drive array not propagated
 
-`copy_next_drive` in `NetworkODE` copies drive values forward. If `DescendingDrive.step()` is called AFTER `NetworkODE.step()`, the new drive values won't be used until the NEXT iteration.
+`copy_next_drive` in `NetworkODE` copies drive values forward. If `DescendingDrive.step()` is called after `NetworkODE.step()`, the new drive values won't be used until the NEXT iteration.
 
-**Fix**: Ensure `drive.step()` is called BEFORE `network.step()` in the controller's `before_step()`. The standard `AmphibiousController` does this in the correct order.
+Ensure `drive.step()` is called before `network.step()` in the controller's `before_step()`. The standard `AmphibiousController` does this in the correct order.
 
-## What NOT to assume
+## Caveats
 
-1. **Drive values are NOT continuous.** They are stored per-iteration in a pre-allocated array. The drive at iteration `i` is a single scalar per drive index. There is no interpolation between iterations.
+- Drive values are not continuous. They are stored per-iteration in a pre-allocated array. The drive at iteration `i` is a single scalar per drive index. There is no interpolation between iterations.
 
-2. **The forward drive values (2 and 4) are NOT hardcoded gait frequencies.** They are drive signal values that get mapped to frequencies/amplitudes through the drive-dependent piecewise-linear functions defined in the YAML. The actual frequencies depend on the oscillator parameters.
+- The forward drive values (2 and 4) are not hardcoded gait frequencies. They are drive signal values that get mapped to frequencies/amplitudes through the drive-dependent piecewise-linear functions defined in the YAML. The actual frequencies depend on the oscillator parameters.
 
-3. **`OrientationFollower` does NOT control leg drives.** The `compute_intention()` method returns 0 for drive indices that are not brain or spine left/right. Leg drives are left at their previous values (propagated by `copy_next_drive`).
+- `OrientationFollower` does not control leg drives. The `compute_intention()` method returns 0 for drive indices that are not brain or spine left/right. Leg drives are left at their previous values (propagated by `copy_next_drive`).
 
-4. **The heading is computed from link positions, not IMU data.** `links.heading()` computes the heading from the positions of the links specified by `links_indices`. This is a geometric heading, not an inertial measurement.
+- The heading is computed from link positions, not IMU data. `links.heading()` computes the heading from the positions of the links specified by `links_indices`. This is a geometric heading, not an inertial measurement.
 
-5. **`get_orientation_follower_kwargs()` mutates its input.** `drive_config.pop('potential_map')` removes the key from the dict. If you need to reuse `drive_config`, pass a copy.
+- `get_orientation_follower_kwargs()` mutates its input. `drive_config.pop('potential_map')` removes the key from the dict. If you need to reuse `drive_config`, pass a copy.
 
-6. **The `contact_threshold_dis` parameter is popped and discarded.** It exists in the constructor for backward compatibility but has no effect.
+- The `contact_threshold_dis` parameter is popped and discarded. It exists in the constructor for backward compatibility but has no effect.

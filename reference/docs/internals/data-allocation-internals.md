@@ -170,7 +170,7 @@ Each sensor array is 3D: `[buffer_size, n_sensors, n_fields]`
 | `adhesions` | force(3) | See `sc.adhesion_*` |
 | `visuals` | color(4), emission(4) | See `sc.visual_*` |
 
-### `from_dict()`, loading from HDF5
+### `from_dict()`: loading from HDF5
 
 ```python
 @classmethod
@@ -184,7 +184,7 @@ def from_dict(cls, dictionary):
     )
 ```
 
-Each sensor type is optional, if missing from the dictionary, an empty array is created. This allows loading partial data files.
+Each sensor type is optional. If it is missing from the dictionary, an empty array is created. This allows loading partial data files.
 
 ## `AmphibiousData` (farms_amphibious/data/data.py)
 
@@ -197,7 +197,7 @@ class AmphibiousData(AmphibiousDataCy, AnimatData):
         self.joints = joints
 ```
 
-### `from_options()`, complete walkthrough
+### `from_options()`: complete walkthrough
 
 ```python
 @classmethod
@@ -336,7 +336,7 @@ class AmphibiousExperimentData(ExperimentData):
         return cls.from_dict(data_experiment)
 ```
 
-When loading from file, `n_oscillators` is injected into each animat's data dictionary because it's not stored directly in HDF5, it's inferred from the oscillator names list.
+When loading from file, `n_oscillators` is injected into each animat's data dictionary because it's not stored directly in HDF5. It is inferred from the oscillator names list.
 
 ## HDF5 serialization (farms_core/io/hdf5.py)
 
@@ -380,7 +380,7 @@ for attempt in range(max_attempts):
         time.sleep(attempt_delay)
 ```
 
-## `get_amphibious_data()`, factory function
+## `get_amphibious_data()`: factory function
 
 ```python
 def get_amphibious_data(animat_options, simulation_options):
@@ -446,38 +446,38 @@ class SensorsOptions(Options):
 
 4. **Update `to_dict`/`from_dict`**: The serialization is automatic (arrays are saved as-is), but you may want to add the field name to the doc.
 
-## Common failure modes
+## Troubleshooting
 
-### 1. Buffer size mismatch
+### Buffer size mismatch
 
 When `buffer_size = 1`, data is overwritten every step. If you try to access data from a previous iteration, you'll get the current step's data. This is the most common source of subtle bugs in data-dependent control logic.
 
-### 2. Sensor name not in map
+### Sensor name not in map
 
 If a sensor name in the YAML doesn't match a name in the MuJoCo model, the name map will fail. The `connections_from_connectivity` function asserts that all connection names exist in the map.
 
-### 3. HDF5 file locking
+### HDF5 file locking
 
 On some systems, HDF5 files can be locked by other processes. The `hdf5_open` function retries 10 times with 0.1s delay, but if the lock persists, it raises an `OSError`.
 
-### 4. `n_oscillators` not in HDF5
+### `n_oscillators` not in HDF5
 
 `AmphibiousExperimentData.from_file` injects `n_oscillators` into each animat's data because it's not stored as a separate HDF5 field. If you load an HDF5 file without going through this method, you'll need to inject it manually.
 
-### 5. `FARMSLIST` prefix in HDF5
+### `FARMSLIST` prefix in HDF5
 
 Lists of dicts are stored with a `FARMSLIST` prefix (e.g., `FARMSLISTlinks`). If you manually inspect an HDF5 file, these groups will have the prefix. The loading code strips it automatically.
 
-## What NOT to assume
+## Caveats
 
-1. **`AnimatData` does NOT include network data.** Only `AmphibiousData` has `state`, `network`, and `joints`. If you're working with a non-CPG animat, these will be `None`.
+- `AnimatData` does not include network data. Only `AmphibiousData` has `state`, `network`, and `joints`. If you're working with a non-CPG animat, these will be `None`.
 
-2. **The `times` array uses `linspace`, not `arange`.** `np.linspace(0, n_iterations*timestep, n_iterations)` includes the endpoint. This means the last time is `(n_iterations-1)*timestep`, not `n_iterations*timestep`.
+- The `times` array uses `linspace`, not `arange`. `np.linspace(0, n_iterations*timestep, n_iterations)` includes the endpoint. This means the last time is `(n_iterations-1)*timestep`, not `n_iterations*timestep`.
 
-3. **All sensor arrays are 3D.** Even single-value sensors have shape `[buffer, n_sensors, n_fields]`. The third dimension is never squeezed.
+- All sensor arrays are 3D. Even single-value sensors have shape `[buffer, n_sensors, n_fields]`. The third dimension is never squeezed.
 
-4. **`from_dict` creates empty arrays for missing sensor types.** If a sensor type is not in the dictionary, `from_names(names=[], buffer_size=0)` is called, creating a `[0, 0, n_fields]` array.
+- `from_dict` creates empty arrays for missing sensor types. If a sensor type is not in the dictionary, `from_names(names=[], buffer_size=0)` is called, creating a `[0, 0, n_fields]` array.
 
-5. **The `drive2joint_map` uses `IntegerArray2D`, not a regular numpy array.** This is a Cython-compatible wrapper. Don't access it as `map[i][j]`, use `map.array[i, j]`.
+- The `drive2joint_map` uses `IntegerArray2D`, not a regular numpy array. This is a Cython-compatible wrapper. Use `map.array[i, j]`, not `map[i][j]`.
 
-6. **`n_oscillators` is inferred from the oscillator names list, not stored directly.** This means the state array width (`n_oscillators * 3`) must be consistent with the number of oscillator names.
+- `n_oscillators` is inferred from the oscillator names list, not stored directly. This means the state array width (`n_oscillators * 3`) must be consistent with the number of oscillator names.

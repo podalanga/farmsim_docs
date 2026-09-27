@@ -1,6 +1,6 @@
 # farms_amphibious.control.drive
 
-Descending drive system, goal-directed modulation of CPG amplitude and frequency.
+Descending drive system: goal-directed modulation of CPG amplitude and frequency.
 
 ## Overview
 
@@ -244,7 +244,7 @@ Parameters map identically to `OrientationFollower`, but the controller manages 
     simply behaving as if run at a coarser timestep. Plain
     `AmphibiousController` (used by the bundled Zbot experiments) calls
     `drive.step()` exactly once, so the bug is dormant there. Full detail:
-    [Amphibious Controller, `AmphibiousDriveController.step`](amphibious-controller.md#amphibiousdrivecontroller).
+    [Amphibious Controller: `AmphibiousDriveController.step`](amphibious-controller.md#amphibiousdrivecontroller).
 
 ---
 
