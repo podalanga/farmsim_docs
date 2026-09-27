@@ -148,11 +148,11 @@ Top-level experiment data container that aggregates the full state of the animat
 
 **Attributes**
 - `sensors`: `SensorsData` container recording proprioceptive data.
-- `state`: `OscillatorNetworkState` — pre-allocated time-history of the CPG state (phases, amplitudes, joint offsets).
-- `network`: `NetworkParameters` — drives, oscillator parameters, and the osc/joint/contact/xfrc connectivity maps.
-- `joints`: `JointsControlArray` — drive-dependent joint offset parameters and `drive2joint_map`.
+- `state`: `OscillatorNetworkState`, pre-allocated time-history of the CPG state (phases, amplitudes, joint offsets).
+- `network`: `NetworkParameters`, drives, oscillator parameters, and the osc/joint/contact/xfrc connectivity maps.
+- `joints`: `JointsControlArray`, drive-dependent joint offset parameters and `drive2joint_map`.
 
-Use `from_options` to initialize empty containers for simulation, or `from_file` to load saved logging files.
+Use `from_options` to allocate the containers for a simulation. Loading a saved file with `AmphibiousData.from_file()` or `from_dict()` currently fails (it expects an `n_oscillators` entry that `to_dict()` does not write): read the CPG state from the file directly, see [Save, Load, and Inspect Data](../../how-to/save-load-data.md#cpg-state).
 
 ---
 
@@ -217,6 +217,6 @@ oscillator network. Same `connections`/`weights` shape as `JointsConnectivity`.
 
 ## See Also
 
-- [CPG Oscillator Data](cpg-oscillators.md) — Oscillator data structures
-- [CPG Network API](network-ode.md) — Network state management
-- [Sensor Data Arrays](../core/core-sensors.md) — Pre-allocated telemetry arrays
+- [CPG Oscillator Data](cpg-oscillators.md): Oscillator data structures
+- [CPG Network API](network-ode.md): Network state management
+- [Sensor Data Arrays](../core/core-sensors.md): Pre-allocated telemetry arrays

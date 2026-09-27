@@ -1,6 +1,6 @@
 # Options and YAML Design
 
-This document explains the design of FARMS' configuration system — how YAML
+This document explains the design of FARMS' configuration system, how YAML
 files are loaded into Python objects, how the `Options` base class works, and
 why dotted-path loaders are used.
 
@@ -18,20 +18,20 @@ class Options(dict):
         """Save to YAML using pyobject2yaml()."""
 ```
 
-All configuration classes extend `Options` — `SimulationOptions`,
+All configuration classes extend `Options`, `SimulationOptions`,
 `AnimatOptions`, `ArenaOptions`, `ExperimentOptions`, and their amphibious
 subclasses. This provides:
 
-- **Serialization** — any options object can be saved to and loaded from YAML
-- **Dict compatibility** — options behave as dicts, allowing flexible
+- **Serialization**: any options object can be saved to and loaded from YAML
+- **Dict compatibility**: options behave as dicts, allowing flexible
   programmatic access
-- **Type safety** — `__init__` methods use `kwargs.pop()` with assertions to
+- **Type safety**: `__init__` methods use `kwargs.pop()` with assertions to
   catch unknown keys early
 
 ## YAML loading mechanism
 
 `yaml2pyobject()` (`farms_core/io/yaml.py`) is **not** a smart, `loader`-aware
-deserializer — it's a one-line wrapper around `yaml.load()`. It returns a
+deserializer, it's a one-line wrapper around `yaml.load()`. It returns a
 plain nested dict/list/scalar tree with no knowledge of `Options` classes at
 all:
 
@@ -44,7 +44,7 @@ def yaml2pyobject(filename: str) -> Any:
 
 `Options.load()` (`farms_core/options.py`) does the actual object
 construction, by handing that dict straight to the class's own `__init__` as
-kwargs — no dotted-path resolution happens here either:
+kwargs, no dotted-path resolution happens here either:
 
 ```python
 @classmethod
@@ -85,14 +85,14 @@ after loading, `ExperimentOptions.load()` calls `import_item()` on the
 matching `loaders.*` entry and invokes that class's `.load(filename,
 strict=strict)`, replacing the string in place. `animats`/`arenas` must have
 exactly as many entries as `loaders.animats_options`/`loaders.arenas_options`
-— a length mismatch raises an assertion naming the offending config file.
+,  a length mismatch raises an assertion naming the offending config file.
 
 **2. `ExtensionOptions`** (`farms_core/extensions/extensions.py`) is a
 smaller, unrelated mechanism used for the `extensions:` lists inside
 `simulation_config.yaml` and `animat_config.yaml`. Each entry is an inline
 `{loader, config}` pair, and it's the *caller* (e.g. `ExperimentTask`) that
 calls `import_item(extension.loader)` and then `.from_options(config=
-extension.config, ...)` — `ExtensionOptions.__init__` itself just stores the
+extension.config, ...)`, `ExtensionOptions.__init__` itself just stores the
 two fields:
 
 ```yaml
@@ -103,7 +103,7 @@ extensions:
 ```
 
 These two mechanisms look similar (`loader:` appears in both) but are
-independent code paths with different call signatures — don't assume one
+independent code paths with different call signatures, don't assume one
 generic "loader resolution" pass handles all of it.
 
 ## The from_options() pattern
@@ -111,9 +111,9 @@ generic "loader resolution" pass handles all of it.
 Many option classes have a `from_options(cls, kwargs)` classmethod in addition
 to `__init__`. This serves a different purpose:
 
-- **`__init__`** — constructs from explicit kwargs (used when YAML has full
+- **`__init__`**: constructs from explicit kwargs (used when YAML has full
   nested structure)
-- **`from_options()`** — constructs from a flat kwargs dict, applying defaults
+- **`from_options()`**: constructs from a flat kwargs dict, applying defaults
   and convention-based logic
 
 For example, `AmphibiousOptions.from_options()` takes a flat kwargs dict and:
@@ -132,9 +132,11 @@ configs that rely on convention-based defaults.
 naming and indexing based on morphology parameters:
 
 - `n_joints_body`, `n_legs`, `n_dof_legs` → oscillator count, names, connectivity
-- Body oscillators: `osc_body_L_0`, `osc_body_R_0`, `osc_body_L_1`, ...
-- Leg oscillators: `osc_leg_LF_0`, `osc_leg_RF_0`, ...
-- Drive names: derived from oscillator names (`osc` → `drv`)
+- Body oscillators: `osc_body_0_L`, `osc_body_0_R`, `osc_body_1_L`, ...
+  (`osc_body_0`, ... with `single_osc_body`)
+- Leg oscillators: `osc_leg_<leg>_<L|R>_<joint>_<side>`
+- Drives: `drive_brain_L`, `drive_brain_R`, `drive_body_<joint>_<L|R>`,
+  `drive_leg_...`
 
 The `defaults_from_convention()` methods on options classes use this convention
 to auto-generate:
@@ -149,10 +151,13 @@ and get a fully configured CPG network.
 
 ## The assertion pattern
 
-All `__init__` methods end with:
+The `__init__` methods end with a check that every key was used:
 
 ```python
 assert not kwargs, f'Unknown kwargs: {kwargs}'
+# or, in farms_core, skippable with Options.load(filename, strict=False):
+if kwargs.pop('strict', True) and kwargs:
+    raise Exception(f'Unknown kwargs: {kwargs}')
 ```
 
 This is a design choice for fail-fast validation. If a YAML file contains an
@@ -161,14 +166,18 @@ catches typos and config errors at load time rather than at runtime.
 
 ## Serialization fidelity
 
-`pyobject2yaml()` serializes `Options` objects back to YAML. The round-trip
-(YAML → object → YAML) is designed to be lossless for fully-specified configs.
+`pyobject2yaml()` serializes `Options` objects back to YAML
+(`ExperimentOptionsLogger` uses it to write the options of a run). The
+round trip (YAML to object to YAML) is meant to be lossless for
+fully-specified configs; a subclass that does not accept every key its
+parent writes breaks it (this was the case of `buoyancy_center` in
+`AmphibiousLinkOptions`, now fixed).
 However, convention-based defaults are expanded during `from_options()`, so a
 minimal config loaded and then saved will produce a larger file with all
 defaults explicitly written.
 
 ## See also
 
-- [YAML Configuration Schema](../reference/env/yaml-schema.md) — complete key reference
-- [Configure an Experiment YAML](../how-to/configure-yaml.md) — practical guide
-- [farms_core Reference](../reference/core/farms-core.md) — Options class API
+- [Configuration Parameter Reference](../reference/env/configuration-reference.md): every key (generated)
+- [Configure an Experiment YAML](../how-to/configure-yaml.md): practical guide
+- [farms_core Reference](../reference/core/farms-core.md): Options class API

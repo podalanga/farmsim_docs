@@ -1,45 +1,80 @@
-name: Deploy Docs to GitHub Pages
+name: Docs
 
+# The site documents the FARMS packages listed in reference/farms-packages.yaml,
+# checked out from their public repositories at every build. API,
+# configuration and CLI pages are generated from that code, and
+# tools/check_docs.py fails the build when the hand-written pages mention
+# modules, files, flags or options that no longer exist.
 on:
   push:
     branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 3 * * *'  # Nightly: pick up code changes without a dispatch
   workflow_dispatch:
+    inputs:
+      farms_refs:
+        description: 'Override package refs, e.g. farms_mujoco=my-branch,farms_core=abc123'
+        required: false
+        default: ''
+  repository_dispatch:
+    types: [code-updated]  # Sent by the FARMS repositories (templates/notify-docs.yml)
 
-# Grant GITHUB_TOKEN the permissions required to make a Pages deployment
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FARMS_REFS: ${{ github.event.inputs.farms_refs || github.event.client_payload.farms_refs || '' }}
+  DISABLE_MKDOCS_2_WARNING: 'true'
+  MUJOCO_GL: osmesa
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout documentation
+        uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          
-      - name: Install dependencies
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: reference/requirements.txt
+
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libegl1 libgl1 libosmesa6
+
+      - name: Install the FARMS packages (public podalanga forks)
+        working-directory: reference
         run: |
-          pip install mkdocs-material>=9.7 pymdown-extensions>=10.6
-          
+          python -m pip install --upgrade pip pyyaml
+          python tools/install_farms.py --dest "$RUNNER_TEMP/farms-src"
+
+      - name: Install the documentation toolchain
+        run: python -m pip install -r reference/requirements.txt
+
+      - name: Check the pages against the code
+        working-directory: reference
+        run: python tools/check_docs.py
+
       - name: Build site
-        working-directory: ./reference
+        working-directory: reference
         run: mkdocs build --strict
-        
+
       - name: Upload artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./reference/site
+          path: reference/site
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

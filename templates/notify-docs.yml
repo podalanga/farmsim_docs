@@ -1,0 +1,25 @@
+# Copy to .github/workflows/notify-docs.yml in a FARMS repository
+# (podalanga/farms_core, farms_mujoco, farms_sim, farms_amphibious) to
+# rebuild the documentation when that repository changes. Set `branches` to
+# the branch listed for the package in farmsim_docs/reference/farms-packages.yaml.
+#
+# Requires a repository secret DOCS_DISPATCH_TOKEN: a fine-grained personal
+# access token with "Contents: read and write" access to
+# podalanga/farmsim_docs (needed to send repository_dispatch events).
+name: Notify documentation
+
+on:
+  push:
+    branches: [fluid-fast]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the documentation build
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/podalanga/farmsim_docs/dispatches \
+            -f event_type=code-updated \
+            -f "client_payload[source]=${{ github.repository }}@${{ github.sha }}"

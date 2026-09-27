@@ -1,10 +1,10 @@
 # farms_amphibious.control.joints_control_cy
 
 !!! note "Source Files"
-    - `farms_amphibious/control/passive_cy.pyx` — `PassiveJointCy`
-    - `farms_amphibious/control/position_muscle_cy.pyx` — `PositionMuscleCy`
-    - `farms_amphibious/control/position_phase_cy.pyx` — `PositionPhaseCy`
-    - `farms_amphibious/control/joints_control_cy.pyx` — Base class `JointsControlCy`
+    - `farms_amphibious/control/passive_cy.pyx`: `PassiveJointCy`
+    - `farms_amphibious/control/position_muscle_cy.pyx`: `PositionMuscleCy`
+    - `farms_amphibious/control/position_phase_cy.pyx`: `PositionPhaseCy`
+    - `farms_amphibious/control/joints_control_cy.pyx`: Base class `JointsControlCy`
 
 In addition to the Ekeberg torque model, FARMS provides three additional joint actuator strategies. These cover passive dynamics, position control from oscillator amplitude, and phase-tracking position control.
 
@@ -12,7 +12,7 @@ In addition to the Ekeberg torque model, FARMS provides three additional joint a
 
 ## 1. Passive Joint (`PassiveJointCy`)
 
-A passive joint applies spring, damping, and friction torques with no active component — it behaves as a purely mechanical element.
+A passive joint applies spring, damping, and friction torques with no active component, it behaves as a purely mechanical element.
 
 ### Torque Equation
 
@@ -32,7 +32,7 @@ Where:
 | $\theta$ | Joint position | From `joints_data.positions(iteration)` |
 | $\dot{\theta}$ | Joint velocity | From `joints_data.velocities(iteration)` |
 
-**From `passive_cy.pyx` (lines 50–69):**
+**From `passive_cy.pyx`:**
 
 ```cython
 cpdef void step(self, unsigned int iteration):
@@ -93,12 +93,12 @@ $$
 $$
 
 Where:
-- $y_k = r_k(1+\cos\varphi_k)$ — neural output of oscillator $k$
-- $\delta_j$ — joint offset from the CPG state at `offsets(iteration)[joint_data_i]`
-- $g$ — `transform_gain[joint_data_i]`
-- $b$ — `transform_bias[joint_data_i]`
+- $y_k = r_k(1+\cos\varphi_k)$, neural output of oscillator $k$
+- $\delta_j$, joint offset from the CPG state at `offsets(iteration)[joint_data_i]`
+- $g$, `transform_gain[joint_data_i]`
+- $b$, `transform_bias[joint_data_i]`
 
-**From `position_muscle_cy.pyx` (lines 12–33):**
+**From `position_muscle_cy.pyx`:**
 
 ```cython
 cpdef void step(self, unsigned int iteration):
@@ -119,7 +119,7 @@ cpdef void step(self, unsigned int iteration):
 ```
 
 !!! note "Why 0.5"
-    The factor of 0.5 normalises the neural difference. Since $y_k \in [0, 2r_k]$, the difference $\Delta y \in [-2r, 2r]$. Multiplying by 0.5 gives an effective angular excursion of $r$ per side — matching the nominal amplitude parameter.
+    The factor of 0.5 normalises the neural difference. Since $y_k \in [0, 2r_k]$, the difference $\Delta y \in [-2r, 2r]$. Multiplying by 0.5 gives an effective angular excursion of $r$ per side, matching the nominal amplitude parameter.
 
 ### Construction
 
@@ -196,7 +196,7 @@ $$
 \theta^{cmd} = g \cdot (\Delta\theta + \theta) + b
 $$
 
-where $\theta = (\theta_{raw} - b)/g$ is the sensed position mapped into convention space and $\text{wrap}(x) = fmod(x + \pi,\, 2\pi) - \pi$. The limb is driven toward the CPG joint offset $\delta_j$ (i.e. `0 + offsets[joint_data_i]`) — the retracted/neutral posture dictated by the descending drive, not a fixed $\pi$.
+where $\theta = (\theta_{raw} - b)/g$ is the sensed position mapped into convention space and $\text{wrap}(x) = fmod(x + \pi,\, 2\pi) - \pi$. The limb is driven toward the CPG joint offset $\delta_j$ (i.e. `0 + offsets[joint_data_i]`), the retracted/neutral posture dictated by the descending drive, not a fixed $\pi$.
 
 **Walking mode (`amplitude >= threshold`):**
 
@@ -226,7 +226,7 @@ The joint tracks the oscillator phase plus the CPG offset: `desired_angle = phas
     (plus the base-class `joints_names`/`joints_data`/`indices`/`gain`/`bias` via `**kwargs`).
     There is **no** `weight` or `offset` argument on this class.
 
-**From `amphibious.py` (lines 410–419):**
+**From `amphibious.py`:**
 
 ```python
 self.network2joints['position_phase'] = PositionPhaseCy(
@@ -273,26 +273,31 @@ self.equations_dict = {
 
 | `motor.equation` | Class Instantiated | Control Type |
 |---|---|---|
-| `'ekeberg_muscle'` | `EkebergMuscleCy` | Torque (implicit spring) |
+| `'ekeberg_muscle'` | `EkebergMuscleCy` | Velocity and torque (stiffness and damping through the MuJoCo joint) |
 | `'ekeberg_muscle_explicit'` | `EkebergMuscleCy` | Torque (explicit, no MuJoCo spring) |
-| `'passive'` | `PassiveJointCy` | Torque (passive only) |
+| `'passive'` | `PassiveJointCy` | Velocity and torque (passive only) |
 | `'position_muscle'` | `PositionMuscleCy` | Position (amplitude-diff based) |
 | `'position_phase'` | `PositionPhaseCy` | Position (phase tracking + gait switching) |
 
-Multiple equation types can coexist in one controller. The `before_step` loop calls `net2joints.step(index)` for each:
+Multiple equation types can coexist in one controller. At every
+environment step, `AmphibiousController.before_step()` calls `step()`,
+which steps the drive, the network, then each handler:
 
 ```python
-def before_step(self, task, action, physics):
-    index = task.iteration % task.buffer_size
-    self.network.step(index=index, time=..., timestep=...)
+def step(self, iteration, time, timestep):
+    if self.drive is not None:
+        self.drive.step(iteration, time, timestep)
+    if self.network is not None:
+        self.network.step(iteration, time, timestep)
     for net2joints in self.network2joints.values():
-        net2joints.step(index)   # EkebergMuscleCy, PassiveJointCy, etc.
+        if net2joints is not None:
+            net2joints.step(iteration)   # EkebergMuscleCy, PositionMuscleCy, ...
 ```
 
 ---
 
 ## See Also
 
-- [Ekeberg Muscle Model](ekeberg-muscle.md) — Deep dive into active muscle torques
-- [CPG Oscillators](cpg-oscillators.md) — Source of all `outputs()` and `phases()` used here
-- [Amphibious Controller](amphibious-controller.md) — How all controllers are assembled
+- [Ekeberg Muscle Model](ekeberg-muscle.md): Deep dive into active muscle torques
+- [CPG Oscillators](cpg-oscillators.md): Source of all `outputs()` and `phases()` used here
+- [Amphibious Controller](amphibious-controller.md): How all controllers are assembled

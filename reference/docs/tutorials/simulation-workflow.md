@@ -1,72 +1,61 @@
 # Trace a Simulation Step
 
-This tutorial traces the execution path from a YAML configuration file through
-to a single MuJoCo physics step. Understanding this flow is essential for
-extending FARMS — it shows where your code plugs in.
+This tutorial follows the execution path from the YAML configuration files to a
+single MuJoCo physics step. It shows where your own code (controllers and
+extensions) plugs in.
 
 ## The entry point
 
-All simulations start from `run_sim.py` in the experiment directory:
+Simulations start from the `run_sim.py` script of an experiment folder:
 
 ```python
-# experiments/zbot_bout_glide/run_sim.py
-import sys, os
+# experiments/zbot_bout_glide/run_sim.py (simplified)
+import os
+import sys
+
 current_dir = os.path.abspath(os.path.dirname(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
 from farms_sim._bootstrap import main
-sys.exit(main())
+
+if __name__ == '__main__':
+    sys.exit(main())
 ```
 
-`run_sim.py` first inserts the experiment directory into `sys.path` itself
-(so local modules such as `controller.zbot_controller` can be imported), then
-calls `farms_sim._bootstrap.main()`. The same `farmsim` console command
-installed by `farms_sim` (`farmsim --experiment_config ...`) calls the same
-`main()` function.
+The script adds the experiment folder to `sys.path`, so that local modules such
+as `controller.zbot_controller` can be imported, and calls
+`farms_sim._bootstrap.main()`. The `farmsim` console command installed by
+`farms_sim` calls the same function.
 
 `_bootstrap.main()` takes no arguments. On macOS it re-executes the process
-under `mjpython` if available (MuJoCo's viewer requires it there), then
-delegates to `farms_sim.farmsim.profile_simulation()`. On Linux/Windows it
-calls `profile_simulation()` directly.
+under `mjpython` when available (the MuJoCo viewer requires it there). It then
+calls `farms_sim.farmsim.profile_simulation()`.
 
 ## Phase 1: Argument parsing
 
-`profile_simulation()` calls `sim_parse_args()` from
-`farms_sim.utils.parse_args`, then wraps `main()` (the *simulation* `main()`
-in `farms_sim.farmsim`, not `_bootstrap.main()`) in `farms_core.utils.profile.profile()`:
+`profile_simulation()` parses the command line with
+`farms_sim.utils.parse_args.sim_parse_args()` and runs
+`farms_sim.farmsim.main()` through `farms_core.utils.profile.profile()`, which
+only profiles when `--profile <file>` is given.
 
-```python
-args = sim_parse_args()
-```
-
-Key CLI arguments (verified in `farms/farms_sim/farms_sim/utils/parse_args.py`):
-
-| Argument | Type | Description |
-|----------|------|-------------|
-| `--experiment_config` | str | Path to `experiment_config.yaml` (required) |
-| `--simulator` | str | Simulator backend: `mujoco` or `pybullet` (default: `mujoco`) |
-| `--log_path` | str | Output directory (default: `./simulations`) |
-| `--plot` | flag | Plot results after simulation |
-| `--video` | str | Video name (empty = no video) |
+The options are listed in the [CLI reference](../reference/env/cli.md), which
+is generated from the parser. The only one needed is `--experiment_config`.
 
 ## Phase 2: Loading options
 
-The experiment YAML is loaded into an `ExperimentOptions` object:
+`main()` calls `farms_sim.simulation.setup_from_clargs()`, which loads the
+experiment file:
 
 ```python
-experiment_options = ExperimentOptions.load(args.experiment_config)
+experiment_options = ExperimentOptions.load(clargs.experiment_config)
 ```
 
-`yaml2pyobject()` itself is a thin wrapper around `yaml.load()` — it does
-**not** resolve any dotted paths. The dotted-path resolution happens
-separately, in `ExperimentOptions.load()` (`farms_core/experiment/options.py`),
-which reads a `loaders:` block listing the classes to use, and treats
-`simulation` / `animats` / `arenas` as plain filenames to feed into those
-classes' own `.load()`:
+The experiment file lists the other files and the Python classes (loaders)
+used to read them:
 
 ```yaml
-# experiment_config.yaml (simplified)
+# experiment_config.yaml
 simulation: simulation_config.yaml
 animats:
   - animat_config.yaml
@@ -83,23 +72,18 @@ loaders:
     - farms_core.model.data.AnimatData
 ```
 
-`ExperimentOptions.load()` walks this in order: it builds an
-`ExperimentLoadOptions` from the `loaders:` block, then for each of
-`simulation` / `animats[i]` / `arenas[i]` that is still a string, calls
-`import_item()` on the corresponding entry in `loaders` and invokes that
-class's own `.load(filename, strict=strict)` to replace the string with the
-parsed options object. `animats` and `arenas` must have exactly as many
-entries as `loaders.animats_options` / `loaders.arenas_options` — mismatched
-lengths raise an assertion error naming the file.
+`ExperimentOptions.load()` (`farms_core/experiment/options.py`) first builds
+an `ExperimentLoadOptions` from `loaders:`. Then, for `simulation` and for
+every entry of `animats` and `arenas` that is a filename, it imports the
+corresponding loader class (`farms_core.extensions.extensions.import_item`)
+and calls its `.load(filename)`. `animats` and `arenas` must have as many
+entries as `loaders.animats_options` and `loaders.arenas_options`.
 
-!!! note "Don't confuse this with extension `loader:`/`config:` pairs"
-    Individual **extensions** (inside `simulation_config.yaml`'s or
-    `animat_config.yaml`'s `extensions:` list) *do* use an inline
-    `loader:`/`config:` pair per entry — that's a different, simpler
-    mechanism (`ExtensionOptions`) unrelated to the top-level
-    `ExperimentOptions` loading above. See
-    [Options and YAML Design](../explanation/options-yaml-design.md) for
-    both mechanisms side by side.
+!!! note "Extensions use a different mechanism"
+    Extensions, listed in the `extensions:` lists of the simulation and animat
+    files, each have their own `loader:` (a dotted class path) and `config:`
+    (a free-form dictionary passed to the class's `from_options()`). See
+    [Options and YAML Design](../explanation/options-yaml-design.md).
 
 ## Phase 3: Creating experiment data
 
@@ -107,113 +91,110 @@ lengths raise an assertion error naming the file.
 experiment_data = ExperimentData.from_options(experiment_options)
 ```
 
-`ExperimentData` pre-allocates NumPy arrays for all sensor data, network states,
-and timing information. Each animat gets an `AnimatData` object containing:
-
-- `SensorsData` — arrays for links, joints, contacts, xfrc, muscles, adhesions,
-  visuals
-- `NetworkLog` (optional) — CPG oscillator state history
-
-The array sizes are determined by the simulation duration, timestep, and the
-number of sensors declared in the options.
+`ExperimentData` pre-allocates NumPy arrays for all sensors, for
+`runtime.buffer_size` iterations. It holds one `AnimatData` per animat,
+created with the classes listed in `loaders.animats_data`. Each `AnimatData`
+contains a `SensorsData` (links, joints, contacts, xfrc, muscles, adhesions,
+visuals and rays).
 
 ## Phase 4: Simulation setup
 
-```python
-simulation = simulation_setup(
-    simulator=args.simulator,
-    experiment_options=experiment_options,
-    experiment_data=experiment_data,
-)
-```
+`farms_sim.simulation.run_simulation()` calls `simulation_setup()`, which, for
+MuJoCo, builds a `farms_mujoco.simulation.simulation.Simulation` with
+`Simulation.from_experiment()`:
 
-For MuJoCo (the default), this calls `MuJoCoSimulation.from_experiment()`:
+1. **MJCF construction**: `setup_mjcf_xml()` converts the animat and arena SDF
+   files into a MuJoCo model, applying the options (morphology, sensors,
+   actuators). See [MJCF Builder Internals](../internals/mjcf-builder-internals.md).
+2. **Task creation**: an `ExperimentTask` (a dm_control `Task`) is created. It
+   instantiates every extension with its `from_options()` class method: first
+   those of `simulation.extensions`, then those of each animat's
+   `extensions`, in order.
+3. **Environment creation**: a dm_control `Environment` wraps the task and the
+   physics.
 
-1. **MJCF construction** — `setup_mjcf_xml()` builds a MuJoCo XML model from
-   the animat SDF files, arena SDF, and all options (morphology, sensors,
-   extensions)
-2. **Task creation** — `ExperimentTask` is created as a dm_control `Task`
-3. **Environment creation** — `dm_control.rl.control.Environment` wraps the
-   task and physics
-
-During this phase, all extensions listed in the YAML `extensions:` lists are
-instantiated via their `from_options()` class methods.
+!!! important "Controllers are extensions"
+    A controller only runs if it is listed in the animat's `extensions:`
+    (for example `loader: controller.zbot_controller.ZbotCPGController`).
+    The `control.controller_loader` option is still parsed but is not used to
+    create controllers.
 
 ## Phase 5: The simulation loop
 
-```python
-simulation.run(headless=True)
-```
+`sim.run()` opens the viewer, or runs headless when `runtime.headless` is
+true, and repeatedly calls `env.step()`.
 
-The `run()` method iterates:
+Time is split in three levels, set in `simulation_config.yaml`:
 
-```python
-for iteration in range(n_iterations):
-    # 1. Step the environment
-    env.step(action=None)  # action unused; controllers drive via extensions
-```
+- An **iteration** (`physics.timestep`) is the logging and control period.
+  Sensors are stored once per iteration, and `runtime.n_iterations` iterations
+  are simulated.
+- Each iteration is made of `physics.cb_sub_steps` **environment steps**.
+- Each environment step advances MuJoCo by `physics.num_sub_steps` physics
+  steps of `timestep / (cb_sub_steps*num_sub_steps)`.
 
-Inside `env.step()`, the dm_control framework calls:
+dm_control calls the task methods below around every environment step.
 
-### `task.initialize_episode()` — called once at start
+### `ExperimentTask.initialize_episode()` (once, at time 0)
 
-- Builds name-to-index maps for joints, links, sensors
-- Creates controller instances from `animat_options.control.controller_loader`
-- Initializes all extensions
-- Sets up sensor data arrays
+- Builds the name to index maps of links, joints, actuators and sensors.
+- Creates the sensor maps between MuJoCo and `AnimatData`.
+- Collects the controllers (extensions that are `AnimatController`
+  instances) and maps their joints to MuJoCo actuators.
+- Resets the physics to keyframe 0.
+- Calls `initialize_episode(task, physics)` on every extension.
 
-### `task.before_step(physics)` — called every iteration
-
-This is the core per-step pipeline:
-
-```python
-def before_step(self, physics):
-    # 1. Update sensor readings from MuJoCo state
-    self.update_sensors(iteration, physics)
-
-    # 2. Call each extension's before_step()
-    for extension in self.extensions:
-        extension.before_step(self, None, physics)
-
-    # 3. Collect controller outputs and apply to MuJoCo
-    for controller in self.animat_controllers:
-        positions = controller.positions(iteration, time, timestep)
-        velocities = controller.velocities(iteration, time, timestep)
-        torques = controller.torques(iteration, time, timestep)
-        # ... map to physics.data.ctrl
-```
-
-Controllers are themselves `AnimatExtension` instances, so their `before_step()`
-advances internal dynamics (e.g., CPG integration), and then `positions()` /
-`velocities()` / `torques()` return the computed joint targets.
-
-### `task.after_step(physics)` — called every iteration
+### `ExperimentTask.before_step()` (every environment step)
 
 ```python
-def after_step(self, physics):
-    self.iteration += 1
-    for extension in self.extensions:
-        extension.after_step(self, None, physics)
+# Simplified from farms_mujoco/simulation/task.py
+full_step = first environment step of an iteration
+if full_step or any extension runs on substeps:
+    self.update_sensors(physics, links_only=not full_step)
+for extension in self.extensions:
+    if full_step or extension.substep:
+        extension.before_step(task=self, action=action, physics=physics)
+        if isinstance(extension, AnimatController):
+            # Write controller outputs to MuJoCo, for the control types
+            # the controller has joints (or muscles) for
+            positions = extension.positions(iteration, time, timestep)
+            velocities = extension.velocities(iteration, time, timestep)
+            torques = extension.torques(iteration, time, timestep)  # + spring/damping
+            excitations = extension.excitations(iteration, time, timestep)
 ```
 
-Extensions like `ExperimentLogger` use `after_step()` to record data into the
-pre-allocated HDF5 arrays.
+A controller's `before_step()` advances its internal dynamics (for example
+the CPG integration), then `positions()`, `velocities()`, `torques()` (and
+the spring and damping references) or `excitations()` (muscles) give the
+targets written to `physics.data.ctrl` and the model.
+
+Extensions created with `substep=True`, such as the `SwimmingExtension`,
+run on every environment step, so the fluid forces follow the body between
+iterations.
+
+### `ExperimentTask.after_step()` (every environment step)
+
+At the end of each iteration, the iteration counter is incremented and
+`after_step(task, physics)` is called on every extension. Logging extensions
+use `end_episode()` instead: `ExperimentLogger` writes the HDF5 file when the
+episode ends.
 
 ## Where your code plugs in
 
 | What you want to do | Where to plug in |
-|---------------------|------------------|
-| Add per-step behavior | `AnimatExtension.before_step()` / `after_step()` |
-| Control joint targets | `AnimatController.positions()` / `velocities()` / `torques()` |
-| Read sensor data | Access `AnimatData.sensors` in any extension |
-| Add a physics force | `AnimatExtension.before_step()` → `physics.data.xfrc_applied` |
-| Log custom data | `AnimatExtension.after_step()` → write to `AnimatData` |
+|---|---|
+| Add per-iteration behaviour | `AnimatExtension.before_step()` / `after_step()` |
+| Add per-substep behaviour | an extension created with `substep=True` |
+| Control joints | `AnimatController.positions()` / `velocities()` / `torques()` |
+| Read sensor data | `AnimatData.sensors` (for example `task.data.animats[i].sensors`) |
+| Apply an external force | `before_step()`, writing `physics.data.xfrc_applied` |
+| Save data at the end | `end_episode()` |
 
 ## Next steps
 
-- [Write a Custom Controller](custom-controller.md) — implement your own
-  `AnimatController` subclass
-- [Write an AnimatExtension](../how-to/write-extension.md) — add custom
-  per-step behavior
-- [Extension and Controller Design](../explanation/extension-design.md) —
-  understand the lifecycle in depth
+- [Write a Custom Controller](custom-controller.md): implement your own
+  `AnimatController`
+- [Write an AnimatExtension](../how-to/write-extension.md): add custom
+  per-step behaviour
+- [Extension and Controller Design](../explanation/extension-design.md): the
+  lifecycle in depth

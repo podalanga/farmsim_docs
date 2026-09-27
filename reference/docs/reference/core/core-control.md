@@ -1,150 +1,117 @@
 # `farms_core.simulation.extensions` / `farms_core.model.control`
 
-Base classes for simulation extensions and animat controllers.
+Base classes of the extensions and controllers, and the logging
+extensions. The lifecycle (when each method is called) is described in
+[Extension and Controller Design](../../explanation/extension-design.md).
 
 ## TaskExtension
 
-```python
-class TaskExtension(ABC):
-    def __init__(self, substep: bool = False):
-        ...
-```
+The base class of every extension: code called by `ExperimentTask` during
+the simulation. A simulation extension is listed in the `extensions:` of
+the simulation file and created with
+`from_options(config, experiment_options)`.
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `substep` | `bool` | `False` | Whether this extension operates on physics substeps. |
+With `substep=False` (the default), `before_step()` is called once per
+iteration. With `substep=True`, it is called at every environment step
+(`physics.cb_sub_steps` times per iteration). `after_step()` is called
+once per iteration.
 
-The `TaskExtension` is an abstract base class for any simulation hook. Custom extensions should inherit from this class to inject logic into the physics loop.
+The `action_spec`, `step_spec`, `get_observation`, `get_reward`,
+`get_termination` and `observation_spec` methods let an extension define
+a dm_control / reinforcement learning interface.
 
-### Methods
-
-| Method | Description |
-|--------|-------------|
-| `from_options(cls, config: dict, experiment_options: ExperimentOptions)` | **Abstract.** Instantiates the extension from configuration options. |
-| `initialize_episode(self, task: Task, physics: Physics)` | Called at simulation iteration 0. |
-| `before_step(self, task: Task, action, physics: Physics)` | Called before the physics engine steps. |
-| `after_step(self, task: Task, physics: Physics)` | Called after the physics engine steps. |
-| `action_spec(self, task: Task, physics: Physics)` | Defines the action specification. |
-| `step_spec(self, task: Task, physics: Physics)` | Defines the timestep specifications. |
-| `get_observation(self, task: Task, physics: Physics)` | Retrieves the environment observation. |
-| `get_reward(self, task: Task, physics: Physics)` | Computes the reward. |
-| `get_termination(self, task: Task, physics: Physics)` | Returns final discount if episode should end, else None. |
-| `observation_spec(self, task: Task, physics: Physics)` | Defines the observation specification. |
-| `end_episode(self, task: Task, physics: Physics)` | Called at the end of the simulation. |
+::: farms_core.simulation.extensions.TaskExtension
+    options:
+      show_root_heading: false
+      heading_level: 3
 
 ## AnimatExtension
 
-```python
-class AnimatExtension(TaskExtension, ABC):
-    ...
-```
+An extension attached to one animat, listed in the `extensions:` of an
+animat file. Its `from_options()` also receives the index of the animat,
+its `AnimatData` and its options.
 
-Inherits `initialize_episode()`, `before_step()`, and all other simulation lifecycle methods from `TaskExtension` — see [TaskExtension](#taskextension). This abstract class associates the extension with a specific animat via the `animat_i` index.
-
-### Methods
-
-| Method | Description |
-|--------|-------------|
-| `from_options(cls, config: dict, experiment_options: ExperimentOptions, animat_i: int, animat_data: AnimatData, animat_options: AnimatOptions)` | **Abstract.** Instantiates the extension for a specific animat. |
+::: farms_core.model.extensions.AnimatExtension
+    options:
+      show_root_heading: false
+      heading_level: 3
 
 ## AnimatController
 
-```python
-class AnimatController(AnimatExtension):
-    def __init__(self, animat_i: int, joints_names: tuple[list[str], ...], muscles_names: tuple[str, ...], max_torques: tuple[NDARRAY_V1, ...], substep: bool = True):
-        ...
-```
+An `AnimatExtension` whose commands `ExperimentTask` writes to the
+actuators after its `before_step()`. Each command method takes
+`(iteration, time, timestep)` and returns a `dict[str, float]` from joint
+name to value, except `excitations()`, which returns an array ordered
+like `muscles_names`. `springrefs()`, `springcoefs()` and `dampingcoefs()`
+are only called for controllers that have torque controlled joints:
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `animat_i` | `int` | *(required)* | Index of the animat this controller drives. |
-| `joints_names` | `tuple[list[str], ...]` | *(required)* | 7-tuple of joint name lists, one for each `ControlType`. |
-| `muscles_names` | `tuple[str, ...]` | *(required)* | Tuple of muscle names. |
-| `max_torques` | `tuple[NDARRAY_V1, ...]` | *(required)* | 7-tuple of maximum torques per `ControlType`. |
-| `substep` | `bool` | `True` | Whether controller runs on substeps. |
+| Method | Command | `ControlType` |
+|--------|---------|---------------|
+| `positions` | Position targets | `POSITION` |
+| `velocities` | Velocity targets | `VELOCITY` |
+| `torques` | Torques | `TORQUE` |
+| `springrefs` | Spring reference positions | `SPRINGREF` |
+| `springcoefs` | Spring stiffnesses | `SPRINGCOEF` |
+| `dampingcoefs` | Damping coefficients | `DAMPINGCOEF` |
+| `excitations` | Muscle excitations | `MUSCLE` |
 
-The `AnimatController` bridges high-level behavior (like a CPG) to low-level physical actuation.
+`joints_names` and `max_torques` hold one entry per `ControlType`. The
+static methods `joints_from_control_types()` and
+`max_torques_from_control_types()` build them from the motor options.
+The default `from_options()` creates a controller without joints:
+override it. See [Write a Custom Controller](../../tutorials/custom-controller.md).
 
-### Methods
-
-The following methods output the active commands for the current iteration. Each method takes `(iteration: int, time: float, timestep: float)` and returns a `dict[str, float]` mapping the joint or actuator name to its commanded value.
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `positions` | `dict[str, float]` | Positional setpoints. |
-| `velocities` | `dict[str, float]` | Velocity setpoints. |
-| `torques` | `dict[str, float]` | Direct torque or force commands. |
-| `springrefs` | `dict[str, float]` | Dynamic spring equilibrium references. |
-| `springcoefs` | `dict[str, float]` | Dynamic stiffness coefficients. |
-| `dampingcoefs` | `dict[str, float]` | Dynamic damping coefficients. |
-| `excitations` | `dict[str, float]` | Muscle activation levels. |
+::: farms_core.model.control.AnimatController
+    options:
+      show_root_heading: false
+      heading_level: 3
 
 ## ControlType
 
-```python
-class ControlType(IntEnum):
-    ...
-```
-
-Standardizes the modes by which joints and actuators are driven.
-
 | Value | Code | Controls |
 |-------|------|----------|
-| `POSITION` | `0` | Standard positional targets. |
-| `VELOCITY` | `1` | Target joint velocities. |
-| `TORQUE` | `2` | Direct effort, forces, or torques. |
-| `SPRINGREF` | `3` | Equilibrium point (rest length/angle) of a simulated spring. |
-| `SPRINGCOEF` | `4` | Joint stiffness (spring constant *K*). |
-| `DAMPINGCOEF` | `5` | Joint damping (*D*). |
-| `MUSCLE` | `6` | Muscle excitation levels (activations). |
+| `POSITION` | `0` | Position targets |
+| `VELOCITY` | `1` | Velocity targets |
+| `TORQUE` | `2` | Torques or forces |
+| `SPRINGREF` | `3` | Spring reference position |
+| `SPRINGCOEF` | `4` | Joint stiffness |
+| `DAMPINGCOEF` | `5` | Joint damping |
+| `MUSCLE` | `6` | Muscle excitations |
+
+`ControlType.from_string_list(['position', 'velocity'])` converts the
+`control_types` of a motor.
 
 ## ExperimentLogger
 
-```python
-class ExperimentLogger(TaskExtension):
-    def __init__(self, experiment_options: ExperimentOptions, log_path: str, skip: int):
-        ...
+Keeps a reference to the `ExperimentData` and writes it to
+`<log_path>/simulation.hdf5` at the end of the episode (`end_episode()`).
+The `skip` option is stored but not used: every iteration held in the
+buffers is saved.
+
+```yaml
+# simulation_config.yaml
+extensions:
+  - loader: farms_core.simulation.extensions.ExperimentLogger
+    config:
+      log_path: Output
+      skip: 1
 ```
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `experiment_options` | `ExperimentOptions` | *(required)* | The options for the experiment. |
-| `log_path` | `str` | *(required)* | Directory to save the HDF5 file. |
-| `skip` | `int` | *(required)* | Number of frames to skip between logging. |
-
-A simulation extension that logs animat data arrays into an HDF5 file (`simulation.hdf5`) at the end of the simulation.
 
 ## ExperimentOptionsLogger
 
-```python
-class ExperimentOptionsLogger(TaskExtension):
-    def __init__(self, experiment_options: ExperimentOptions, log_path: str):
-        ...
-```
+Writes the options of the simulation, animats and arenas to
+`<log_path>/simulation_options.yaml`, `animat_<i>_options.yaml` and
+`arena_<i>_options.yaml` at the start of the episode.
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `experiment_options` | `ExperimentOptions` | *(required)* | The options for the experiment. |
-| `log_path` | `str` | *(required)* | Directory to save the YAML files. |
-
-A simulation extension that writes the initial simulation, animat, and arena configuration options into distinct YAML files (`simulation_options.yaml`, `animat_X_options.yaml`, `arena_X_options.yaml`) before the simulation steps begin.
-
-## Usage Example
-
-```python
-from farms_core.model.control import AnimatController
-import numpy as np
-
-class SineWaveController(AnimatController):
-    def positions(self, iteration: int, time: float, timestep: float) -> dict[str, float]:
-        target = np.sin(time * 2.0 * np.pi)
-        return {
-            joint: target * 0.5
-            for joint in self.joints_names[0]  # ControlType.POSITION
-        }
+```yaml
+extensions:
+  - loader: farms_core.simulation.extensions.ExperimentOptionsLogger
+    config:
+      log_path: Output
 ```
 
 ## See Also
 
-- [farms_core_options.md](core-options.md)
-- [farms_mujoco_simulation.md](../mujoco/mujoco-simulation.md)
+- [Options](core-options.md)
+- [MuJoCo Simulation](../mujoco/mujoco-simulation.md)
+- [API reference: `farms_core.model.control`](../api/farms_core/model/control.md)

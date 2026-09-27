@@ -4,14 +4,14 @@ This page documents the Cython classes that convert CPG oscillator state into jo
 
 ## Source files covered
 
-| File | Lines | Purpose |
-|---|---|---|
-| `farms_amphibious/control/position_phase_cy.pyx` | 67 | `PositionPhaseCy` — phase-based position control |
-| `farms_amphibious/control/ekeberg.pyx` | 131 | `EkebergMuscleCy` — Ekeberg muscle model |
-| `farms_amphibious/control/amphibious.py` | 695 | `JointMuscleController`, `AmphibiousController`, `JointsMap`, `MusclesMap` |
-| `farms_amphibious/control/passive_cy.pyx` | — | `PassiveJointCy` — passive stiffness/damping |
-| `farms_amphibious/control/position_muscle_cy.pyx` | — | `PositionMuscleCy` — amplitude-based position control |
-| `farms_amphibious/control/joints_control_cy.pyx` | — | `JointsControlCy`, `JointsMusclesCy` (base classes) |
+| File | Purpose |
+|---|---|
+| `farms_amphibious/control/position_phase_cy.pyx` | `PositionPhaseCy`, phase-based position control |
+| `farms_amphibious/control/ekeberg.pyx` | `EkebergMuscleCy`, Ekeberg muscle model |
+| `farms_amphibious/control/amphibious.py` | `JointMuscleController`, `AmphibiousController`, `JointsMap`, `MusclesMap` |
+| `farms_amphibious/control/passive_cy.pyx` | `PassiveJointCy`, passive stiffness/damping |
+| `farms_amphibious/control/position_muscle_cy.pyx` | `PositionMuscleCy`, amplitude-based position control |
+| `farms_amphibious/control/joints_control_cy.pyx` | `JointsControlCy`, `JointsMusclesCy` (base classes) |
 
 ## Call graph / entry points
 
@@ -19,9 +19,9 @@ This page documents the Cython classes that convert CPG oscillator state into jo
 ExperimentTask.before_step()
   └─ AmphibiousController.before_step()
        ├─ drive.step(iteration, time, timestep)        [DescendingDrive]
-       ├─ network.step(iteration, time, timestep)       [NetworkODE — integrate CPG]
+       ├─ network.step(iteration, time, timestep)       [NetworkODE, integrate CPG]
        └─ for net2joints in self.network2joints.values():
-            net2joints.step(iteration)                  [Cython handler — compute motor commands]
+            net2joints.step(iteration)                  [Cython handler, compute motor commands]
 
 ExperimentTask.step_joints_control_position/torque()
   └─ controller.positions/torques(iteration, time, timestep)
@@ -33,13 +33,13 @@ ExperimentTask.step_joints_control_position/torque()
 
 ```
 JointsControlCy (Cython base class)
-  ├── PassiveJointCy        — passive stiffness/damping/friction
+  ├── PassiveJointCy, passive stiffness/damping/friction
   └── JointsMusclesCy (extends JointsControlCy)
-       ├── EkebergMuscleCy   — Ekeberg muscle model (5-parameter)
-       └── PositionMuscleCy  — amplitude-based position
+       ├── EkebergMuscleCy, Ekeberg muscle model (5-parameter)
+       └── PositionMuscleCy, amplitude-based position
 
 PositionPhaseCy (extends JointsControlCy)
-  — Phase-based position control (separate from JointsMusclesCy)
+, Phase-based position control (separate from JointsMusclesCy)
 ```
 
 ## Selection mechanism
@@ -195,9 +195,9 @@ cdef class PositionPhaseCy(JointsControlCy):
 | `state` | `OscillatorNetworkStateCy` | required | CPG state array (phases, amplitudes, offsets) |
 | `osc_indices` | `UITYPEv2` (uint array) | required | Oscillator indices per joint `[2, n_joints]` |
 | `threshold` | float | 0 | Amplitude threshold for swim/walk gait switching |
-| `**kwargs` | — | — | Passed to `JointsControlCy`: `joints_names`, `joints_data`, `indices`, `gain`, `bias` |
+| `**kwargs` | n/a | n/a | Passed to `JointsControlCy`: `joints_names`, `joints_data`, `indices`, `gain`, `bias` |
 
-### `step(iteration)` — complete walkthrough
+### `step(iteration)`, complete walkthrough
 
 ```cython
 cpdef void step(self, unsigned int iteration):
@@ -243,7 +243,7 @@ cpdef void step(self, unsigned int iteration):
 
 The `threshold` parameter (set to `1e-2` in `AmphibiousController.__init__`) determines the swim/walk transition:
 
-- **Swimming** (`amplitudes[osc_i_0] < threshold`): The desired angle is just the joint offset. The phase is NOT used — the joint holds a static position. This is because swimming uses axial undulation controlled by other joints, and the limbs stay retracted.
+- **Swimming** (`amplitudes[osc_i_0] < threshold`): The desired angle is just the joint offset. The phase is NOT used, the joint holds a static position. This is because swimming uses axial undulation controlled by other joints, and the limbs stay retracted.
 
 - **Walking** (`amplitudes[osc_i_0] >= threshold`): The desired angle is the oscillator phase PLUS the joint offset. The phase drives the oscillatory motion of the limb.
 
@@ -264,7 +264,7 @@ assert osc_i_0 < len(phases)
 assert osc_i_1 >= len(phases)
 ```
 
-The first assertion checks that the primary oscillator index is valid. The second assertion checks that the secondary oscillator index is **out of range** — this is intentional. `PositionPhaseCy` uses only ONE oscillator per joint (the phase oscillator), not a pair. The second index should be the sentinel value `np.iinfo(np.uintc).max`.
+The first assertion checks that the primary oscillator index is valid. The second assertion checks that the secondary oscillator index is **out of range**, this is intentional. `PositionPhaseCy` uses only ONE oscillator per joint (the phase oscillator), not a pair. The second index should be the sentinel value `np.iinfo(np.uintc).max`.
 
 ### Final position command
 
@@ -311,7 +311,7 @@ cdef enum:
 
 These are the indices into the `parameters` array (from `MusclesMap.arrays`).
 
-### `step(iteration)` — complete walkthrough
+### `step(iteration)`, complete walkthrough
 
 ```cython
 cpdef void step(self, unsigned int iteration):
@@ -366,9 +366,9 @@ cpdef void step(self, unsigned int iteration):
 
 ### Neural signals
 
-- `neural_diff = activations[osc_1] - activations[osc_0]`: The difference between the two opposing muscle activations. This drives the active torque — when one muscle is more active than the other, it creates a net torque.
+- `neural_diff = activations[osc_1] - activations[osc_0]`: The difference between the two opposing muscle activations. This drives the active torque, when one muscle is more active than the other, it creates a net torque.
 
-- `neural_sum = activations[osc_0] + activations[osc_1]`: The total activation. This drives the active stiffness — co-contraction of both muscles increases joint stiffness without changing the net torque.
+- `neural_sum = activations[osc_0] + activations[osc_1]`: The total activation. This drives the active stiffness, co-contraction of both muscles increases joint stiffness without changing the net torque.
 
 ### Position error
 
@@ -424,7 +424,7 @@ cdef inline double sign(double value):
         return 1
 ```
 
-Note: `sign(0)` returns `1`, not `0`. This is a slight asymmetry — at zero velocity, friction is positive. This differs from `np.sign(0) = 0`.
+Note: `sign(0)` returns `1`, not `0`. This is a slight asymmetry, at zero velocity, friction is positive. This differs from `np.sign(0) = 0`.
 
 ## `PassiveJointCy`
 

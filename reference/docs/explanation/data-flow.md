@@ -1,151 +1,167 @@
 # Data Flow and Persistence
 
-This document traces how data flows through a FARMS simulation — from YAML
-configuration through pre-allocated arrays to HDF5 output.
+How data moves through a FARMS simulation, from the YAML files to the
+pre-allocated arrays and the HDF5 output, and the reference of the data
+classes. See [Save, Load, and Inspect Data](../how-to/save-load-data.md)
+for practical usage.
 
-## Configuration → Options → Data
+## From the YAML files to the arrays
 
-```
+```text
 YAML files
-    ↓  (yaml2pyobject with loader dotted paths)
+    │  ExperimentOptions.load() (classes of loaders:)
+    ▼
 ExperimentOptions
     ├── simulation: SimulationOptions
-    ├── animats: list[AnimatOptions]
+    ├── animats: list[AnimatOptions]     (AmphibiousOptions for the Zbot)
     └── arenas: list[ArenaOptions]
-    ↓  (ExperimentData.from_options)
-ExperimentData
-    ├── times: ndarray(n_iterations)
-    ├── timestep: float
-    ├── simulation: SimulationData
-    │   └── units: SimulationUnitScaling
-    └── animats: list[AnimatData]
-        └── sensors: SensorsData
-            ├── links:    ndarray(n_iterations, n_links, 19)
-            ├── joints:   ndarray(n_iterations, n_joints, 3)
-            ├── contacts:  ndarray(n_iterations, n_contacts, 7)
-            └── xfrc:     ndarray(n_iterations, n_links, 6)
+    │  ExperimentData.from_options()
+    ▼
+ExperimentData                           farms_core.experiment.data
+    ├── times: (n_iterations,)
+    ├── timestep: float                  physics.timestep [s]
+    ├── simulation: SimulationData       farms_core.simulation.data
+    │   ├── ncon: (n_iterations,)        number of contacts
+    │   ├── niter: (n_iterations,)       solver iterations
+    │   └── energy: (n_iterations, 2)    potential and kinetic energy
+    └── animats: list[AnimatData]        farms_core.model.data
+        ├── sensors: SensorsData         farms_core.sensors.data
+        │   ├── links     (buffer_size, n_links, 20)
+        │   ├── joints    (buffer_size, n_joints, 17)
+        │   ├── contacts  (buffer_size, n_contacts, 12)
+        │   ├── xfrc      (buffer_size, n_xfrc, 6)
+        │   ├── muscles   (buffer_size, n_muscles, 17)
+        │   ├── adhesions (buffer_size, n_adhesions, 1)
+        │   ├── visuals   (buffer_size, n_visuals, 8)
+        │   └── rays      (buffer_size, n_rays, 8)
+        ├── state        (AmphibiousData: CPG phases, amplitudes, offsets)
+        └── network      (AmphibiousData: drives and connectivity)
 ```
 
-## Pre-allocation strategy
+The number of elements of each sensor category is the length of the
+corresponding list in `control.sensors` of the animat file. The arrays
+hold `runtime.buffer_size` iterations (by default `runtime.n_iterations`).
 
-`ExperimentData.from_options()` pre-allocates all arrays before the simulation
-starts. Array dimensions are computed from:
+## Pre-allocation
 
-- `n_iterations = int(duration / timestep)` — from `RunOptions`
-- Sensor counts — from `SensorsOptions` name lists
-- Data dimensions — fixed per sensor type (19 for links, 3 for joints, etc.)
+`ExperimentData.from_options()` allocates every array before the
+simulation starts, with the data class of each animat
+(`loaders.animats_data`). This means:
 
-This approach has several benefits:
-
-1. **No allocation during simulation** — the hot loop only writes to
-   pre-existing arrays
-2. **Memory predictability** — total memory is known at setup time
-3. **Efficient HDF5 writing** — arrays can be written in a single operation
-4. **Index-based access** — extensions write to `array[iteration, ...]`,
-   avoiding dynamic data structures
+1. no allocation in the simulation loop, which only writes to existing
+   arrays;
+2. memory known at setup time;
+3. a direct HDF5 export of the arrays;
+4. index based access: `array[iteration % buffer_size, element, column]`.
 
 ## Per-step data flow
 
-During each simulation step, data flows through the system in this order:
-
-```
-1. MuJoCo physics state (qpos, qvel, xpos, xquat, etc.)
-       ↓  (ExperimentTask.update_sensors)
-2. AnimatData.sensors arrays (pre-allocated)
-       ↓  (extensions read sensor data)
-3. Extension computations (forces, control outputs)
-       ↓  (controllers write joint targets)
-4. physics.data.ctrl (MuJoCo control inputs)
-       ↓  (MuJoCo physics.step())
-5. New MuJoCo physics state
-       ↓  (ExperimentTask.after_step)
-6. Extensions log to AnimatData (e.g., ExperimentLogger)
+```text
+1. MuJoCo state (sensors, xpos, xquat, qpos, ...)
+       │  ExperimentTask.update_sensors() -> physics2data()
+2. SensorsData arrays at index iteration % buffer_size
+       │  extensions and controllers read them in before_step()
+3. Forces and commands
+       │  physics.data.xfrc_applied, physics.data.ctrl, ...
+4. MuJoCo step
+       │  ExperimentTask.after_step(), next iteration
+5. ExperimentLogger.end_episode(): ExperimentData.to_file()
 ```
 
-## Sensor update
+The sensors are copied from the MuJoCo sensors and arrays through maps
+built at the start of the episode (see
+[Physics to Sensor Mapping](../internals/physics-sensor-mapping.md)). On
+the substeps of an iteration, only the links are updated (when an
+extension runs on substeps). The `xfrc` array is written by the extensions
+that apply forces, such as `SwimmingExtension`, not read from MuJoCo.
 
-`ExperimentTask.update_sensors(iteration, physics)` reads from MuJoCo's physics
-state and writes into the pre-allocated arrays:
+## Sensor arrays
 
-| Sensor array | MuJoCo source | Columns |
-|--------------|---------------|---------|
-| `links.array[i, :, 0:3]` | `physics.data.xpos` | Position |
-| `links.array[i, :, 3:7]` | `physics.data.xquat` | Orientation |
-| `links.array[i, :, 7:10]` | `physics.data.cvel` | Linear velocity |
-| `links.array[i, :, 10:13]` | `physics.data.cvel` | Angular velocity |
-| `joints.array[i, :, 0]` | `physics.data.qpos` | Position |
-| `joints.array[i, :, 1]` | `physics.data.qvel` | Velocity |
-| `joints.array[i, :, 2]` | `physics.data.actuator_force` | Torque |
-| `xfrc.array[i, :, :3]` | `physics.data.xfrc_applied` | Force |
-| `contacts.array[i, :, :3]` | `physics.data.collision` | Contact force |
+Each category has an `.array` of shape `(buffer_size, n_elements, n_columns)`
+and `.names`, the element names. The columns are the constants of
+`farms_core/sensors/sensor_convention.pxd`, available in Python as
+`farms_core.sensors.sensor_convention.sc` (for example
+`sc.joint_position`). The arrays also have accessor methods, for example
+`links.com_position(iteration, link_i)` or
+`links.global_com_position(iteration)`.
 
-## Force application
+| Category | Columns |
+|----------|---------|
+| `links` (20) | CoM position (0:3), CoM orientation quaternion x, y, z, w (3:7), link frame position (7:10), link frame orientation (10:14), CoM linear velocity (14:17), CoM angular velocity (17:20) |
+| `joints` (17) | Position, velocity, torque, reaction force (3) and torque (3), position, velocity and torque commands, active, stiffness, damping and friction torques, limit force |
+| `contacts` (12) | Reaction force (3), friction force (3), total force (3), position (3) |
+| `xfrc` (6) | Force (3), torque (3), world frame, about the CoM |
+| `muscles` (17) | Excitation, activation, tendon unit length, velocity and force, fiber length and velocity, pennation angle, force-length, force-velocity, active and passive forces, tendon length and force, Ia, II and Ib feedback |
+| `adhesions` (1) | Adhesion force |
+| `visuals` (8) | Colour RGBA (4), emission RGB and intensity (4) |
+| `rays` (8) | Distance, origin (3), direction (3), hit |
 
-Extensions that apply forces (e.g., `SwimmingExtension`) write to
-`physics.data.xfrc_applied`:
+See [Add and Configure Sensors](../how-to/configure-sensors.md) for how to
+enable them.
+
+## Units
+
+The simulation may use scaled units (`simulation.units` in the simulation
+file, `SimulationUnitScaling`). The sensor arrays are in SI units. MuJoCo
+quantities are converted with `task.units`:
 
 ```python
-# In SwimmingExtension.before_step():
-physics.data.xfrc_applied[body_id, :3] = drag_force + buoyancy_force
-physics.data.xfrc_applied[body_id, 3:] = torque
+sim_time = physics.time()/task.units.seconds
+dt = physics.timestep()/task.units.seconds
+physics.data.xfrc_applied[body, :3] = force*task.units.newtons
 ```
 
-MuJoCo reads `xfrc_applied` during `physics.step()` and incorporates these
-external forces into the dynamics computation.
+`SimulationUnitScaling` has `meters`, `seconds` and `kilograms`, and
+derived factors such as `newtons`, `torques`, `velocity`,
+`angular_velocity`, `stiffness`, `damping` and `inertia`.
 
-## Controller output mapping
+## HDF5 files
 
-Controller outputs are dicts mapping joint names to float values:
+`ExperimentLogger` calls `ExperimentData.to_file('<log_path>/simulation.hdf5', iteration)`
+at the end of the simulation. The file mirrors `ExperimentData.to_dict()`
+(lists are stored as groups whose name starts with `FARMSLIST`):
 
-```python
-# In ExperimentTask.before_step():
-positions = controller.positions(iteration, time, timestep)
-# positions = {'joint_0': 0.5, 'joint_1': -0.3, ...}
+```text
+times                     (n_iterations,)
+timestep                  ()
+simulation/ncon, niter, energy
+FARMSLISTanimats/0/sensors/links/array     (buffer_size, n_links, 20)
+FARMSLISTanimats/0/sensors/links/names
+FARMSLISTanimats/0/sensors/links/masses
+FARMSLISTanimats/0/sensors/joints/array ... (and the other categories)
+FARMSLISTanimats/0/state                   (AmphibiousData only)
+FARMSLISTanimats/0/network/...             (AmphibiousData only)
 ```
 
-The task maps these to MuJoCo's `ctrl` array using the joint name → actuator
-index map built during `initialize_episode()`.
+`ExperimentData.from_file()` reads it back, with `AnimatData` for the
+animats.
 
-## HDF5 persistence
+## Options files
 
-At episode end (or simulation completion), `ExperimentLogger` calls
-`ExperimentData.to_file()`:
+`ExperimentOptionsLogger` writes, at the start of the simulation, the
+options as loaded (with the defaults filled in) to its `log_path`:
 
-```python
-def to_file(self, filename):
-    """Write all data to HDF5."""
+```text
+Output/
+├── simulation_options.yaml
+├── animat_0_options.yaml
+└── arena_0_options.yaml
 ```
 
-The HDF5 file structure mirrors the Python object hierarchy:
+They can be used to reproduce the simulation, and are never read back by
+the simulation itself. `MjcfSaver` writes the MuJoCo model
+(`simulation_mjcf.xml`).
 
-- Top-level datasets: `times`, `timestep`
-- Groups for each animat: `animat_0/`, `animat_1/`, ...
-- Sub-groups for sensors: `animat_0/sensors/links/`, etc.
-- Array datasets within each sensor group
-- Attributes for metadata (names, units, etc.)
+## API reference
 
-### Round-trip fidelity
-
-`ExperimentData.from_file()` reconstructs the full object tree from HDF5.
-The round-trip is lossless — all array data and metadata are preserved.
-
-## Options persistence
-
-`ExperimentOptionsLogger` saves YAML copies of all configuration files:
-
-```
-options/
-├── experiment_config.yaml
-├── simulation_config.yaml
-├── animat_config.yaml
-└── arena_config.yaml
-```
-
-These are the original YAML files as loaded (after any convention-based
-defaults have been expanded). They can be used to reproduce the simulation.
+The generated API reference lists every method:
+[`ExperimentData`](../reference/api/farms_core/experiment/data.md),
+[`AnimatData`](../reference/api/farms_core/model/data.md),
+[`SensorsData` and the sensor arrays](../reference/api/farms_core/sensors/data.md).
 
 ## See also
 
-- [Save, Load, and Inspect Data](../how-to/save-load-data.md) — practical usage
-- [Data Model](../reference/env/data-model.md) — class reference
-- [Simulation Lifecycle](simulation-lifecycle.md) — when data is written
+- [Save, Load, and Inspect Data](../how-to/save-load-data.md)
+- [Add and Configure Sensors](../how-to/configure-sensors.md)
+- [Simulation Lifecycle](simulation-lifecycle.md)
+- [Data Allocation Internals](../internals/data-allocation-internals.md)

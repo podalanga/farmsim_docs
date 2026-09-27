@@ -1,106 +1,172 @@
 # farms_mujoco.swimming
 
-Phenomenological hydrodynamic drag model for aquatic and amphibious robots.
+Fluid forces (buoyancy, drag and added mass) on the links of swimming
+animats. They are computed in C once per MuJoCo step, on a single core and
+without allocation in the simulation loop, and applied through MuJoCo's
+`xfrc_applied`. MuJoCo's own fluid model is disabled on the FARMS geoms
+(`fluidcoef` set to 0).
 
-## Overview
+| Model | Options | What it computes |
+|---|---|---|
+| Buoyancy | `buoyancy`, `cob_method`, `cob_geom_group`, `cob_overlap` | $-\rho V g$ at the centre of buoyancy, with $V$ and the centre computed from the link geoms |
+| Legacy drag | `drag`, `fluid_model: legacy`, link `drag_coefficients` | Per-axis quadratic drag in the link frame |
+| Ellipsoid drag | `drag`, `fluid_model: ellipsoid`, `ellipsoid_*` | Form, viscous and rotational drag of an ellipsoid fitted to each link |
+| Added mass | `added_mass` (ellipsoid model only) | Lamb added mass, Kirchhoff and Munk terms |
 
-Standard rigid-body physics engines like MuJoCo excel at contact dynamics but lack native computational fluid dynamics (CFD) solvers. To simulate amphibious and aquatic locomotion, this module implements an efficient phenomenological hydrodynamic drag model. It computes real-time fluid forces and injects them directly into the physics engine loop.
+The equations are in [Mathematical Models](../../explanation/mathematical-models.md#2-hydrodynamics),
+and the implementation in [Hydrodynamics Internals](../../internals/hydrodynamics-internals.md).
 
-!!! warning "Limitations"
-    Added mass and lift are **NOT** implemented in this model. Only translational drag, rotational drag, and buoyancy are calculated.
+## Configuration
 
----
+A link has fluid forces when `fluid_interaction: true` in the animat file.
+The water is described by the `water` block of the arena file:
 
-## Class Reference: SwimmingExtension
-
-Inherits from `AnimatExtension`. Computes hydrodynamic forces on all individual rigid bodies and injects them into the physics step.
-
-```python
-SwimmingExtension.__init__(self, animat_i, animat_data, animat_options, arena_options, substep=True, water_properties=None)
-```
-
-| Name | Type | Default | Description |
-|---|---|---|---|
-| `animat_i` | `int` | Required | Index of the animat in the simulation. |
-| `animat_data` | `AnimatData` | Required | Central data object for telemetry. |
-| `animat_options` | `AnimatOptions` | Required | Configuration of the animat morphology. |
-| `arena_options` | `ArenaOptions` | Required | Configuration for the arena and water. |
-| `substep` | `bool` | `True` | Whether to step the extension on physics substeps. |
-| `water_properties` | `WaterPropertiesExtension` | `None` | Reference to water definitions. |
-
-Note: The `__init__` method will load and process PNG water velocity flow field maps from `arena_options.water.maps` whenever `arena_options.water.velocity` is not a 3-element constant vector (i.e. `len(velocity) != 3`). In that case `velocity` carries the velocity range and spatial bounds, and a `WaterPropertiesExtension` backed by the maps is constructed.
-
-```python
-SwimmingExtension.from_options(cls, config, experiment_options, animat_i, animat_data, animat_options)
-```
-Instantiates the extension by reading the global `experiment_options.arenas[0]` settings.
-
-```python
-SwimmingExtension.initialize_episode(self, task, physics)
-```
-Constructs the core `SwimmingHandler`, parsing the morphology's geometric shapes and constructing the fluid resistance profiles for each link.
-
-```python
-SwimmingExtension.before_step(self, task, action, physics)
-```
-Steps the hydrodynamic drag computations. Modifies the underlying `physics.data.xfrc_applied` array to inject the resulting computed global torques and forces on a per-body basis.
-
-!!! danger "Known bug: forces are rotated twice"
-    `before_step()` currently applies an extra `xmat` rotation on top of
-    forces that `compute_link_forces` (in `hydrodynamics.pyx`) already
-    rotated into the world frame — see [Hydrodynamics Internals § Common
-    failure modes](../../internals/hydrodynamics-internals.md#3-double-rotation-of-forces-confirmed-bug-see-before_step-above)
-    for the confirmed root cause. Force/torque direction on any link away
-    from identity orientation is currently wrong.
-
----
-
-## Drag Force Computation
-
-The handler computes forces based on a simplified quadratic drag model. For a rigid body moving through a fluid, the force and torque vectors are computed locally relative to the body's orientation. The implementation lives in `farms_mujoco/swimming/drag.pyx` (pure drag math), orchestrated together with buoyancy by `farms_mujoco/swimming/hydrodynamics.pyx` (`SwimmingHandler`), which is the file `SwimmingExtension` actually imports.
-
-$$ F_{D, local} = C_{D, lin} \circ \mu \circ V_{local} \circ |V_{local}| + F_{buoyancy, local} $$
-$$ \tau_{D, local} = C_{D, ang} \circ \omega_{local} \circ |\omega_{local}| $$
-
-Where:
-- $\mu$ is the fluid viscosity (as returned by `WaterProperties.viscosity`).
-- $V_{local}$ and $\omega_{local}$ are linear and angular velocities relative to the surrounding water (the ambient fluid velocity is rotated into the URDF frame and subtracted from the link velocity).
-- $C_{D, lin}$ and $C_{D, ang}$ are coefficients defining resistance along local axes (`coefficients[0]` for force, `coefficients[1]` for torque).
-- $F_{buoyancy, local}$ is the buoyancy force (computed by `buoyancy_cy.pyx`) folded into the drag force as the last step.
-- $\circ$ denotes the Hadamard (element-wise) product.
-
-!!! note "Sign convention"
-    The code computes $v|v|$ (i.e. $v^2 \cdot \operatorname{sgn}(v)$) and multiplies by $\mu \cdot C_D$. There is no explicit $-0.5 \cdot \rho$ prefactor in the implementation; whether the resulting force acts as drag (opposing motion) or thrust depends on the sign of the configured coefficients $C_D$.
-
-### Axial vs Normal Decomposition
-
-By separating drag coefficients for the local X axis (axial/forward) versus local Y/Z axes (normal/perpendicular), the model simulates anisotropic drag. This enables undulatory propulsion where sliding forward encounters less resistance than lateral oscillation.
-
-### Configuration Format
-
-Drag coefficients are configured in `MorphologyOptions` as a $2 \times 3$ matrix per link:
 ```yaml
-drag_coefficients:
-  - [C_x, C_y, C_z] # Translational coefficients
-  - [C_wx, C_wy, C_wz] # Rotational coefficients
+water:
+  sdf: ../../models/arena_water_v0/sdf/arena_water.sdf  # Visual only
+  drag: true
+  buoyancy: true
+  height: 0                    # Surface height [m]
+  density: 1000.0              # [kg/m^3]
+  viscosity: 1.0               # Scale of the quadratic drag
+  velocity: [0, 0, 0]          # Water velocity [m/s], or maps (see below)
+  # Fluid model options, all optional (defaults shown)
+  cob_method: exact            # exact | lut | ramp
+  cob_geom_group: 2            # 2: collision geoms, 1: visual meshes
+  cob_overlap: ignore          # ignore | scale
+  cob_lut_resolution: [32, 64] # LUT directions per side, depths
+  drag_implicit: false         # Semi-implicit legacy drag
+  fluid_model: legacy          # legacy | ellipsoid
+  ellipsoid_fit: mvee          # mvee | inertia
+  ellipsoid_coefficients: [1.0, 1.0, 2.5]  # Form, viscous, rotational
+  dynamic_viscosity: 1.0e-3    # [Pa.s] ellipsoid viscous drag
+  added_mass: off              # off | implicit | explicit
 ```
 
----
+The fluid model options can also be grouped in a nested `cob` block
+(`cob_method` becomes `cob.method`, and so on). Their full list, generated
+from the code, is in the
+[Configuration reference](../env/configuration-reference.md#fluid-model-options).
 
-## Water Properties and Maps
+!!! note "Previous option values"
+    `cob_method: analytic`, `analytical`, `analytic_fast` and `mesh` are
+    aliases of `exact`. The other previous `cob_*` keys are accepted and
+    ignored.
 
-### WaterPropertiesExtension
-Provides callbacks to query specific localized properties of the fluid. It handles queries for water surface height, density, velocity, and viscosity (the four `WaterProperties` cdef methods: `surface`, `density`, `velocity`, `viscosity`), enabling dynamically structured fluids.
+The animat's extension entry has no required configuration:
 
-### water_velocity_from_maps
-```python
-water_velocity_from_maps(position, water_maps)
+```yaml
+extensions:
+  - loader: farms_mujoco.swimming.extension.SwimmingExtension
+    config:
+      water_properties: null  # Ignored: the arena's water block is used
 ```
-When complex current flows are required, FARMS uses PNG-based flow fields. This function samples the $V_{water}$ vector at any spatial `position` by mapping the position into the image's 2D bounding box and picking the nearest pixel (nearest-neighbor sampling via `round(...)`, not bilinear interpolation). The lookup is only performed when the position lies inside the configured `pos_min`/`pos_max` bounds; otherwise a zero velocity is returned.
 
----
+## Choosing the options
+
+**`cob_method`** (centre of buoyancy):
+
+| Value | Accuracy | Cost per link | Use it for |
+|---|---|---|---|
+| `exact` | Exact for every geom type | about 6 to 170 ns per geom crossing the surface, 8 ns otherwise | Default |
+| `lut` | About 1 % of the link volume | about 60 ns, whatever the geoms | Many geoms per link, overlapping geoms, many robots |
+| `ramp` | Approximate, no buoyancy torque | minimal | Legacy behaviour |
+
+`exact` counts overlapping geoms twice. `cob_overlap: scale` rescales them
+by the union fraction, and `lut` uses the true union. See the buoyancy
+note of [The Zbot Model](../../tutorials/zbot-model.md) for a model where
+this matters.
+
+`cob_geom_group: 1` uses the visual meshes instead of the collision
+geoms, for bodies whose shape is poorly described by primitives. Meshes
+that are not watertight are replaced by their convex hull.
+
+**`fluid_model`**: `legacy` uses the per-link `drag_coefficients` (tuned
+by hand). `ellipsoid` derives the drag and the added mass from the link
+geometry, with no per-link coefficient.
+
+**`added_mass`**: use `implicit` with the ellipsoid model. It adds the
+added mass to the MuJoCo body masses and inertias, which is
+unconditionally stable. `explicit` applies it as a force from filtered
+accelerations and is unstable when the added mass exceeds about half the
+link mass (a warning is printed).
+
+**`drag_implicit`**: makes the legacy drag stable for large timesteps or
+light links with strong drag.
+
+## Water velocity maps
+
+When `water.velocity` is not a 3-vector, it holds the velocity ranges and
+the area of two PNG maps listed in `water.maps` (horizontal x and y
+velocities):
+
+```yaml
+# check-docs: skip
+water:
+  velocity: [vx_min, vy_min, 0, vx_max, vy_max, 0, x_min, y_min, x_max, y_max]
+  maps: [velocity_x.png, velocity_y.png]
+```
+
+The pixel values are scaled linearly to the velocity ranges, and the
+velocity at a point is the value of the nearest pixel (zero outside the
+area).
+
+## Classes
+
+### SwimmingExtension
+
+The animat extension that applies the fluid forces. It is created with
+`substep=True`, so the forces are computed at every environment step.
+`initialize_episode()` creates a `SwimmingHandler`, and `before_step()`
+calls its `step()`.
+
+::: farms_mujoco.swimming.extension.SwimmingExtension
+    options:
+      show_root_heading: false
+      heading_level: 4
+
+### SwimmingHandler
+
+Computes the fluid wrench of every link in a single C loop. It is also
+useful on its own, for example to read the submerged volumes
+(`links_submerged()`).
+
+::: farms_mujoco.swimming.hydrodynamics.SwimmingHandler
+    options:
+      show_root_heading: false
+      heading_level: 4
+
+### Water properties
+
+`SwimmingHandler` reads the water through a `WaterProperties` object:
+
+| Class | Surface, density, viscosity | Velocity |
+|---|---|---|
+| `WaterPropertiesConstant` | Constant | Constant, can be changed with `set_velocity()` |
+| `WaterPropertiesMaps` | Constant | Nearest pixel of the velocity maps |
+| `WaterPropertiesExtension` | Python callables of time and position | Python callable |
+
+`WaterPropertiesExtension` makes the water fully programmable (waves,
+currents), at the cost of Python calls in the loop.
+
+### FluidOptions
+
+::: farms_mujoco.swimming.fluid_options.FluidOptions
+    options:
+      show_root_heading: false
+      heading_level: 4
+
+## Tools
+
+| Script (`farms_mujoco/benchmarks/`) | Use |
+|---|---|
+| `inspect_buoyancy.py --experiment DIR` | Per-link volumes and buoyancy/weight budget of a model, with each method |
+| `bench_fluid.py --experiment DIR` | Timing of the fluid forces in a full simulation |
+| `bench_cob.py` | Timing of the centre of buoyancy kernels |
 
 ## See Also
 
-- [Controller Base Classes](../core/core-control.md) — How hydrodynamic forces are applied
-- [MuJoCo Simulation](mujoco-simulation.md) — Physics backend integration
+- [Hydrodynamics Internals](../../internals/hydrodynamics-internals.md)
+- [Mathematical Models](../../explanation/mathematical-models.md#2-hydrodynamics)
+- [MuJoCo Simulation](mujoco-simulation.md)
+- [API reference: `farms_mujoco.swimming`](../api/farms_mujoco/swimming.md)

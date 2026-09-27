@@ -1,185 +1,87 @@
 # farms_core.model.options
 
-Configuration dataclasses parsed from YAML, defining the full experiment setup.
+The options classes of the animat and arena files
+(`farms_core/model/options.py`), and the `Options` base class. The keys,
+types and descriptions of every class are in the generated
+[Configuration Parameter Reference](../env/configuration-reference.md);
+this page adds what a table cannot say.
 
-## Overview
+## The Options base class
 
-The `farms_core.model.options` module defines the configuration schemas that dictate the Animat and the environment properties. The parameters are usually defined in YAML files and deserialised into Python dataclass-like objects inheriting from the `Options` base class. This allows robust and explicit definition of morphological properties, control architectures, and simulation physics settings.
+`Options` (`farms_core/options.py`) is a `dict` subclass with attribute
+access (`options.spawn.pose`). `load(filename, strict=True)` reads a YAML
+file and calls the class's `__init__` with its content; `save(filename)`
+writes it back. Each class pops its keys in `__init__` and fails on
+unknown keys (unless loaded with `strict=False`, for the `farms_core`
+classes). Some classes also have a `from_options()` class method, which
+builds the options from a flat dictionary with defaults.
 
-## Options Base Class
+::: farms_core.options.Options
+    options:
+      show_root_heading: false
+      heading_level: 3
+      members: [load, save]
 
-All configuration classes inherit from `Options`.
+## Animat options
 
-```python
-class Options(dict):
-    @classmethod
-    def load(cls, filename: str, strict: bool = True) -> 'Options':
-        pass
+| Class | YAML block | Reference |
+|-------|-----------|-----------|
+| `AnimatOptions` | the animat file | [AnimatOptions](../env/configuration-reference.md#animatoptions) |
+| `SpawnOptions` | `spawn` | [SpawnOptions](../env/configuration-reference.md#spawnoptions), [SpawnLoader](../env/configuration-reference.md#spawnloader), [SpawnMode](../env/configuration-reference.md#spawnmode) |
+| `MorphologyOptions` | `morphology` | [MorphologyOptions](../env/configuration-reference.md#morphologyoptions) |
+| `LinkOptions` | `morphology.links[]` | [LinkOptions](../env/configuration-reference.md#linkoptions) |
+| `JointOptions` | `morphology.joints[]` | [JointOptions](../env/configuration-reference.md#jointoptions) |
+| `ControlOptions` | `control` | [ControlOptions](../env/configuration-reference.md#controloptions) |
+| `SensorsOptions` | `control.sensors` | [SensorsOptions](../env/configuration-reference.md#sensorsoptions) |
+| `MotorOptions` | `control.motors[]` | [MotorOptions](../env/configuration-reference.md#motoroptions) |
+| `MuscleOptions` | `control.hill_muscles[]` | [MuscleOptions](../env/configuration-reference.md#muscleoptions) |
 
-    def save(self, filename: str):
-        pass
+`farms_amphibious` extends them (`AmphibiousOptions`, ...), see
+[farms_amphibious.model.options](../amphibious/amphibious-options.md).
 
-    def to_dict(self) -> dict:
-        pass
-```
+### What the options do in MuJoCo
 
-**Note**: `Options` is a `dict` subclass, not a frozen dataclass. It provides attribute-style access via a custom `__getattr__` (which falls back to `self[name]`) and `__setattr__ = dict.__setitem__`.
+| Option | Effect with MuJoCo |
+|--------|--------------------|
+| `spawn.pose` | `[x, y, z, roll, pitch, yaw]` [m, rad] of the base link, used as keyframe 0 |
+| `spawn.mode` | Constraints on the base link (`free`, `fixed`, `rotx`, `sagittal`, ...) |
+| `links[].friction` | Friction of the link's collision geoms |
+| `links[].collisions` | Not used by the MuJoCo builder: the collision geoms are those of the SDF file |
+| `links[].fluid_interaction` | Whether `SwimmingExtension` applies fluid forces to the link |
+| `links[].drag_coefficients` | `[[cx, cy, cz], [c'x, c'y, c'z]]`, linear and rotational drag in the link frame, negative (legacy fluid model) |
+| `links[].density` | Only used by `cob_method: ramp`, to estimate the link volume as `mass/density`. Masses come from the SDF file |
+| `links[].solref`, `solimp` | Parsed but not applied per link |
+| `joints[].stiffness`, `damping`, `springref` | Added to the MuJoCo joint. The joint limits come from the SDF file |
+| `joints[].initial` | Initial `[position, velocity]` |
+| `motors[].control_types` | Actuators created for the joint (`position`, `velocity`, `torque`, ...) |
+| `motors[].gains` | `[kp of the position actuator, kv of the position actuator, kv of the velocity actuator]` |
+| `motors[].limits_torque` | Force range of the actuators |
+| `morphology.self_collisions` | Link pairs that collide; the other links of an animat do not collide with each other |
+| `control.controller_loader` | Parsed but not used: controllers are listed in `extensions:` |
 
-!!! warning "`from_options` is not defined on the base class"
-    The base `Options` class does **not** define `from_options`. It is implemented
-    as a `@classmethod` by individual subclasses (e.g. `SpawnOptions.from_options`,
-    `ControlOptions.from_options`, `SensorsOptions.from_options`), each with its
-    own signature. `Options.load` and `Options.save` (which delegate to
-    `yaml2pyobject` / `pyobject2yaml`) are the only serialisation helpers provided
-    by the base class.
+## Arena and water options
 
-## ExperimentOptions
+| Class | YAML block | Reference |
+|-------|-----------|-----------|
+| `ArenaOptions` | the arena file | [ArenaOptions](../env/configuration-reference.md#arenaoptions) |
+| `WaterOptions` | `water` | [WaterOptions](../env/configuration-reference.md#wateroptions), [Fluid model options](../env/configuration-reference.md#fluid-model-options) |
 
-The top-level container for a complete simulation setup.
+`water.viscosity` scales the quadratic drag (it is not a viscosity in
+Pa.s; the ellipsoid model uses `dynamic_viscosity` for that).
+`water.velocity` is a 3-vector, or the ranges and area of velocity maps
+given in `water.maps`. The fluid model is described in
+[farms_mujoco.swimming](../mujoco/mujoco-swimming.md).
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `simulation` | SimulationOptions | *(required)* | Simulation physics and runtime parameters |
-| `animats` | list[AnimatOptions] | *(required)* | List of animats in the simulation |
-| `arenas` | list[ArenaOptions] | *(required)* | List of arenas/terrains |
-| `loaders` | ExperimentLoadOptions | *(required)* | Loader class paths for options and data |
+## Simulation options
 
-## AnimatOptions
-
-Defines a single robot/animat entity.
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `sdf` | str | - | Path to the SDF model file |
-| `morphology` | MorphologyOptions | - | Overrides for link and joint properties |
-| `spawn` | SpawnOptions | - | Rules for placing the animat in the world |
-| `control` | ControlOptions | - | Actuation and controller logic (includes `sensors`) |
-| `extensions` | list[AnimatExtensionOptions] | `[]` | Additional plugins (e.g., swimming, contacts) |
-
-## MorphologyOptions
-
-Describes the morphological overrides for rigid bodies and joints.
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `links` | list[LinkOptions] | - | Properties for individual rigid bodies |
-| `self_collisions` | list[list[str]] | - | Pairs of links allowed/denied to self-collide |
-| `joints` | list[JointOptions] | - | Properties for individual constraints/joints |
-| `tendons` | list[TendonOptions] | `[]` | Tendon transmission properties |
-
-### LinkOptions
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `name` | str | - | Identifier matching the SDF link |
-| `collisions` | bool | - | Toggles collision geometry |
-| `friction` | list[float] | - | Lateral, spinning, rolling friction |
-| `fluid_interaction` | bool | `False` | Enables buoyancy and drag force calculation |
-| `density` | float | `1000` | Mass density in kg/m³ |
-| `drag_coefficients` | list[float] | `[0, 0, 0, 0, 0, 0]` | Linear and angular hydrodynamic drag components `[Vx, Vy, Vz, Wx, Wy, Wz]` |
-| `sites` | list[SiteOptions] | `[]` | Reference markers for motion tracking |
-| `solref` | - | `None` | MuJoCo constraint solver reference |
-| `solimp` | - | `None` | MuJoCo constraint solver impedance |
-| `extras` | dict | `{}` | Extra options (deprecated) |
-
-### JointOptions
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `name` | str | - | Identifier matching the SDF joint |
-| `initial` | list[float] | - | Initial state `[position (rad), velocity (rad/s)]` |
-| `limits` | list[list[float]] | - | Range of motion limits in rad |
-| `stiffness` | float | - | Joint spring stiffness in Nm/rad |
-| `damping` | float | - | Joint friction/damping in N·m·s/rad |
-| `springref` | float | - | Spring equilibrium position in rad |
-
-## Spawn Configuration
-
-Dictates how and where the animat is instantiated into the simulation world.
-
-### SpawnOptions
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `loader` | SpawnLoader | *(required)* | Physics engine loading method (defaults to `FARMS` only via `from_options`) |
-| `mode` | SpawnMode | `FREE` | Base constraints |
-| `pose` | list[float] | - | Spawn position (m) and orientation (rad) `[x,y,z,R,P,Y]` |
-| `velocity` | list[float] | - | Spawn linear (m/s) and angular (rad/s) velocity |
-| `extras` | dict | `{}` | Extra options (deprecated) |
-
-### SpawnLoader (IntEnum)
-
-- `FARMS (0)`: Recommended custom SDF loader.
-- `PYBULLET (1)`: PyBullet's default SDF loader.
-
-### SpawnMode (Enum)
-
-| Mode | Description |
-|------|-------------|
-| `FREE` | Unconstrained floating base. |
-| `FIXED` | Base link is rigidly attached to the world. |
-| `ROTX` / `ROTY` / `ROTZ` | Constrained rotation around a single axis. |
-| `SAGITTAL` / `SAGITTAL0` / `SAGITTAL3` | Constrained to the sagittal plane (XZ). Variants for rotation permissions. |
-| `CORONAL` / `CORONAL0` / `CORONAL3` | Constrained to the coronal plane (YZ). |
-| `TRANSVERSE` / `TRANSVERSE0` / `TRANSVERSE3` | Constrained to the transverse plane (XY). |
-
-## ControlOptions
-
-Defines how the animat thinks and acts.
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `controller_loader` | str | `''` | Python class path for the controller |
-| `sensors` | SensorsOptions | - | Telemetry extraction |
-| `motors` | list[MotorOptions] | - | Actuator mappings |
-| `hill_muscles` | list[MuscleOptions] | `[]` | Hill-type muscle definitions |
-
-### MotorOptions
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `joint_name` | str | - | Target joint identifier |
-| `control_types` | list[str] | - | Actuation modes (e.g., position, velocity, torque) |
-| `limits_torque` | list[float] | - | Torque limits `[min, max]` in N·m |
-| `gains` | list[float] | - | Proportional and derivative gains `[Kp, Kd]` for position control |
-
-### SensorsOptions
-
-Lists the names of elements to track in telemetry. Typically contains lists of strings for `links`, `joints`, `contacts`, `xfrc`, `muscles`, `adhesions`, and `visuals`.
-
-## Environment and Simulation Options
-
-### WaterOptions
-
-Defines fluid dynamics parameters used by hydrodynamic extensions.
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `sdf` | str | - | Path to water SDF file |
-| `drag` | bool | - | Enables drag forces |
-| `buoyancy` | bool | - | Enables buoyancy forces |
-| `height` | float | - | Surface level *Z*-coordinate in m |
-| `velocity` | list[float] | - | Flow vector `[Vx, Vy, Vz]` in m/s |
-| `viscosity` | float | - | Fluid dynamic viscosity in Pa·s |
-| `density` | float | - | Fluid density in kg/m³ |
-| `maps` | list[str] | - | Water maps sourced from images |
-
-### ArenaOptions
-
-Defines the terrain, specifying properties such as a ground plane, friction limits, or a heightmap. Inherits `sdf` and `spawn` from `ModelOptions`.
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `sdf` | str | - | Path to the arena SDF model file |
-| `spawn` | SpawnOptions | - | Spawn pose/velocity for the arena |
-| `water` | WaterOptions | - | Fluid dynamics configuration |
-| `ground_height` | float | - | Height offset at which to place the arena |
-
-### SimulationOptions
-
-Contains subsets of parameters defining the physics engine configuration. Top-level fields are `units` (`SimulationUnitScaling`), `runtime` (`RuntimeSimulationOptions`), `physics` (`PhysicsSimulationOptions`), `mujoco` (`MuJoCoSimulationOptions`), `pybullet` (`PybulletSimulationOptions`), and `extensions` (list of `SimulationExtensionOptions`). The `timestep` (s) and `gravity` (m/s²) live under the `physics` sub-options (`physics.timestep`, `physics.gravity`).
+`SimulationOptions` (`farms_core/simulation/options.py`) has `units`,
+`runtime`, `physics`, `mujoco`, `pybullet` and `extensions`; see
+[SimulationOptions](../env/configuration-reference.md#simulationoptions).
+`duration()` returns `physics.timestep*(runtime.n_iterations - 1)` and
+`times()` the times of the iterations.
 
 ## See Also
 
-- [Configuration Reference](../env/yaml-schema.md)
-- [farms_amphibious.model.options](../amphibious/amphibious-options.md)
+- [Configuration Parameter Reference](../env/configuration-reference.md)
+- [YAML Configuration Schema](../env/yaml-schema.md)
+- [Options and YAML Design](../../explanation/options-yaml-design.md)

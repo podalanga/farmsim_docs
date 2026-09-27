@@ -1,307 +1,232 @@
 # Use Built-in Extensions
 
-This guide lists the built-in extensions provided by FARMS and their
-configuration options.
+The extensions provided by FARMS, where to list them and their options.
+Each entry of an `extensions:` list has a `loader` (the dotted path of the
+class) and a `config` (its options).
 
-FARMS's viewer/camera extensions — `MjcfSaver`, `CameraFollower`, and the
-marker/trail viewers — subclass `TaskExtension` directly
-(`farms_mujoco/simulation/extensions.py`), not `AnimatExtension`, and are
-registered in `simulation_config.yaml`'s top-level `extensions:` list
-alongside `ExperimentLogger`, not in `animat_config.yaml` (confirmed against
-`experiments/zbot_swimming/simulation_config.yaml`, which lists
-`ExperimentLogger`, `ExperimentOptionsLogger`, `MjcfSaver`, and
-`CameraFollower` together in that one list). Because they're
-`TaskExtension`s and don't get `animat_data` injected automatically, each
-one that needs animat data reaches for it manually via
-`task.data.animats[self.animat_id].sensors.links` in `initialize_episode()`
-— that's why every one of them still takes an `animat_id` config key even
-though they live in the simulation-level list, not the animat-level one.
+| File | Extensions |
+|------|------------|
+| `simulation_config.yaml` | Loggers, `MjcfSaver`, cameras, viewer markers (all `TaskExtension`) |
+| `animat_config.yaml` | Controllers, `SwimmingExtension` (`AnimatExtension`) |
 
-## Simulation-level extensions
+The camera and marker extensions follow one animat (`animat_id`) but are
+simulation extensions: they read its data from `task.data.animats[animat_id]`.
 
-These are registered in `simulation_config.yaml` under `extensions:` and
-extend `TaskExtension` (`farms_core/simulation/extensions.py`).
+## Saving data
 
 ### ExperimentLogger
 
-Saves all simulation data to HDF5 at episode end.
+Writes the experiment data to `<log_path>/simulation.hdf5` at the end of
+the simulation.
 
 ```yaml
-extensions:
-  - loader: farms_core.simulation.extensions.ExperimentLogger
-    config:
-      log_path: ./simulation.hdf5
-      skip: 1
+- loader: farms_core.simulation.extensions.ExperimentLogger
+  config:
+    log_path: Output
+    skip: 1
 ```
 
-| Config key | Type | Default | Description |
-|------------|------|---------|-------------|
-| `log_path` | str | — | Output HDF5 file path |
-| `skip` | int | `1` | Save every N iterations (1 = every step) |
+| Key | Description |
+|-----|-------------|
+| `log_path` | Output folder |
+| `skip` | Stored but not used: all the iterations in the buffers are saved |
 
 ### ExperimentOptionsLogger
 
-Saves copies of all YAML configuration files to the output directory.
+Writes the options as loaded (`simulation_options.yaml`,
+`animat_<i>_options.yaml`, `arena_<i>_options.yaml`) to `log_path` at the
+start of the episode.
 
 ```yaml
-extensions:
-  - loader: farms_core.simulation.extensions.ExperimentOptionsLogger
-    config:
-      log_path: ./options
+- loader: farms_core.simulation.extensions.ExperimentOptionsLogger
+  config:
+    log_path: Output
 ```
-
-| Config key | Type | Default | Description |
-|------------|------|---------|-------------|
-| `log_path` | str | — | Output directory for YAML files |
 
 ### MjcfSaver
 
-Saves the compiled MuJoCo model as MJCF XML, at `initialize_episode()` time
-(before physics runs), by calling `mjcf2str(task.mjcf)` on the fully-built
-in-memory MJCF tree.
+Writes the compiled MuJoCo model (MJCF XML) at the start of the episode.
 
 ```yaml
-extensions:
-  - loader: farms_mujoco.simulation.extensions.MjcfSaver
-    config:
-      path: Output/simulation_mjcf.xml
+- loader: farms_mujoco.simulation.extensions.MjcfSaver
+  config:
+    path: Output/simulation_mjcf.xml   # File path (default simulation_mjcf.xml)
 ```
 
-| Config key | Type | Default | Description |
-|------------|------|---------|-------------|
-| `path` | str | `'simulation_mjcf.xml'` | Full output file path (not a directory — despite the name, pass the target `.xml` file path itself, as in the example above). |
+## Cameras
 
-### CameraFollower — moving the *interactive* viewer camera
+### CameraFollower: the viewer camera
 
-Makes the **interactive passive-viewer camera** (`task.viewer.cam`) follow an
-animat: every `after_step()` it nudges `viewer.cam.azimuth` by
-`angular_velocity * dt` (continuous orbiting) and low-pass-filters
-`viewer.cam.lookat` toward the tracked animat's global center-of-mass
-position.
+Makes the camera of the interactive viewer follow an animat: at each
+iteration it moves the look-at point towards the centre of mass of the
+animat (low-pass filtered) and turns the azimuth at `angular_velocity`.
+It has no effect headless or on recorded videos.
 
 ```yaml
-extensions:
-  - loader: farms_mujoco.simulation.extensions.CameraFollower
-    config:
-      animat_id: 0
-      azimuth: 90
-      distance: 2.0
-      elevation: -30
-      angular_velocity: 0.0   # deg/s — set non-zero for a continuously orbiting camera
+- loader: farms_mujoco.simulation.extensions.CameraFollower
+  config:
+    animat_id: 0
+    distance: 2.0          # [m]
+    azimuth: 90            # [deg]
+    elevation: -30         # [deg]
+    angular_velocity: 0.0  # [deg/s], non-zero for an orbiting camera
 ```
 
-| Config key | Type | Default | Description |
-|------------|------|---------|-------------|
-| `animat_id` | int | `0` | Index into `experiment_options.animats` / `task.data.animats` of the animat to track. |
-| `azimuth` | float | `0` | Initial camera azimuth [deg], set once in `initialize_episode()`. |
-| `distance` | float | `1` | Camera distance from the look-at point [m], scaled by `units.meters`. |
-| `elevation` | float | `0` | Camera elevation [deg]. |
-| `angular_velocity` | float | `0` | Continuous azimuth rotation rate [deg/s] — set non-zero for an orbiting camera; `0` keeps azimuth fixed while `lookat` still tracks the animat. |
+Defaults: `animat_id: 0`, `distance: 1`, `azimuth: 0`, `elevation: 0`,
+`angular_velocity: 0`.
 
-!!! warning "Only affects the interactive viewer — has no effect headless or in offscreen video export"
-    `CameraFollower` mutates `task.viewer.cam`, and `initialize_episode()`
-    is a no-op unless `task.viewer` is truthy (`if self.viewer:`). It only
-    does anything when `mujoco.viewer` is showing a live, interactive
-    window (`runtime.headless: false` / `play: true` in
-    `simulation_config.yaml`). It has **no effect** on offscreen video
-    export — for a moving camera in an exported video, use
-    [`CameraRecording`](#camerarecording-moving-camera-for-offscreen-video-export)
-    below instead, which drives its own independent `mujoco.MjvCamera` and
-    `mujoco.Renderer`.
+### CameraRecording: video files
 
-### CameraRecording — moving camera for offscreen video export
-
-A **separate, independent** camera/rendering mechanism from `CameraFollower`
-above, defined in `farms_mujoco/sensors/camera.py`. Instead of touching the
-interactive viewer, it drives its own free-floating `mujoco.MjvCamera`
-(`mjCAMERA_FREE` mode) through an offscreen `mujoco.Renderer`, captures a
-frame into a pre-allocated `(n_frames, height, width, 3)` uint8 buffer every
-`before_step()`, and encodes the buffer to a video file (`.mp4` via
-`cv2.VideoWriter`+ffmpeg codec fallback chain, or `.html` via
-matplotlib's `FuncAnimation` writers) in `end_episode()`. It works
-identically whether or not an interactive window is open, which makes it the
-right tool for headless/batch video export.
+Renders offscreen with its own camera (`mujoco.Renderer`), with or
+without the viewer, and writes a video. It is defined in
+`farms_mujoco/sensors/camera.py`.
 
 ```yaml
-extensions:
-  - loader: farms_mujoco.sensors.camera.CameraRecording
-    config:
-      path: Output/video          # extension (.mp4/.html) is appended automatically
-      resolution: [1280, 720]
-      fps: 30
-      speed: 1.0
-      animat_id: 0                # camera tracks this animat's global CoM; null = fixed at `offset`
-      offset: [0, 0, 0]
-      distance: 2
-      azimuth: 0
-      elevation: -15
-      angular_velocity: 0         # deg/s — orbiting camera around the tracked point
-      motion_filter: null         # defaults to 10*timestep if omitted
-      geomgroups: [1, 1, 0, 1, 0, 0]
+- loader: farms_mujoco.sensors.camera.CameraRecording
+  config:
+    path: Output/video.mp4    # .mp4 or .html, the extension selects the writer
+    resolution: [1280, 720]
+    fps: 30
+    speed: 1.0                # Playback speed
+    animat_id: 0              # Tracked animat, null for a fixed look-at point
+    offset: [0, 0, 0]         # Added to the look-at point [m]
+    distance: 2
+    azimuth: 0
+    elevation: -15
+    angular_velocity: 0       # [deg/s]
+    geomgroups: [0, 1, 0, 1, 0, 0]  # Rendered geom groups (1: visuals, 2: collisions)
 ```
 
-| Config key | Type | Default | Description |
-|------------|------|---------|-------------|
-| `path` | str | required | Output path *without* extension; the file extension (`.mp4`/`.html`, from `os.path.splitext`) is what selects the writer backend. Anything else falls back to `ffmpeg` with a warning. |
-| `resolution` | `[int, int]` | `[1280, 720]` in `CameraRecordingOptions`, but `[640, 480]` in the `CameraRecording` extension's own default — pass it explicitly to be sure. | Frame `[width, height]`. |
-| `fps` | float | `30` | Target output framerate; actual capture cadence (`skips`) is derived from `fps`, `speed`, and the physics `timestep` so that captured frames land close to real-time playback at `speed`. |
-| `speed` | float | `1.0` | Playback speed factor — internally divides the extension's own notion of `timestep` (`timestep/speed`), which changes `skips` and thus `fps`, not just metadata. |
-| `animat_id` | int \| `None` | `0` | Animat whose global CoM the camera's `lookat` tracks each frame. `None` = fixed camera at `offset`, not following anything. |
-| `offset` | `[float, float, float]` | `[0, 0, 0]` | Added to `lookat` every frame — either the fixed look-at point (`animat_id: null`) or an offset from the tracked animat's CoM. |
-| `distance`, `azimuth`, `elevation` | float | `2`, `0`, `-15` | Initial `MjvCamera` distance/azimuth/elevation. |
-| `angular_velocity` | float | `0` | Added to `camera.azimuth` every frame, scaled by the elapsed physics time since the last capture — an orbiting shot. |
-| `geomgroups` | `list[int]` (6 entries) | `[1, 1, 0, 1, 0, 0]` | `MjvOption.geomgroup` mask controlling which MuJoCo geom groups are rendered into the video (independent of what's visible in the interactive viewer). |
-| `skips` | int | derived from `speed/(timestep*fps) - 1` | Number of physics steps to skip between captured frames; you can override it directly instead of relying on the `fps`/`speed` derivation. |
+| Key | Default | Description |
+|-----|---------|-------------|
+| `path` | required | Output file. `.mp4` uses OpenCV when installed (H.264 codecs, then `mp4v`), otherwise Matplotlib with ffmpeg; `.html` uses Matplotlib |
+| `resolution` | `[1280, 720]` | `[width, height]` |
+| `fps` | `30` | Frame rate. A frame is captured every `speed/(timestep*fps)` iterations |
+| `speed` | `1.0` | Playback speed factor |
+| `animat_id` | `0` | Animat whose centre of mass the camera follows, `null` for a fixed camera |
+| `offset` | `[0, 0, 0]` | Look-at point offset (or the fixed look-at point) |
+| `distance`, `azimuth`, `elevation` | `2`, `0`, `-15` | Camera pose |
+| `angular_velocity` | `0` | Orbit rate [deg/s] |
+| `geomgroups` | `[0, 1, 0, 1, 0, 0]` | MuJoCo geom groups to render |
+| `camera` | `null` | MuJoCo camera id. Only works with `mujoco.viewer: dm_control`: with the default viewer it raises an `AttributeError` on the first frame |
 
-!!! bug "Don't pass a `camera` id (e.g. to target an MJCF-embedded camera) with the default viewer"
-    See the full bug writeup in
-    [`mujoco-simulation.md`](../reference/mujoco/mujoco-simulation.md#camerarecording) —
-    supplying `camera` in config crashes with `AttributeError` on the first
-    frame for the default `viewer: MuJoCo` setting. Leave it unset.
+The marker extensions below are drawn in the videos too (their
+`show_on_camera` attribute is true by default). Without OpenCV, the whole video is kept in
+memory until the end: use short runs or a low resolution.
 
-!!! note "Requires `cv2` for `.mp4`, falls back to matplotlib otherwise"
-    If OpenCV (`cv2`) is importable, `.mp4` output goes through
-    `cv2.VideoWriter`, trying H.264 codecs (`avc1`, `H264`, `X264`) before
-    falling back to `mp4v`. If `cv2` isn't installed, the whole recording
-    pipeline falls back to a matplotlib `FuncAnimation` writer
-    (`manimation.writers[...]`), which is slower and produces the frame
-    buffer in memory for the entire episode — expensive for long runs at
-    high resolution. `.html` output always goes through the matplotlib path.
+## Viewer markers
 
-### Visualization / marker extensions
+These draw debug geometry (spheres, lines, arrows) that is not part of the
+physics: no collision, no mass. It is drawn in the interactive viewer and
+in the `CameraRecording` videos.
 
-These render lightweight, **ephemeral** debug geometry (spheres, lines,
-arrows) directly into the interactive MuJoCo viewer's scratch scene buffer
-(`viewer.user_scn`), via `mujoco.mjv_initGeom`. This is **not physics
-geometry** — it has no collision, no mass, isn't part of the MJCF model, and
-is not visible in offscreen `CameraRecording` renders (which render from the
-actual `physics.model`/`physics.data`, not the viewer's scratch buffer).
-Like `CameraFollower`, these all require `task.viewer` to be truthy —
-they're no-ops when running headless.
-
-| Extension | Description | Config |
+| Extension (`farms_mujoco.simulation.extensions`) | Draws | Config |
 |-----------|-------------|--------|
-| `CoMViewer` | Creates one sphere (`create_sphere`) at `initialize_episode()`, then repositions it (`sphere.pos = ...`) every `after_step()` to track the animat's global CoM. Auto-sizes the sphere radius from total link mass if `size` isn't given. | `animat_id`, `size`, `rgba` |
-| `TrailCoMViewer` | Every `spacing` iterations, draws a new short `create_line` segment from the previous CoM sample to the current one — accumulates into a visible trail over time (each segment is a separate scratch geom; the buffer is never cleared by this extension itself). | `animat_id`, `width`, `rgba`, `spacing` |
-| `TrailLinkViewer` | Same as `TrailCoMViewer`, but tracks one named link's `com_position` instead of the whole-animat CoM. Asserts `link` is a valid name in `animat_data.sensors.links.names` at `initialize_episode()` — this will raise if the link isn't in your `sensors.links` YAML list, so it depends on [sensor configuration](configure-sensors.md). | `animat_id`, `link`, `width`, `rgba`, `spacing` |
-| `ArrowViewer` | Creates one `create_arrow` primitive, repositioned above the animat's CoM (`+ [0, 0, offset]`) each step and continuously rotated (`0.2*pi*time` about the local x-axis) — a generic rotating pointer, not bound to any physical torque/force value by default. Auto-sizes from mass like `CoMViewer` if `size` is omitted. | `animat_id`, `size`, `rgba`, `offset` |
+| `CoMViewer` | A sphere at the centre of mass of the animat | `animat_id`, `size`, `rgba` (required) |
+| `TrailCoMViewer` | The trail of the centre of mass, a segment every 10 iterations | `animat_id`, `width` and `rgba` (required) |
+| `TrailLinkViewer` | The trail of a link, which must be in `control.sensors.links` | `animat_id`, `link`, `width` and `rgba` (required) |
+| `ArrowViewer` | A rotating arrow above the animat | `animat_id`, `size`, `rgba` (required), `offset` |
 
-!!! warning "Scratch-geom buffer has a fixed capacity"
-    `create_primitive()` (in `farms_mujoco/simulation/extensions.py`) writes
-    into `viewer.user_scn.geoms[viewer.user_scn.ngeom]` and increments
-    `ngeom`. MuJoCo's scratch scene buffer has a fixed maximum size
-    (`mujoco.mjMAXOVERLAY`/renderer-dependent limit); a long-running
-    `TrailCoMViewer`/`TrailLinkViewer` that never removes old segments will
-    eventually exceed it and raise or silently stop drawing. Keep
-    `spacing` large enough, or the trail short enough, for the run length
-    you need.
+```yaml
+- loader: farms_mujoco.simulation.extensions.TrailCoMViewer
+  config:
+    animat_id: 0
+    width: 5
+    rgba: [1.0, 0.3, 0.0, 0.7]
+```
 
-## Animat-level extensions
+!!! note "Options not read from YAML"
+    The trail viewers' `from_options()` does not apply `width` (it is
+    passed as `size`) nor `spacing` (fixed to 10), and no marker reads
+    `show_on_camera` from YAML (it defaults to true). Set them in Python
+    when creating the extension.
 
-These are registered in `animat_config.yaml` under `extensions:` and extend
-`AnimatExtension` (`farms_core/model/extensions.py`) or a subclass —
-verified against `experiments/zbot_swimming/animat_config.yaml`, whose
-`extensions:` list contains `AmphibiousController` and `SwimmingExtension`
-(both `AnimatExtension` subclasses; `AmphibiousController` further extends
-it via `AnimatController`).
+!!! warning "Scene capacity"
+    MuJoCo scenes hold a fixed number of geoms. A trail adds one segment
+    every 10 iterations and never removes them, which can exceed the
+    capacity on long runs.
+
+`farms_mujoco.simulation.extensions.SnakeGame` (a food collecting game)
+and `farms_mujoco.viewer.Targets2Reach` (target markers) are further
+examples of viewer extensions.
+
+## Fluid forces
 
 ### SwimmingExtension
 
-Computes hydrodynamic forces (drag + buoyancy) and applies them as
-`xfrc_applied` in MuJoCo. This is the core fluid dynamics extension for
-swimming robots.
+Computes the fluid forces (buoyancy, drag, added mass) of the links with
+`fluid_interaction: true` and applies them through `xfrc_applied`, at
+every environment step. It reads the `water` block of the first arena;
+its `config` is ignored.
 
 ```yaml
+# animat_config.yaml
 extensions:
   - loader: farms_mujoco.swimming.extension.SwimmingExtension
-    config:
-      water_properties: null
+    config: {}
 ```
 
-| Config key | Type | Default | Description |
-|------------|------|---------|-------------|
-| `water_properties` | dict \| `null` | `null` | Optional explicit water-properties override; when `null`/omitted, the extension falls back to reading `water.drag`, `water.buoyancy`, `water.height`, and `water.density` from `experiment_options.arenas[0]` (the first arena's `WaterOptions`). |
+The options and models are described in
+[farms_mujoco.swimming](../reference/mujoco/mujoco-swimming.md).
 
-**How it works** (verified in `farms_mujoco/swimming/extension.py`):
-
-1. `from_options()` receives arena water options
-2. `before_step()` calls `SwimmingHandler.step()` which:
-   - Computes drag forces from link velocities and drag coefficients
-   - Computes buoyancy forces from link volume and water height
-   - Sets forces in `physics.data.xfrc_applied`
-
-## Typical extension configuration
-
-A typical swimming experiment uses this combination — note `MjcfSaver` and
-`CameraFollower` live in `simulation_config.yaml`, while `SwimmingExtension`
-lives in `animat_config.yaml`:
+## A typical configuration
 
 ```yaml
 # simulation_config.yaml
 extensions:
   - loader: farms_core.simulation.extensions.ExperimentLogger
     config:
-      log_path: ./simulation.hdf5
+      log_path: Output
       skip: 1
   - loader: farms_core.simulation.extensions.ExperimentOptionsLogger
     config:
-      log_path: ./options
+      log_path: Output
   - loader: farms_mujoco.simulation.extensions.MjcfSaver
     config:
-      path: ./Output/simulation_mjcf.xml
+      path: Output/simulation_mjcf.xml
   - loader: farms_mujoco.simulation.extensions.CameraFollower
     config:
       animat_id: 0
-      azimuth: 90
       distance: 2.0
+      azimuth: 90
       elevation: -30
       angular_velocity: 0.0
+```
 
+```yaml
 # animat_config.yaml
 extensions:
   - loader: farms_amphibious.control.amphibious.AmphibiousController
     config: {}
   - loader: farms_mujoco.swimming.extension.SwimmingExtension
-    config:
-      water_properties: null
+    config: {}
 ```
 
 ## Adding objects to the scene
 
-There is no runtime "add object" API — physical (collidable) objects are
-part of the compiled MJCF model, built once at `setup_mjcf_xml()` time from:
+There is no API to add physical objects at runtime: they are part of the
+MuJoCo model, built once from:
 
-- The **arena SDF** (`arena_options.sdf`), converted via `sdf2mjcf()` — any
-  static geometry, obstacles, or terrain you want in the world belongs here.
-- An optional **water body** (`arena_options.water.sdf` + `water.height`),
-  added as a second, separately-loaded SDF model with contacts disabled
-  (`contype=0, conaffinity=0` — it exists for the `SwimmingExtension`'s
-  drag/buoyancy math and for the water visual, not for collision).
-- Additional **animats** — every entry in `experiment_options.animats` gets
-  its own `sdf2mjcf()` pass and its own contact bitmask
-  (`contype=2**(animat_i+1)`), so a second manipulable/collidable body is
-  most naturally added as a second animat entry, not as a special "object"
-  type.
+- the arena SDF file (`sdf` of the arena file): static geometry,
+  obstacles, terrain;
+- the water SDF file (`water.sdf`), a visual without collisions;
+- the animats: an extra movable object can be added as another animat,
+  with its own spawn options.
 
-To add a new static or dynamic object, add it to the arena's SDF file (or
-give it its own SDF and register it as an additional `animats` entry if it
-needs independent spawn options); there's no equivalent of a Python
-`add_object(mesh, pos)` call at simulation-setup time. If you only need a
-non-physical visual marker (not a collidable object), use one of the
-[marker/trail viewer extensions](#visualization-marker-extensions) above,
-or write your own `TaskExtension` calling `create_sphere`/`create_line`/
-`create_arrow`/`create_cylinder` from
+For a visual marker only, use the marker extensions, or write a
+`TaskExtension` that calls `create_sphere()`, `create_line()`,
+`create_arrow()` or `create_cylinder()` from
 `farms_mujoco.simulation.extensions`.
 
 ## Extension ordering
 
-Extensions execute in YAML declaration order. `SwimmingExtension` should be
-listed first among animat extensions so that its xfrc data is available to
-other extensions that read `animat_data.sensors.xfrc`.
+Extensions run in the order of the files and lists. All of them run before
+the MuJoCo step: the order only matters when one extension reads what
+another writes in the same step. For example, an extension reading the
+`xfrc` sensors (the fluid forces) must be listed after `SwimmingExtension`.
 
 ## See also
 
-- [Write an AnimatExtension](write-extension.md) — write your own
-- [Extension API](../reference/core/extension-api.md) — full class reference
-- [Configure an Experiment YAML](configure-yaml.md) — where to register extensions
-- [Add and Configure Sensors](configure-sensors.md) — required for `TrailLinkViewer`'s `link` lookup
+- [Write an AnimatExtension](write-extension.md)
+- [Extension and Controller Design](../explanation/extension-design.md)
+- [Configure an Experiment YAML](configure-yaml.md)

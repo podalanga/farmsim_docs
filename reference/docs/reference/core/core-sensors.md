@@ -66,7 +66,13 @@ The top-level container for all different sensor types attached to a single anim
 | `xfrc` | `XfrcArray` | External applied forces (e.g., hydrodynamic drag). |
 | `muscles` | `MusclesArray` | Active muscle state and tension data. |
 | `adhesions` | `AdhesionsArray` | Adhesion force data. |
-| `visuals` | `VisualsArray` | Visual telemetry. |
+| `visuals` | `VisualsArray` | Colour and emission of link visuals. |
+| `rays` | `RaySensorArray` | Ray casting (rangefinder) sensors. |
+| `cameras` | `CameraArray` | Camera images, when cameras are configured. |
+
+The number of columns of each array is given by the sensor convention
+(`farms_core/sensors/sensor_convention.pxd`, `sc` in Python), see
+[Data Flow and Data Model](../../explanation/data-flow.md#sensor-arrays).
 
 ---
 
@@ -100,12 +106,24 @@ Tracks the internal state and dynamics of the robot's joints.
 | `cmd_torque(iter, joint_i)` | `joint_cmd_torque` | Last torque command. |
 | `active(iter, joint_i)` | `joint_torque_active` | Torque generated purely by motors/muscles. |
 | `spring(iter, joint_i)` | `joint_torque_stiffness` | Torque resulting from joint stiffness compliance. |
+| `damping(iter, joint_i)`, `friction(iter, joint_i)` | `joint_torque_damping`, `joint_torque_friction` | Damping and friction torques. |
 
 ### ContactsArray
 
-Logs collision events and reaction forces. It tracks normal forces, friction forces, and contact positions for geometry explicitly tracked in the animat options.
+Contacts of the links listed in `control.sensors.contacts`: `reaction()`,
+`friction()`, `total()` and `position()` (per iteration and element), and
+`reactions()`, `frictions()`, `totals()` (all iterations).
+
+### XfrcArray
+
+External forces written by the extensions (the fluid forces of
+`SwimmingExtension`): `force()`, `torque()`, `forces()`, `torques()`, and
+`set_force()`, `set_torque()`.
+
+The full list of methods is in the
+[generated API](../api/farms_core/sensors/data.md).
 
 ## See Also
 
-- [Controller Base Classes](core-control.md) — How sensor data is consumed
-- [Amphibious Data](../amphibious/amphibious-data.md) — Extended sensor data for amphibious animats
+- [Controller Base Classes](core-control.md): How sensor data is consumed
+- [Amphibious Data](../amphibious/amphibious-data.md): Extended sensor data for amphibious animats

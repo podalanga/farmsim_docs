@@ -1,18 +1,20 @@
-# Zbot — Bio-inspired eel-like swimming robot
+# Zbot, Bio-inspired eel-like swimming robot
 
-The **Zbot** is a bio-inspired, eel-like underwater robot developed for research in swimming locomotion and neural control. It consists of a rigid **Head** module followed by six serially-connected **body segments** (`Segment1`–`Segment6`) and a **TailSegment**, connected by six revolute joints (`joint_1`–`joint_6`). Sinusoidal undulation of these joints generates the travelling wave that propels the robot forward.
+The **Zbot** is a bio-inspired, eel-like underwater robot developed for research in swimming locomotion and neural control. It consists of a rigid **Head** module followed by six serially-connected **body segments** (`Segment1` to `Segment6`), connected by six revolute joints (`joint_1` to `joint_6`), and a **TailSegment** fixed to the last segment. Undulation of these joints generates the travelling wave that propels the robot forward.
 
 !!! note "Source Files"
-    - `models/zbot/sdf/zbot.sdf` — Zbot SDF model definition
-    - `models/zbot/sdf/meshes/` — Visual mesh files (.stl)
-    - `experiments/zbot_swimming/animat_config.yaml` — Zbot animat configuration
-    - `experiments/zbot_swimming/experiment_config.yaml` — Experiment entry point
+    - `models/zbot/sdf/zbot.sdf`: Zbot SDF model definition
+    - `models/zbot/sdf/meshes/`: Visual mesh files (.stl)
+    - `experiments/zbot_swimming/`: swimming with the built-in `AmphibiousController` (CPG network)
+    - `experiments/zbot_bout_glide/`: bout-and-glide swimming with the custom `ZbotCPGController`
+    - `experiments/zbot_bout_glide_teleop/`: the same controller with keyboard teleoperation
+    - `experiments/zbot_path_planning/`: path following
 
 This section covers everything you need to:
 
 - Understand the robot's physical model and SDF definition
 - Run the built-in swimming experiment
-- Implement your own custom controller — including a CPG-based one
+- Implement your own custom controller, including a CPG-based one
 
 ---
 
@@ -21,7 +23,7 @@ This section covers everything you need to:
 ```
 Head → [joint_1] → Segment1 → [joint_2] → Segment2 → [joint_3]
      → Segment3 → [joint_4] → Segment4 → [joint_5] → Segment5
-     → [joint_6] → Segment6 → TailSegment
+     → [joint_6] → Segment6 → [tail_joint, fixed] → TailSegment
 ```
 
 | Property | Value |
@@ -30,11 +32,11 @@ Head → [joint_1] → Segment1 → [joint_2] → Segment2 → [joint_3]
 | Number of revolute joints | 6 (`joint_1` – `joint_6`) |
 | Head mass | 1.9 kg |
 | Segment mass | ~0.16 kg each |
-| Link density | 950 kg/m³ (less than water → floats) |
+| Link `density` option | 950 kg/m³ (only used by the legacy buoyancy ramp, see [Zbot Model](zbot-model.md#head)) |
 | Locomotion mode | Anguilliform undulation (eel-like) |
-| Default gait frequency | ~1.0 Hz (CPG: `frequency_gain` × drive) |
-| Physics backend | MuJoCo (default) |
-| Hydrodynamics | Drag + buoyancy via `SwimmingExtension` |
+| Gait frequency | `zbot_swimming`: set by the CPG drive (`frequency_gain` times drive); `zbot_bout_glide`: `tail_frequency` (1 Hz) |
+| Physics backend | MuJoCo |
+| Hydrodynamics | Buoyancy (exact centre of buoyancy) and drag via `SwimmingExtension` |
 
 ---
 
@@ -50,18 +52,18 @@ Head → [joint_1] → Segment1 → [joint_2] → Segment2 → [joint_3]
 
 ## How to Read This Section
 
-If you are implementing a custom CPG controller, follow this order. Do not skip ahead — each step builds on the previous one.
+If you are implementing a custom CPG controller, follow this order. Do not skip ahead, each step builds on the previous one.
 
-**Step 1 — This page** *(you are here)*
+**Step 1, This page** *(you are here)*
 Get oriented. Understand the robot anatomy, the system diagram, and what each page covers.
 
-**Step 2 — [Swimming Experiment](zbot-experiment.md)**
-Read the YAML configs carefully before writing any Python. You need to understand how `controller_loader`, `equation`, `motors`, and `loaders` interact — most bugs come from misconfigured YAML, not the controller code itself.
+**Step 2, [Swimming Experiment](zbot-experiment.md)**
+Read the YAML configs carefully before writing any Python. You need to understand how the animat `extensions`, `equation`, `motors`, and `loaders` interact; most bugs come from misconfigured YAML, not the controller code itself.
 
-**Step 3 — [`AnimatController` API](../reference/core/core-control.md)**
+**Step 3, [`AnimatController` API](../reference/core/core-control.md)**
 Study the base class contract: constructor arguments, `from_options()`, `positions()`, `torques()`, and the `ControlType` enum. This is what your class must implement.
 
-**Step 4 — [Custom CPG Controller](zbot-custom-controller.md)**
+**Step 4, [Custom CPG Controller](zbot-custom-controller.md)**
 Now implement. Follow Steps 1–4 in that guide (simple sine CPG) and get it running before touching the ODE version.
 
 ---
@@ -70,10 +72,10 @@ Now implement. Follow Steps 1–4 in that guide (simple sine CPG) and get it run
 
 ---
 
-**Step 5 — [`Sensor Data Arrays` API](../reference/core/core-sensors.md)**
+**Step 5, [`Sensor Data Arrays` API](../reference/core/core-sensors.md)**
 Read this when you are ready to add closed-loop sensor feedback. It documents what is inside `sensors.joints`, `sensors.links`, `sensors.xfrc`, and which `sc.*` index maps to each channel.
 
-**Step 6 — [Mathematical Models](../explanation/mathematical-models.md)**
+**Step 6, [Mathematical Models](../explanation/mathematical-models.md)**
 Go here if your CPG behaviour does not match expectations. It has the actual phase/amplitude ODE equations and the Ekeberg torque derivation to reason about frequencies, phase lags, and amplitudes.
 
 ---
@@ -83,18 +85,17 @@ Go here if your CPG behaviour does not match expectations. It has the actual pha
 ### Enter the container and run the default experiment
 
 ```bash
-docker exec -it farms_zbot bash
+docker exec -it zbot_farms_linux bash   # zbot_farms_windows on Windows
 cd /app/experiments/zbot_swimming
 farmsim --experiment_config experiment_config.yaml
 ```
 
-The MuJoCo viewer opens automatically. Press **Space** to pause/unpause.
+The MuJoCo viewer opens automatically. Press **Space** to pause and resume.
 
 ### Run headless (no viewer)
 
-```bash
-farmsim --experiment_config experiment_config.yaml --headless
-```
+There is no command line flag for this: set `runtime.headless: true` in the
+experiment's `simulation_config.yaml` (as `zbot_bout_glide` does).
 
 ### Analyse results
 
@@ -102,7 +103,8 @@ farmsim --experiment_config experiment_config.yaml --headless
 python analysis.py
 ```
 
-Plots of joint positions, velocities, and torques are generated from `Output/simulation.hdf5`.
+The analysis script plots the results saved in `Output/simulation.hdf5` by
+the `ExperimentLogger` extension.
 
 ---
 
@@ -113,9 +115,9 @@ flowchart TD
     YAML["YAML Configs\n(experiment / simulation / animat / arena)"]
     CLI["farmsim CLI\nsetup_from_clargs()"]
     MJ["MuJoCo Physics\nenv.step()"]
-    CPG["CPG Network\nODE integrator (dopri5)"]
-    EKE["Ekeberg Muscle Model\nτ = α(ML−MR) + β(ML+MR)(φoff−φ) − δφ̇"]
-    SWIM["SwimmingExtension\nDrag + Buoyancy"]
+    CPG["CPG network (AmphibiousController)\nor custom controller"]
+    EKE["Joint equations\n(position_muscle, ekeberg_muscle, ...)"]
+    SWIM["SwimmingExtension\nBuoyancy + drag"]
     LOG["ExperimentLogger\nOutput/simulation.hdf5"]
 
     YAML --> CLI
@@ -134,8 +136,8 @@ flowchart TD
 
 ## See Also
 
-- [Installation Guide](install-and-run.md) — get the Docker container running
-- [Architecture Overview](../explanation/architecture.md) — full system data-flow diagram
-- [Mathematical Models](../explanation/mathematical-models.md) — CPG ODEs and Ekeberg muscle equations
-- [`AnimatController` API](../reference/core/core-control.md) — base class reference
-- [`AmphibiousController` API](../reference/amphibious/amphibious-controller.md) — production CPG controller
+- [Installation Guide](install-and-run.md): get the Docker container running
+- [Architecture Overview](../explanation/architecture.md): full system data-flow diagram
+- [Mathematical Models](../explanation/mathematical-models.md): CPG ODEs and Ekeberg muscle equations
+- [`AnimatController` API](../reference/core/core-control.md): base class reference
+- [`AmphibiousController` API](../reference/amphibious/amphibious-controller.md): production CPG controller

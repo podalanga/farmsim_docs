@@ -1,6 +1,6 @@
 # farms_amphibious.control.drive
 
-Descending drive system — goal-directed modulation of CPG amplitude and frequency.
+Descending drive system, goal-directed modulation of CPG amplitude and frequency.
 
 ## Overview
 
@@ -89,6 +89,12 @@ def __init__(self, **kwargs)
 | `origin` | `NDARRAY_V1` | `[0, 0]` | Center point of the circle in meters. |
 | `radius` | `float` | `4` | Radius of the orbit in meters. |
 | `direction` | `int` | `-1` | Orbit direction (`1` for CCW, `-1` for CW). |
+
+---
+
+## EllipsoidPotentialMap
+
+Heading towards an elliptic limit cycle, like `CirclePotentialMap` for an ellipse.
 
 ---
 
@@ -233,61 +239,67 @@ Parameters map identically to `OrientationFollower`, but the controller manages 
     `self.contact_value`, and updates an internal `simple_pid.PID` instance.
     `farms_amphibious.control.amphibious.AmphibiousDriveController.step()`
     calls `drive.step()` and then, via `super().step()`, calls it again
-    unconditionally — so a drive attached to that controller integrates
+    unconditionally, so a drive attached to that controller integrates
     twice per physics step, distorting its turn/speed response rather than
     simply behaving as if run at a coarser timestep. Plain
     `AmphibiousController` (used by the bundled Zbot experiments) calls
     `drive.step()` exactly once, so the bug is dormant there. Full detail:
-    [Amphibious Controller — `AmphibiousDriveController.step`](amphibious-controller.md#amphibiousdrivecontroller).
+    [Amphibious Controller, `AmphibiousDriveController.step`](amphibious-controller.md#amphibiousdrivecontroller).
 
 ---
 
-## drive_from_config
+## Writing a drive
 
-!!! warning "Unverified"
-    `drive_from_config` is **not defined** in the current source tree. It is imported
-    by `farms_amphibious/scripts/plot_drive.py` from
-    `farms_amphibious.control.drive`, but no `def drive_from_config` exists anywhere
-    in the repository (the import would fail). Drive loading is actually performed
-    dynamically via the `drive_loader` / `from_options` mechanism in
-    `AmphibiousController.from_options` (see `amphibious.py`). Treat the signature
-    and behavior below as unverified/aspirational.
+A drive is created by `AmphibiousController.from_options()` when
+`control.network.drive_config` names a YAML file: it imports the class of
+`control.network.drive_loader` and calls its
+`from_options(animat_data, animat_options, drive_config, simulation_options)`,
+with `drive_config` the content of that file. Its `step()` is called at
+every environment step, before the network.
 
 ```python
-def drive_from_config(filename, animat_data, simulation_options)
+from farms_amphibious.control.drive import DescendingDrive
+
+
+class RampDrive(DescendingDrive):
+    """Increase the drives linearly with time, up to a maximum"""
+
+    def __init__(self, drives, start, rate, maximum):
+        super().__init__(drives=drives)
+        self.start, self.rate, self.maximum = start, rate, maximum
+
+    @classmethod
+    def from_options(cls, animat_data, animat_options, drive_config,
+                     simulation_options):
+        return cls(drives=animat_data.network.drives, **drive_config)
+
+    def step(self, iteration, time, timestep):
+        value = min(self.start + self.rate*time, self.maximum)
+        self.set_left_drive(iteration, value)
+        self.set_right_drive(iteration, value)
 ```
 
-Factory function that instantiates the appropriate `DescendingDrive` subclass based on a YAML configuration file.
-
-| Name | Type | Default | Description |
-| ---- | ---- | ------- | ----------- |
-| `filename` | `str` | *(required)* | Path to the YAML configuration file. |
-| `animat_data` | `AmphibiousData` | *(required)* | Simulation animat data. |
-| `simulation_options` | `SimulationOptions` | *(required)* | Global simulation options object. |
-
----
-
-## Usage Example
-
-Subclassing `DescendingDrive` to implement a simple speed-control policy that forces a walk gait and gradually increases speed:
-
-```python
-class SpeedController(DescendingDrive):
-    def __init__(self, animat_data):
-        super().__init__(drives=animat_data.network.drives)
-        self.base_drive = 2.0  # Walk regime
-
-    def step(self, iteration: int, time: float, timestep: float):
-        # Gradually increase drive speed up to 3.0
-        current_drive = min(self.base_drive + 0.1 * time, 3.0)
-        self.set_left_drive(iteration, current_drive)
-        self.set_right_drive(iteration, current_drive)
+```yaml
+# animat_config.yaml
+control:
+  network:
+    drive_loader: ramp_drive.RampDrive
+    drive_config: ramp_drive.yaml   # start: 2.0, rate: 0.1, maximum: 4.0
 ```
+
+!!! warning "Drive kinds"
+    `set_left_drive()` and `set_right_drive()` only write the drives whose
+    `kind` is `spine_left`/`brain_left` (and `spine_right`/`brain_right`).
+    The Zbot drives have `kind: null`, so set their kinds before using a
+    descending drive with it.
+
+The `farms_amphibious/scripts/plot_drive.py` script imports a
+`drive_from_config` function that no longer exists.
 
 ---
 
 ## See Also
 
-- [farms_amphibious_controller.md](amphibious-controller.md)
-- [farms_amphibious_data.md](amphibious-data.md)
+- [Amphibious Controller](amphibious-controller.md)
+- [Amphibious Data](amphibious-data.md)
 - **Source**: `farms_amphibious/control/drive.py`

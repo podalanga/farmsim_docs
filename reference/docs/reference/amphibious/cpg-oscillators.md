@@ -1,12 +1,12 @@
 # farms_amphibious.control.ode
 
 !!! note "Source Files"
-    - `farms_amphibious/control/ode.pyx` — Cython ODE kernels (compiled to `.pyd`)
-    - `farms_amphibious/data/data_cy.pyx` — Cython state containers
-    - `farms_amphibious/data/network.py` — Python wrappers and data classes
-    - `farms_amphibious/control/network.py` — ODE integrator
+    - `farms_amphibious/control/ode.pyx`: Cython ODE kernels (compiled to `.pyd`)
+    - `farms_amphibious/data/data_cy.pyx`: Cython state containers
+    - `farms_amphibious/data/network.py`: Python wrappers and data classes
+    - `farms_amphibious/control/network.py`: ODE integrator
 
-FARMS implements a **biologically inspired Central Pattern Generator (CPG)** network modelled as a system of coupled nonlinear oscillators. This is the mathematical engine that generates rhythmic, coordinated locomotion patterns for swimming and walking in amphibious robots. The oscillators are a **Hopf-type** phase-amplitude system — each oscillator has an independent phase and amplitude, coupled through weighted, phase-biased connections.
+FARMS implements a **biologically inspired Central Pattern Generator (CPG)** network modelled as a system of coupled nonlinear oscillators. This is the mathematical engine that generates rhythmic, coordinated locomotion patterns for swimming and walking in amphibious robots. The oscillators are a **Hopf-type** phase-amplitude system, each oscillator has an independent phase and amplitude, coupled through weighted, phase-biased connections.
 
 ---
 
@@ -35,7 +35,7 @@ cpdef DTYPEv1 offsets(self, unsigned int iteration):
 
 ### Oscillator Output Function
 
-The neural output of each oscillator — used to drive muscle models — is:
+The neural output of each oscillator, used to drive muscle models, is:
 
 $$
 y_i = r_i \cdot (1 + \cos(\varphi_i))
@@ -49,7 +49,7 @@ cpdef np.ndarray outputs(self, unsigned int iteration):
 ```
 
 !!! important "Why This Output Function"
-    The output $y_i \in [0, 2r_i]$ is always non-negative, which directly represents the firing rate of a motor neuron. When $\varphi_i = 0$, output is maximum ($2r_i$); when $\varphi_i = \pi$, output is zero. This is the half-wave rectified cosine — a well-established model for motor neuron activity.
+    The output $y_i \in [0, 2r_i]$ is always non-negative, which directly represents the firing rate of a motor neuron. When $\varphi_i = 0$, output is maximum ($2r_i$); when $\varphi_i = \pi$, output is zero. This is the half-wave rectified cosine, a well-established model for motor neuron activity.
 
 ---
 
@@ -74,7 +74,9 @@ Where:
 | $\Delta\varphi_{ji}$ | Desired phase difference (phase bias) | `connectivity.c_desired_phase(i)` |
 | $\mathcal{C}(i)$ | Set of connections targeting oscillator $i$ | `osc2osc_map` |
 
-**From `ode.pyx` (lines 45–78):**
+In the YAML `osc2osc` entries, `in` is the target $i$ and `out` the source $j$: at steady state, $\varphi_{out} - \varphi_{in} = \Delta\varphi$ (`phase_bias`).
+
+**From `ode.pyx`:**
 
 ```cython
 cpdef inline void ode_dphase(...) nogil:
@@ -97,7 +99,7 @@ cpdef inline void ode_dphase(...) nogil:
 ```
 
 !!! note "Phase coupling is amplitude-weighted"
-    The coupling term uses `state[n_oscillators + i1]` — the **amplitude** of the source oscillator, not 1. This means a silenced oscillator (amplitude → 0) stops exerting influence on its neighbours, which is critical for smooth gait transitions.
+    The coupling term uses `state[n_oscillators + i1]`, the **amplitude** of the source oscillator, not 1. This means a silenced oscillator (amplitude → 0) stops exerting influence on its neighbours, which is critical for smooth gait transitions.
 
 ---
 
@@ -116,7 +118,7 @@ Where:
 | $a_i$ | Convergence rate (rad/s) | `oscillators.c_rate(i)` |
 | $R_i^{nom}$ | Nominal amplitude (drive-dependent) | `oscillators.c_nominal_amplitude(iteration, i, drives)` |
 
-**From `ode.pyx` (lines 81–99):**
+**From `ode.pyx`:**
 
 ```cython
 cpdef inline void ode_damplitude(...) nogil:
@@ -133,17 +135,20 @@ The convergence rate `a_i` determines how quickly the oscillator amplitude track
 
 ## Drive-Dependent Parameters
 
-Both `ω_i` and `R_i^{nom}` are not fixed — they are **piecewise-linear functions of the descending drive** `d_i`:
+Both `ω_i` and `R_i^{nom}` are not fixed, they are **piecewise-linear functions of the descending drive** `d_i`:
 
 $$
-\omega_i(d_i) = \text{clamp}\left(g^{\omega}_i \cdot d_i + b^{\omega}_i,\; s^{\omega}_{lo},\; s^{\omega}_{hi}\right), \quad \text{if } d_i \in [lo_i, hi_i]
+\omega_i(d_i) =
+\begin{cases}
+g^{\omega}_i \, d_i + b^{\omega}_i & lo_i \le d_i \le hi_i \\
+s^{\omega}_{lo,i} & d_i < lo_i \\
+s^{\omega}_{hi,i} & d_i > hi_i
+\end{cases}
 $$
 
-The drive itself is clamped:
-
-$$
-d_i^{eff} = \text{clamp}(d_i, lo_i, hi_i)
-$$
+and the same for the nominal amplitude $R_i^{nom}$ with the amplitude
+parameters. There is no clamping: outside `[low, high]` the value jumps
+to the saturation value (`DriveDependentArrayCy.c_value`).
 
 The `DriveDependentArrayCy` stores 6 parameters per oscillator: `[gain, bias, low, high, saturation_low, saturation_high]`:
 
@@ -154,7 +159,7 @@ class DriveDependentArray(DriveDependentArrayCy):
         return cls(np.array([gain, bias, low, high, saturation_low, saturation_high]))
 ```
 
-This creates the characteristic "drive-frequency" curve seen in salamander CPG literature: below `low`, the oscillator is silent; above `high`, frequency saturates.
+This gives the drive-frequency curve of the salamander CPG models: below `low`, the value is `saturation_low` (0 silences the oscillator), and above `high` it is `saturation_high`.
 
 ---
 
@@ -166,7 +171,7 @@ $$
 \frac{d\delta_j}{dt} = a_j^{off} \cdot \left(\delta_j^{des}(d) - \delta_j\right)
 $$
 
-**From `ode.pyx` (lines 237–259):**
+**From `ode.pyx`:**
 
 ```cython
 cpdef inline void ode_joints(...) nogil:
@@ -199,7 +204,7 @@ $$
 \frac{dr_{i0}}{dt} \mathrel{+}= w \cdot \theta_{i1} \quad (\text{STRETCH2AMP})
 $$
 
-**Tegotae stretch:** Multiplied by $\sin(\varphi_i)$ — this is phase-dependent feedback:
+**Tegotae stretch:** Multiplied by $\sin(\varphi_i)$, this is phase-dependent feedback:
 
 $$
 \frac{d\varphi_{i0}}{dt} \mathrel{+}= w \cdot \theta_{i1} \cdot \sin(\varphi_{i0}) \quad (\text{STRETCH2FREQTEGOTAE})
@@ -208,14 +213,14 @@ $$
 !!! note "Tegotae feedback origin"
     Tegotae (手応え, Japanese for "tactile response") is a control strategy introduced by Owaki & Ishiguro (2017) where each limb CPG is locally modulated by the ground reaction force, producing emergent gait patterns without central coordination. FARMS implements this via `sin(phase)` multiplication.
 
-**From `ode.pyx` (lines 102–156):**
+**From `ode.pyx`:**
 
 ```cython
 if connection_type == ConnectionType.STRETCH2FREQTEGOTAE:
     dstate[i0] += (
         joints2osc_map.c_weight(i)
         * joints.position_cy(iteration, i1)
-        * sin(state[i0])   # Phase-dependent — Tegotae
+        * sin(state[i0])   # Phase-dependent, Tegotae
     )
 elif connection_type == ConnectionType.STRETCH2FREQ:
     dstate[i0] += (
@@ -242,7 +247,7 @@ $$
 \frac{d\varphi_{i0}}{dt} \mathrel{+}= w \cdot \|F_{contact,\,i1}\| \cdot \sin(\varphi_{i0}) \quad (\text{REACTION2FREQTEGOTAE})
 $$
 
-**From `ode.pyx` (lines 159–193):**
+**From `ode.pyx`:**
 
 ```cython
 contact_reaction = sqrt(
@@ -304,7 +309,7 @@ cpdef inline DTYPEv1 ode_oscillators_sparse(
     return dstate
 ```
 
-Setting `nosfb=1` bypasses all sensory feedback, giving a pure open-loop CPG — useful for in-water locomotion experiments where only the descending drive matters.
+Setting `nosfb=1` bypasses all sensory feedback, giving a pure open-loop CPG, useful for in-water locomotion experiments where only the descending drive matters.
 
 ---
 
@@ -407,7 +412,7 @@ class NetworkODE(AnimatNetwork):
 ```
 
 !!! note "Integrator kwargs are forwarded verbatim"
-    `nsteps`, `max_step`, `verbosity`, etc. are not named `__init__` parameters —
+    `nsteps`, `max_step`, `verbosity`, etc. are not named `__init__` parameters
     they are collected into `**kwargs` and stored as `self.integrator_kwargs`, then
     passed to `solver.set_integrator(self.integrator, **self.integrator_kwargs)`
     inside `initialize_episode()`. `AmphibiousController.from_options` constructs the
@@ -418,10 +423,10 @@ class NetworkODE(AnimatNetwork):
 
 `dopri5` is the **Dormand-Prince 4th/5th-order Runge-Kutta** with adaptive step size. It is the same algorithm as MATLAB's `ode45`. It is chosen because:
 
-1. **Explicit method** — works well for the non-stiff phase dynamics
-2. **Adaptive stepping** — automatically handles the fast transients when drive changes abruptly
-3. **Embedded error estimate** — 4th order result for stepping, 5th order for error estimation, giving efficient accuracy control
-4. **Low overhead** — uses only 6 function evaluations per step (Butcher tableau with FSAL property)
+1. **Explicit method**: works well for the non-stiff phase dynamics
+2. **Adaptive stepping**: automatically handles the fast transients when drive changes abruptly
+3. **Embedded error estimate**: 4th order result for stepping, 5th order for error estimation, giving efficient accuracy control
+4. **Low overhead**: uses only 6 function evaluations per step (Butcher tableau with FSAL property)
 
 ### Integration Step Logic
 
@@ -568,7 +573,7 @@ The effective formula is:
 $$
 f(d) = \begin{cases}
 s_{lo} & \text{if } d < lo \\
-\text{clamp}(g \cdot d + b,\; s_{lo},\; s_{hi}) & \text{if } lo \leq d \leq hi \\
+g \cdot d + b & \text{if } lo \leq d \leq hi \\
 s_{hi} & \text{if } d > hi
 \end{cases}
 $$
@@ -588,7 +593,7 @@ $$
 
 ## Related Pages
 
-- [Ekeberg Muscle Model](ekeberg-muscle.md) — How CPG outputs drive joint torques
-- [Position Muscle & Phase Controllers](joint-controllers.md) — How phases map to position commands
-- [Descending Drive](descending-drive.md) — How drive signals are computed
-- [NetworkODE](network-ode.md) — Integration loop details
+- [Ekeberg Muscle Model](ekeberg-muscle.md): How CPG outputs drive joint torques
+- [Position Muscle & Phase Controllers](joint-controllers.md): How phases map to position commands
+- [Descending Drive](descending-drive.md): How drive signals are computed
+- [NetworkODE](network-ode.md): Integration loop details

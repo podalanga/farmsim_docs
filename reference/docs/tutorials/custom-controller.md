@@ -1,231 +1,218 @@
 # Write a Custom Controller
 
-This tutorial shows how to write a custom locomotion controller for a FARMS
-animat. We'll trace the ZbotCPGController from the zbot_bout_glide experiment
-as a concrete example.
+This tutorial shows how to write a locomotion controller for a FARMS animat,
+using the `ZbotCPGController` of `experiments/zbot_bout_glide` as the worked
+example.
 
 ## What is a controller?
 
-A controller is an `AnimatExtension` subclass that also extends
-`AnimatController`. It is registered as an animat extension in
-`animat_config.yaml` via the `controller_loader` field. At each simulation step:
+A controller is a subclass of `farms_core.model.control.AnimatController`,
+which is itself an `AnimatExtension`. It runs because it is listed in the
+animat's `extensions:`. At each control step:
 
-1. `before_step()` advances the controller's internal dynamics
-2. `positions()`, `velocities()`, or `torques()` return joint targets as
-   `dict[str, float]` (joint name → value)
-3. The `ExperimentTask` maps these outputs to MuJoCo's `physics.data.ctrl`
+1. `before_step(task, action, physics)` advances the controller's internal
+   dynamics.
+2. `positions()`, `velocities()`, `torques()` (and, with torque joints,
+   `springrefs()`, `springcoefs()`, `dampingcoefs()`) return the targets as
+   `dict[str, float]` (joint name to value). `excitations()` returns an
+   array of muscle excitations, ordered like `muscles_names`.
+3. `ExperimentTask` writes them to the MuJoCo actuators
+   (`physics.data.ctrl`) of the joints.
 
-## Step 1: Understand the AnimatController base class
+## Step 1: The AnimatController base class
 
-`AnimatController` (in `farms_core/model/control.py`) provides:
+```python
+AnimatController.__init__(
+    self, animat_i, joints_names, muscles_names, max_torques, substep=True,
+)
+```
 
-- `__init__(self, animat_i, joints_names, muscles_names, max_torques, substep)`
-  — stores joint/muscle names and torque limits
-- `positions(iteration, time, timestep) -> dict[str, float]` — override to
-  return position targets
-- `velocities(iteration, time, timestep) -> dict[str, float]` — override to
-  return velocity targets
-- `torques(iteration, time, timestep) -> dict[str, float]` — override to
-  return torque targets
-- `before_step(task, action, physics)` — override to advance internal dynamics
+- `joints_names`: a tuple with one list of joint names per `ControlType`
+  (7 entries), telling which joints use which kind of control.
+- `max_torques`: a tuple with one array of torque limits per `ControlType`.
+- `substep`: whether `before_step()` also runs on the environment substeps
+  (see [Trace a Simulation Step](simulation-workflow.md#phase-5-the-simulation-loop)).
 
-The `ControlType` enum determines which output types each joint uses:
+`ControlType` (`farms_core.model.control`) lists the kinds of control:
 
-| Value | Name | Description |
-|-------|------|-------------|
-| 0 | `POSITION` | Position control |
-| 1 | `VELOCITY` | Velocity control |
-| 2 | `TORQUE` | Torque control |
-| 3 | `SPRINGREF` | Spring reference (Ekeberg muscle) |
-| 4 | `SPRINGCOEF` | Spring coefficient (Ekeberg muscle) |
-| 5 | `DAMPINGCOEF` | Damping coefficient (Ekeberg muscle) |
-| 6 | `MUSCLE` | Muscle activation |
+| Value | Name | Returned by |
+|---|---|---|
+| 0 | `POSITION` | `positions()` |
+| 1 | `VELOCITY` | `velocities()` |
+| 2 | `TORQUE` | `torques()` |
+| 3 | `SPRINGREF` | `springrefs()` |
+| 4 | `SPRINGCOEF` | `springcoefs()` |
+| 5 | `DAMPINGCOEF` | `dampingcoefs()` |
+| 6 | `MUSCLE` | `excitations()` |
 
-## Step 2: Register your controller in YAML
+Two static helpers build the per-type tuples from the motor options:
+`AnimatController.joints_from_control_types()` and
+`AnimatController.max_torques_from_control_types()`.
 
-In `animat_config.yaml`, set the `controller_loader` to the dotted path of your
-controller class:
+## Step 2: Declare the motors and register the controller
+
+In `animat_config.yaml`, each actuated joint has a motor, whose
+`control_types` decide which method of your controller drives it:
 
 ```yaml
 control:
-  controller_loader: controller.zbot_controller.ZbotCPGController
-  sensors:
-    joints:
-      - joint_head_yaw
-      - joint_0
-      # ... more joints
   motors:
-    - joint_name: joint_head_yaw
-      control_types: ["position"]
-      limits_torque: [-0.3, 0.3]
-      gains: [1.0]
-    # ... more motors
-  # network: ... (CPG network, see CPG guide)
-  muscles: []
-  adhesions: []
-  visuals: []
+  - joint_name: joint_1
+    control_types:
+    - position
+    limits_torque:
+    - -10.0
+    - 10.0
+    gains:
+    - 3.0
+    - 0.01
+    - 0
 extensions:
-  - loader: controller.zbot_controller.ZbotCPGController
-    config:
-      bout_duration_s: 0.8
-      bout_interval_s: 2.0
-      tail_frequency: 2.5
-      tail_amplitude: 0.4
+- loader: controller.zbot_controller.ZbotCPGController
+  config:
+    swimming_mode: bout_and_glide
+    bout_duration_s: 5.0
+    bout_interval_s: 2.0
+    tail_amplitude: 1.0
+    tail_frequency: 1.0
+- loader: farms_mujoco.swimming.extension.SwimmingExtension
+  config:
+    water_properties: null
 ```
 
-!!! note "Controller as extension"
-    In the zbot experiments, the controller is registered both as the
-    `controller_loader` (so `ExperimentTask` creates it) and as an entry in
-    the top-level `extensions:` list (sibling to `control:`, not nested under
-    it) so it receives `from_options()` with the config dict. The
-    `ExperimentTask` detects controllers among extensions and handles them
-    specially.
+`loader` is the dotted path of the class. It is importable because
+`run_sim.py` puts the experiment folder on `sys.path`, where the
+`controller/` package lives. `config` is passed as is to the class's
+`from_options()`.
+
+!!! note "`control.controller_loader`"
+    The zbot configurations also set `control.controller_loader`. This option
+    is parsed but not used to create the controller: only the `extensions:`
+    entry matters.
 
 ## Step 3: Implement the controller
 
-Here is the structure of `ZbotCPGController` from
-`experiments/zbot_bout_glide/controller/zbot_controller.py`:
+The structure of `ZbotCPGController`
+(`experiments/zbot_bout_glide/controller/zbot_controller.py`), shortened:
 
 ```python
-from farms_core.model.control import AnimatController
+import numpy as np
+from farms_core.model.control import AnimatController, ControlType
+
 
 class ZbotCPGController(AnimatController):
-    """CPG-based bout-and-glide controller for the Zbot robot."""
+    """Zbot segmental CPG controller"""
+
+    def __init__(self, animat_i, joints_names, muscles_names, max_torques,
+                 params, substep=True):
+        super().__init__(
+            animat_i=animat_i,
+            joints_names=joints_names,
+            muscles_names=muscles_names,
+            max_torques=max_torques,
+            substep=substep,
+        )
+        self.params = params
+        self.cpg = SegmentalCPG(params.n_segments, params.cpg_frequency)
+        self.motor_outputs = np.zeros(params.n_segments)
+        # ... bout gate, vSPN and leaky integrator
 
     @classmethod
     def from_options(cls, config, experiment_options, animat_i,
-                    animat_data, animat_options):
-        """Factory method called by ExperimentTask."""
-        # Read configuration from the config dict
-        bout_duration = config['bout_duration_s']
-        bout_interval = config['bout_interval_s']
-        tail_freq = config['tail_frequency']
-        tail_amp = config['tail_amplitude']
-
-        # Build parameters
-        params = ZbotCPGParameters.from_bout_timing(
-            bout_duration_s=bout_duration,
-            bout_interval_s=bout_interval,
-            tail_frequency=tail_freq,
-            tail_amplitude=tail_amp,
-        )
-
-        # Get joint names and control types from animat_options
-        joints_names = animat_options.control.joints_names()
+                     animat_data, animat_options):
+        """Called by ExperimentTask with the extension's config"""
+        motors = animat_options.control.motors
+        all_joints = [motor.joint_name for motor in motors]
         joints_control_types = {
             motor.joint_name: ControlType.from_string_list(motor.control_types)
-            for motor in animat_options.control.motors
+            for motor in motors
         }
-
-        # Call the parent constructor
-        controller = cls(
+        joints_names = cls.joints_from_control_types(
+            joints_names=all_joints,
+            joints_control_types=joints_control_types,
+        )
+        max_torques = cls.max_torques_from_control_types(
+            joints_names=all_joints,
+            max_torques={
+                motor.joint_name: motor.limits_torque[1] for motor in motors
+            },
+            joints_control_types=joints_control_types,
+        )
+        config = dict(config)
+        params = ZbotCPGParameters.from_bout_timing(
+            bout_duration_s=config.pop('bout_duration_s'),
+            bout_interval_s=config.pop('bout_interval_s'),
+            tail_frequency=config.pop('tail_frequency'),
+            tail_amplitude=config.pop('tail_amplitude', 1.0),
+            **config,  # e.g. swimming_mode
+        )
+        return cls(
             animat_i=animat_i,
-            joints_names=AnimatController.joints_from_control_types(
-                joints_names=joints_names,
-                joints_control_types=joints_control_types,
-            ),
-            muscles_names=[],
-            max_torques=AnimatController.max_torques_from_control_types(
-                joints_names=joints_names,
-                max_torques={
-                    motor.joint_name: motor.limits_torque[1]
-                    for motor in animat_options.control.motors
-                },
-                joints_control_types=joints_control_types,
-            ),
-            substep=True,
+            joints_names=joints_names,
+            muscles_names=(),
+            max_torques=max_torques,
+            params=params,
         )
 
-        # Store internal state
-        controller.params = params
-        controller.cpg = SegmentalCPG(n_segments=params.n_segments)
-        controller.data = animat_data
-        # ... initialize bout gate, vSPN, etc.
-        return controller
+    def initialize_episode(self, task, physics):
+        """Reset the internal state at the start of an episode"""
+        self.cpg.reset()
+        self.motor_outputs[:] = 0.0
+
+    def before_step(self, task, action, physics):
+        """Advance the internal dynamics by one step"""
+        timestep = physics.timestep()/task.units.seconds
+        self.step(timestep)  # Updates self.motor_outputs
+
+    def positions(self, iteration, time, timestep):
+        """Joint position targets [rad], computed in before_step()"""
+        return dict(zip(
+            self.joints_names[ControlType.POSITION],
+            self.motor_outputs,
+        ))
 ```
 
-### Key implementation details
+Points to note:
 
-**`from_options()` signature** (from `AnimatExtension`):
+- `from_options()` has the signature of `AnimatExtension.from_options()`:
+  `config` (the YAML `config:` dictionary), `experiment_options`,
+  `animat_i` (index of the animat), `animat_data` (its `AnimatData`, with the
+  sensor arrays) and `animat_options`.
+- Keep the dynamics in `before_step()` and make `positions()` side-effect
+  free: `ExperimentTask` calls it right after `before_step()`.
+- `physics.timestep()` is the MuJoCo step, in simulation units
+  (`task.units.seconds` converts it to seconds). With `substep=True`,
+  `before_step()` runs at every environment step, which is one MuJoCo step
+  when `physics.num_sub_steps` is 1 (as for the Zbot). In general, an
+  environment step lasts `task.timestep/task.cb_sub_steps`.
+- `positions()` only needs to return the joints of the corresponding control
+  type; the others are ignored.
 
-```python
-@classmethod
-def from_options(cls, config, experiment_options, animat_i,
-                animat_data, animat_options):
-```
-
-- `config` — the `config` dict from the extension entry in YAML
-- `experiment_options` — full `ExperimentOptions` object
-- `animat_i` — index of this animat in the experiment
-- `animat_data` — `AnimatData` with pre-allocated sensor arrays
-- `animat_options` — `AnimatOptions` (or subclass) for this animat
-
-**`before_step()` — advance internal dynamics:**
-
-```python
-def before_step(self, task, action, physics):
-    iteration = task.iteration
-    timestep = physics.timestep() / task.units.seconds
-    time = physics.time() / task.units.seconds
-
-    # Advance CPG, bout gate, and vSPN
-    self.cpg.step(timestep)
-    self.bout_gate.step(timestep)
-    self.leaky_integrator.step(self.cpg.output)
-```
-
-**`positions()` — return joint position targets:**
-
-```python
-def positions(self, iteration, time, timestep):
-    """Return position targets for all position-controlled joints."""
-    motor_output = self.cpg.output * self.bout_gate.output
-    return {
-        joint_name: float(motor_output[i] * self.params.tail_amplitude)
-        for i, joint_name in enumerate(self.position_joints)
-    }
-```
-
-## Step 4: Control types and joint mapping
-
-Each motor in the YAML declares its `control_types` as a list of strings.
-`ControlType.from_string_list()` converts these to `ControlType` enum values.
-
-The `AnimatController` base class provides helper methods:
-
-- `joints_from_control_types(joints_names, joints_control_types)` — returns
-  the flat list of joint names grouped by control type
-- `max_torques_from_control_types(joints_names, max_torques, joints_control_types)`
-  — returns torque limits aligned with the control type grouping
-
-Your `positions()`, `velocities()`, and `torques()` methods only need to return
-dicts for the joints that use the corresponding control type.
-
-## Step 5: Run your controller
+## Step 4: Run your controller
 
 ```bash
 cd experiments/zbot_bout_glide
 python run_sim.py --experiment_config experiment_config.yaml
 ```
 
-If a display is available, the MuJoCo viewer will open and you can watch your
-controller drive the robot.
+The MuJoCo viewer opens unless `runtime.headless` is true in
+`simulation_config.yaml`.
 
 ## Summary
 
 | Step | What you do |
-|------|-------------|
+|---|---|
 | 1 | Subclass `AnimatController` |
-| 2 | Implement `from_options()` to read YAML config |
-| 3 | Implement `before_step()` to advance internal dynamics |
-| 4 | Implement `positions()` / `velocities()` / `torques()` to return targets |
-| 5 | Register in `animat_config.yaml` via `controller_loader` |
+| 2 | Declare motors and their `control_types`, list the controller in `extensions:` |
+| 3 | Implement `from_options()` to read the `config:` dictionary |
+| 4 | Implement `before_step()` to advance the internal dynamics |
+| 5 | Implement `positions()` / `velocities()` / `torques()` to return targets |
 
 ## Next steps
 
-- [Write a Controller (How-to)](../how-to/write-controller.md) — more detailed
-  patterns and API reference
-- [Configure CPG Network Parameters](../how-to/configure-cpg-network.md) —
-  configure the built-in amphibious CPG network
-- [Extension and Controller Design](../explanation/extension-design.md) —
-  understand the full lifecycle
+- [Write a Controller (How-to)](../how-to/write-controller.md): more
+  patterns, including sensor feedback
+- [Configure CPG Network Parameters](../how-to/configure-cpg-network.md):
+  the built-in amphibious CPG network
+- [Extension and Controller Design](../explanation/extension-design.md): the
+  full lifecycle

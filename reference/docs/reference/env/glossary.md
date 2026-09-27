@@ -6,7 +6,11 @@ This glossary defines core domain terminology used across the FARMS framework an
 
 **Added Mass**
 The inertia added to a system because an accelerating or decelerating body must move some volume of surrounding fluid as it moves through it.
-*Implementation Status*: Despite mentions in older documentation, added mass is **not currently implemented** in the active physics backend. See `farms_mujoco/swimming/drag.pyx`.
+*Implementation*: with `fluid_model: ellipsoid`, Lamb's added mass of the ellipsoid fitted to each link (`added_mass: implicit` or `explicit`). See `farms_mujoco/swimming/ellipsoid_model.pyx` and [farms_mujoco.swimming](../mujoco/mujoco-swimming.md).
+
+**Centre of Buoyancy (CoB)**
+The centroid of the submerged volume of a body, where buoyancy is applied. Computed per link from its geoms (`cob_method`).
+*Implementation*: `farms_mujoco/swimming/cob.pyx` (exact), `farms_mujoco/swimming/cob_lut.pyx` (lookup tables)
 
 **Animat**
 A portmanteau of "animal" and "robot". It represents the primary simulated entity in FARMS.
@@ -49,7 +53,7 @@ A phenomenological muscle model that translates neural excitation into joint tor
 *Implementation*: `farms_amphibious/control/ekeberg.pyx`
 
 **ExperimentTask**
-The core orchestrator of the physics loop in `farms_mujoco`. Inherits from `dm_control.rl.control.Task` and delegates to registered `TaskExtension`s.
+The core orchestrator of the physics loop in `farms_mujoco`. Inherits from `dm_control.rl.control.Task` and calls the extensions (`TaskExtension`) listed in the simulation and animat files.
 *Implementation*: `farms_mujoco.simulation.task.ExperimentTask`
 
 ## M
@@ -71,7 +75,7 @@ A concrete implementation of `AnimatNetwork` that integrates CPG oscillator ODEs
 ## O
 
 **Options**
-Base class for all configuration objects. Implemented as a `dict` subclass with attribute-style access. Provides `load()`, `save()`, and `from_options()` class methods.
+Base class for all configuration objects. Implemented as a `dict` subclass with attribute-style access. Provides `load()` and `save()`.
 *Implementation*: `farms_core.options.Options`
 
 ## P
@@ -95,12 +99,12 @@ A self-contained, lightweight Central Pattern Generator implementation used in t
 *Implementation*: `experiments/zbot_bout_glide/controller/zbot_controller.py`
 
 **SwimmingExtension**
-An `AnimatExtension` that computes hydrodynamic drag and buoyancy forces and applies them to MuJoCo via `physics.data.xfrc_applied`.
+An `AnimatExtension` that computes the fluid forces (buoyancy, drag, added mass) and applies them to MuJoCo via `physics.data.xfrc_applied`.
 *Implementation*: `farms_mujoco.swimming.extension.SwimmingExtension`
 
 **SwimmingHandler**
-The Cython-level hydrodynamic force calculator used by `SwimmingExtension`. Computes translational/rotational drag and buoyancy.
-*Implementation*: `farms_mujoco.swimming.drag.SwimmingHandler`
+The Cython fluid force calculator used by `SwimmingExtension`: a single C loop over the links, run at every environment step.
+*Implementation*: `farms_mujoco.swimming.hydrodynamics.SwimmingHandler`
 
 ## T
 

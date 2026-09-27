@@ -1,0 +1,21 @@
+# FARMS packages documented by this site, checked out from the public
+# podalanga forks at every build (in this order: each package needs the
+# previous ones to compile). `ref` is a branch, tag or commit.
+#
+# The API, configuration and CLI pages are generated from these checkouts,
+# and tools/check_docs.py checks the hand-written pages against them. To
+# document other versions, change the refs here (or pass FARMS_REFS, see
+# tools/install_farms.py).
+packages:
+  - name: farms_core
+    repo: https://github.com/podalanga/farms_core.git
+    ref: fluid-fast
+  - name: farms_mujoco
+    repo: https://github.com/podalanga/farms_mujoco.git
+    ref: fluid-fast
+  - name: farms_sim
+    repo: https://github.com/podalanga/farms_sim.git
+    ref: amphibious_v0.2
+  - name: farms_amphibious
+    repo: https://github.com/podalanga/farms_amphibious.git
+    ref: sync-upstream

@@ -2,10 +2,11 @@
 FARMS
 </div>
 
-Framework for Amphibious Robot Modeling and Simulation — a Python-based robotics
-simulation framework for modelling and controlling undulatory swimming robots.
-It integrates with the [MuJoCo](https://mujoco.org/) physics engine and provides
-a CPG (Central Pattern Generator) based locomotion control system.
+FARMS (Framework for Animal and Robot Modeling and Simulation) is a Python
+framework for simulating and controlling animal models and robots. This site
+documents it as used in the zbot project: undulatory swimming robots simulated
+with the [MuJoCo](https://mujoco.org/) physics engine, driven by a CPG (Central
+Pattern Generator) locomotion controller and a fast hydrodynamics module.
 
 <div class="hero-buttons" markdown>
 [Get started](tutorials/install-and-run.md){ .md-button .md-button--primary }
@@ -41,8 +42,16 @@ a CPG (Central Pattern Generator) based locomotion control system.
 
     ---
 
-    Automatic SDF-to-MJCF conversion, fluid force computation, and
-    interactive/headless simulation modes.
+    Automatic SDF-to-MJCF conversion and interactive or headless simulation
+    modes.
+
+-   :material-waves: **Hydrodynamics**
+
+    ---
+
+    Exact centre of buoyancy (closed forms and meshes) or O(1) lookup
+    tables, per-link drag, and an ellipsoid drag and added mass model, all
+    computed in C on a single core.
 
 -   :material-database-outline: **Data persistence**
 
@@ -78,7 +87,8 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework:
     ---
 
     Technical descriptions of modules, classes, YAML schemas, and CLI
-    options.
+    options. The API, configuration and CLI references are generated from
+    the code at every build.
 
 -   :material-lightbulb-on-outline: **[Explanation](explanation/architecture.md)**
 
@@ -92,16 +102,16 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework:
 
 ```bash
 # Clone, then fetch submodules and LFS-tracked meshes
-git clone git@github.com:farmsim/farms_zbot.git
+git clone git@github.com:podalanga/farms_zbot.git
 cd farms_zbot
 git lfs pull
 git submodule update --init --recursive
 
-# Install FARMS packages into an active virtual environment
+# Install FARMS packages into an active Python >= 3.11 virtual environment
 cd farms
 python setup_farms.py
 
-# Run the zbot bout-glide experiment
+# Run the zbot bout-and-glide experiment
 cd ../experiments/zbot_bout_glide
 python run_sim.py --experiment_config experiment_config.yaml
 ```
