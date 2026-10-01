@@ -1,5 +1,13 @@
 site_name: FARMS Documentation
 site_description: Documentation for the FARMS robotics simulation framework
+site_url: https://podalanga.github.io/farmsim_docs/
+repo_url: https://github.com/podalanga/farmsim_docs
+repo_name: podalanga/farmsim_docs
+edit_uri: edit/main/reference/docs/
+copyright: >-
+  FARMS is released under the
+  <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.
+  <a href="https://github.com/podalanga/farmsim_docs/issues">Report a docs issue</a>
 theme:
   name: material
   logo: assets/logo.svg
@@ -39,6 +47,7 @@ theme:
     - content.code.copy
     - content.code.annotate
     - content.tooltips
+    - content.action.edit
 extra_css:
   - stylesheets/extra.css
 extra_javascript:
@@ -84,6 +93,10 @@ plugins:
             heading_level: 2
 extra:
   generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/podalanga/farms_zbot
+      name: farms_zbot on GitHub
 markdown_extensions:
   - pymdownx.superfences:
       custom_fences:

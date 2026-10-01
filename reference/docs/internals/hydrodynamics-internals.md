@@ -172,8 +172,12 @@ link.
 
 `build_cob_lut()` samples the tables with the exact kernels when the
 geoms do not overlap, and from a voxelisation of their union otherwise
-(so overlaps are counted once). The tables are cached in memory and in
-`~/.cache/farms_mujoco/cob_lut`, keyed by the link geometry.
+(so overlaps are counted once). The tables are cached in memory and on
+disk, keyed by the link geometry, in `cob_lut_cache/` next to the running
+script (e.g. `experiments/<name>/cob_lut_cache/`). The `cob_lut_cache`
+water option or the `FARMS_COB_LUT_CACHE` environment variable choose
+another directory, and unwritable locations fall back to
+`~/.cache/farms_mujoco/cob_lut`, then to the temporary directory.
 
 ## Drag
 
