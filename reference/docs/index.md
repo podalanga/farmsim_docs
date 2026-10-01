@@ -100,21 +100,75 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework:
 
 ## Quick start
 
+Both paths start from the same clone. Pick Docker for a ready-made
+environment, or a virtual environment to work on the FARMS sources
+directly on the host.
+
+<div class="grid quickstart" markdown>
+
+<div class="card" markdown>
+
+:material-docker: **Docker** (recommended)
+
+---
+
 ```bash
-# Clone, then fetch submodules and LFS-tracked meshes
-git clone git@github.com:podalanga/farms_zbot.git
+# Clone (the build fetches the rest)
+git clone \
+ git@github.com:podalanga/farms_zbot.git
+cd farms_zbot
+
+# Linux: allow X11 windows
+xhost +local:docker
+
+# Build, start and enter
+cd docker_config/linux
+docker compose up --build -d
+docker exec -it zbot_farms_linux bash
+
+# Inside the container
+cd experiments/zbot_bout_glide
+python run_sim.py --experiment_config \
+  experiment_config.yaml
+```
+
+On Windows, run compose from `docker_config/windows` and enter the
+`zbot_farms_windows` container.
+
+</div>
+
+<div class="card" markdown>
+
+:material-language-python: **Virtual environment**
+
+---
+
+```bash
+# Clone with submodules and meshes
+git clone \
+ git@github.com:podalanga/farms_zbot.git
 cd farms_zbot
 git lfs pull
-git submodule update --init --recursive
+git submodule update \
+  --init --recursive
 
-# Install FARMS packages into an active Python >= 3.11 virtual environment
+# Install FARMS (Python >= 3.11)
+python3 -m venv .venv
+source .venv/bin/activate
 cd farms
 python setup_farms.py
 
-# Run the zbot bout-and-glide experiment
+# Run the bout-and-glide experiment
 cd ../experiments/zbot_bout_glide
-python run_sim.py --experiment_config experiment_config.yaml
+python run_sim.py --experiment_config \
+  experiment_config.yaml
 ```
+
+Needs a C compiler, Git LFS and OpenGL on the host.
+
+</div>
+
+</div>
 
 See the [installation guide](tutorials/install-and-run.md) for full
 details (Docker and native, side by side).

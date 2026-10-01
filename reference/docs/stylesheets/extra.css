@@ -351,3 +351,22 @@ body,
 .md-footer-meta {
   background-color: var(--md-primary-fg-color--dark);
 }
+
+/* --- Home: quick start, Docker and venv side by side -------------------- */
+.md-typeset .grid.quickstart {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  align-items: stretch;
+}
+
+.md-typeset .grid.quickstart > .card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Wrap long commands instead of scrolling inside the narrow columns */
+.md-typeset .grid.quickstart > .card pre > code {
+  font-size: 0.7rem !important;  /* overrides the 0.85rem code size */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
