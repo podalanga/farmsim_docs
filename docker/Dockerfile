@@ -40,6 +40,9 @@ RUN --mount=type=cache,target=/home/farms/.cache/pip,uid=${UID},gid=${GID} \
     --config /home/farms/install/farms-packages.yaml \
     --dest /home/farms/farms-src
 
+# Login shells (bash -l) reset PATH: put the virtual environment back
+RUN echo 'export PATH="/home/farms/venv/bin:${PATH}"' >> /home/farms/.profile
+
 # Examples (overridden by the mounted folder in docker-compose.yml)
 WORKDIR /home/farms/workspace
 COPY --chown=farms:farms examples examples
