@@ -1,0 +1,1690 @@
+sdf: models/amphibot.sdf
+spawn:
+  loader: 0
+  mode: !!python/object/apply:farms_core.model.options.SpawnMode
+  - free
+  pose:
+  - -1.0
+  - 0
+  - 0.075
+  - 0
+  - 0
+  - 0
+  velocity:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  extras: {}
+morphology:
+  links:
+  - name: head
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - &id001
+      - -0.25
+      - -1.5
+      - -1.8
+    - &id002
+      - 0
+      - 0
+      - 0
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg1
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id001
+    - *id002
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg2
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id001
+    - *id002
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg3
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id001
+    - *id002
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg4
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id001
+    - *id002
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg5
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id001
+    - *id002
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg6
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id001
+    - *id002
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg7
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - - -0.25
+      - -3.0
+      - -1.8
+    - - 0
+      - 0
+      - 0
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: head_wheel
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - &id003
+      - 0
+      - 0
+      - 0
+    - &id004
+      - 0
+      - 0
+      - 0
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg1_wheel
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id003
+    - *id004
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg2_wheel
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id003
+    - *id004
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg3_wheel
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id003
+    - *id004
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg4_wheel
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id003
+    - *id004
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg5_wheel
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id003
+    - *id004
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg6_wheel
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id003
+    - *id004
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  - name: seg7_wheel
+    collisions: true
+    friction:
+    - 0.5
+    - 0
+    - 0
+    fluid_interaction: true
+    density: null
+    drag_coefficients:
+    - *id003
+    - *id004
+    buoyancy_center:
+    - 0.0
+    - 0.0
+    - 0.0
+    sites: []
+    solref: null
+    solimp: null
+    extras:
+      restitution: 0
+      linearDamping: 0
+      angularDamping: 0
+    mass_multiplier: 1
+  self_collisions: []
+  joints:
+  - name: joint1
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: joint2
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: joint3
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: joint4
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: joint5
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: joint6
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: joint7
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: head_wheel_joint
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: seg1_wheel_joint
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: seg2_wheel_joint
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: seg3_wheel_joint
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: seg4_wheel_joint
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: seg5_wheel_joint
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: seg6_wheel_joint
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  - name: seg7_wheel_joint
+    initial:
+    - 0
+    - 0
+    limits:
+    - - -.inf
+      - .inf
+    - - -.inf
+      - .inf
+    stiffness: 0
+    springref: 0
+    damping: 0
+    extras: {}
+  tendons: []
+  n_joints_body: 7
+  n_links_body: 8
+  n_dof_legs: 0
+  n_legs: 0
+  n_joints_passive: 8
+control:
+  controller_loader: farms_amphibious.control.amphibious.AmphibiousController
+  sensors:
+    links:
+    - head
+    - seg1
+    - seg2
+    - seg3
+    - seg4
+    - seg5
+    - seg6
+    - seg7
+    - head_wheel
+    - seg1_wheel
+    - seg2_wheel
+    - seg3_wheel
+    - seg4_wheel
+    - seg5_wheel
+    - seg6_wheel
+    - seg7_wheel
+    joints:
+    - joint1
+    - joint2
+    - joint3
+    - joint4
+    - joint5
+    - joint6
+    - joint7
+    - head_wheel_joint
+    - seg1_wheel_joint
+    - seg2_wheel_joint
+    - seg3_wheel_joint
+    - seg4_wheel_joint
+    - seg5_wheel_joint
+    - seg6_wheel_joint
+    - seg7_wheel_joint
+    - head_wheel_joint
+    - seg1_wheel_joint
+    - seg2_wheel_joint
+    - seg3_wheel_joint
+    - seg4_wheel_joint
+    - seg5_wheel_joint
+    - seg6_wheel_joint
+    - seg7_wheel_joint
+    contacts: []
+    xfrc:
+    - head
+    - seg1
+    - seg2
+    - seg3
+    - seg4
+    - seg5
+    - seg6
+    - seg7
+    - head_wheel
+    - seg1_wheel
+    - seg2_wheel
+    - seg3_wheel
+    - seg4_wheel
+    - seg5_wheel
+    - seg6_wheel
+    - seg7_wheel
+    muscles: []
+    adhesions: []
+    visuals: []
+    rays: []
+  motors:
+  - joint_name: joint1
+    control_types:
+    - position
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains:
+    - 1.0
+    - 0.01
+    - 0
+    equation: position_muscle
+    transform:
+      gain: 1
+      bias: 0
+    offsets:
+      gain: 0
+      bias: 0
+      low: 1
+      high: 5
+      saturation_low: 0
+      saturation_high: 0
+      rate: 2
+    passive:
+      is_passive: false
+      stiffness_coefficient: 0
+      damping_coefficient: 0
+      friction_coefficient: 0
+  - joint_name: joint2
+    control_types:
+    - position
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains:
+    - 1.0
+    - 0.01
+    - 0
+    equation: position_muscle
+    transform:
+      gain: 1
+      bias: 0
+    offsets:
+      gain: 0
+      bias: 0
+      low: 1
+      high: 5
+      saturation_low: 0
+      saturation_high: 0
+      rate: 2
+    passive:
+      is_passive: false
+      stiffness_coefficient: 0
+      damping_coefficient: 0
+      friction_coefficient: 0
+  - joint_name: joint3
+    control_types:
+    - position
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains:
+    - 1.0
+    - 0.01
+    - 0
+    equation: position_muscle
+    transform:
+      gain: 1
+      bias: 0
+    offsets:
+      gain: 0
+      bias: 0
+      low: 1
+      high: 5
+      saturation_low: 0
+      saturation_high: 0
+      rate: 2
+    passive:
+      is_passive: false
+      stiffness_coefficient: 0
+      damping_coefficient: 0
+      friction_coefficient: 0
+  - joint_name: joint4
+    control_types:
+    - position
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains:
+    - 1.0
+    - 0.01
+    - 0
+    equation: position_muscle
+    transform:
+      gain: 1
+      bias: 0
+    offsets:
+      gain: 0
+      bias: 0
+      low: 1
+      high: 5
+      saturation_low: 0
+      saturation_high: 0
+      rate: 2
+    passive:
+      is_passive: false
+      stiffness_coefficient: 0
+      damping_coefficient: 0
+      friction_coefficient: 0
+  - joint_name: joint5
+    control_types:
+    - position
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains:
+    - 1.0
+    - 0.01
+    - 0
+    equation: position_muscle
+    transform:
+      gain: 1
+      bias: 0
+    offsets:
+      gain: 0
+      bias: 0
+      low: 1
+      high: 5
+      saturation_low: 0
+      saturation_high: 0
+      rate: 2
+    passive:
+      is_passive: false
+      stiffness_coefficient: 0
+      damping_coefficient: 0
+      friction_coefficient: 0
+  - joint_name: joint6
+    control_types:
+    - position
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains:
+    - 1.0
+    - 0.01
+    - 0
+    equation: position_muscle
+    transform:
+      gain: 1
+      bias: 0
+    offsets:
+      gain: 0
+      bias: 0
+      low: 1
+      high: 5
+      saturation_low: 0
+      saturation_high: 0
+      rate: 2
+    passive:
+      is_passive: false
+      stiffness_coefficient: 0
+      damping_coefficient: 0
+      friction_coefficient: 0
+  - joint_name: joint7
+    control_types:
+    - position
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains:
+    - 1.0
+    - 0.01
+    - 0
+    equation: position_muscle
+    transform:
+      gain: 1
+      bias: 0
+    offsets:
+      gain: 0
+      bias: 0
+      low: 1
+      high: 5
+      saturation_low: 0
+      saturation_high: 0
+      rate: 2
+    passive:
+      is_passive: false
+      stiffness_coefficient: 0
+      damping_coefficient: 0
+      friction_coefficient: 0
+  - joint_name: head_wheel_joint
+    control_types:
+    - velocity
+    - torque
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains: null
+    equation: passive
+    transform:
+      gain: 1
+      bias: 0
+    offsets: null
+    passive:
+      is_passive: true
+      stiffness_coefficient: 0
+      damping_coefficient: 1.0e-05
+      friction_coefficient: 0
+  - joint_name: seg1_wheel_joint
+    control_types:
+    - velocity
+    - torque
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains: null
+    equation: passive
+    transform:
+      gain: 1
+      bias: 0
+    offsets: null
+    passive:
+      is_passive: true
+      stiffness_coefficient: 0
+      damping_coefficient: 1.0e-05
+      friction_coefficient: 0
+  - joint_name: seg2_wheel_joint
+    control_types:
+    - velocity
+    - torque
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains: null
+    equation: passive
+    transform:
+      gain: 1
+      bias: 0
+    offsets: null
+    passive:
+      is_passive: true
+      stiffness_coefficient: 0
+      damping_coefficient: 1.0e-05
+      friction_coefficient: 0
+  - joint_name: seg3_wheel_joint
+    control_types:
+    - velocity
+    - torque
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains: null
+    equation: passive
+    transform:
+      gain: 1
+      bias: 0
+    offsets: null
+    passive:
+      is_passive: true
+      stiffness_coefficient: 0
+      damping_coefficient: 1.0e-05
+      friction_coefficient: 0
+  - joint_name: seg4_wheel_joint
+    control_types:
+    - velocity
+    - torque
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains: null
+    equation: passive
+    transform:
+      gain: 1
+      bias: 0
+    offsets: null
+    passive:
+      is_passive: true
+      stiffness_coefficient: 0
+      damping_coefficient: 1.0e-05
+      friction_coefficient: 0
+  - joint_name: seg5_wheel_joint
+    control_types:
+    - velocity
+    - torque
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains: null
+    equation: passive
+    transform:
+      gain: 1
+      bias: 0
+    offsets: null
+    passive:
+      is_passive: true
+      stiffness_coefficient: 0
+      damping_coefficient: 1.0e-05
+      friction_coefficient: 0
+  - joint_name: seg6_wheel_joint
+    control_types:
+    - velocity
+    - torque
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains: null
+    equation: passive
+    transform:
+      gain: 1
+      bias: 0
+    offsets: null
+    passive:
+      is_passive: true
+      stiffness_coefficient: 0
+      damping_coefficient: 1.0e-05
+      friction_coefficient: 0
+  - joint_name: seg7_wheel_joint
+    control_types:
+    - velocity
+    - torque
+    limits_torque:
+    - -2.0
+    - 2.0
+    gains: null
+    equation: passive
+    transform:
+      gain: 1
+      bias: 0
+    offsets: null
+    passive:
+      is_passive: true
+      stiffness_coefficient: 0
+      damping_coefficient: 1.0e-05
+      friction_coefficient: 0
+  hill_muscles: []
+  network:
+    drive_loader: ''
+    drive_config: ''
+    drives:
+    - name: drive_brain_L
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - brain_left
+      contacts: []
+    - name: drive_brain_R
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - brain_right
+      contacts: []
+    - name: drive_body_0_L
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_left
+      contacts: []
+    - name: drive_body_0_R
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_right
+      contacts: []
+    - name: drive_body_1_L
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_left
+      contacts: []
+    - name: drive_body_1_R
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_right
+      contacts: []
+    - name: drive_body_2_L
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_left
+      contacts: []
+    - name: drive_body_2_R
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_right
+      contacts: []
+    - name: drive_body_3_L
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_left
+      contacts: []
+    - name: drive_body_3_R
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_right
+      contacts: []
+    - name: drive_body_4_L
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_left
+      contacts: []
+    - name: drive_body_4_R
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_right
+      contacts: []
+    - name: drive_body_5_L
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_left
+      contacts: []
+    - name: drive_body_5_R
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_right
+      contacts: []
+    - name: drive_body_6_L
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_left
+      contacts: []
+    - name: drive_body_6_R
+      initial_value: 4.0
+      kind: !!python/object/apply:farms_amphibious.model.options.DriveKind
+      - spine_right
+      contacts: []
+    oscillators:
+    - name: osc_body_0_L
+      initial_phase: 1.0489005911736253
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_0_R
+      initial_phase: 1.2337115749736818
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_1_L
+      initial_phase: 4.747766515832612
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_1_R
+      initial_phase: 4.572819680058671
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_2_L
+      initial_phase: 5.529666057064743
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_2_R
+      initial_phase: 0.9464964111636742
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_3_L
+      initial_phase: 1.721650741802697
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_3_R
+      initial_phase: 5.5584513332392405
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_4_L
+      initial_phase: 4.262488416591463
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_4_R
+      initial_phase: 2.5290135370566857
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_5_L
+      initial_phase: 3.7024196032113244
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_5_R
+      initial_phase: 2.072024457537818
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_6_L
+      initial_phase: 2.679816490638252
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    - name: osc_body_6_R
+      initial_phase: 1.5368773160954263
+      initial_amplitude: 0.0
+      frequency_gain: 1.5707963267948966
+      frequency_bias: 0.0
+      frequency_low: 1
+      frequency_high: 5
+      frequency_saturation_low: 0
+      frequency_saturation_high: 0
+      amplitude_gain: 0.15
+      amplitude_bias: 0.0
+      amplitude_low: 1
+      amplitude_high: 5
+      amplitude_saturation_low: 0
+      amplitude_saturation_high: 0
+      rate: 10.0
+      modular_phase: 0.0
+      modular_amplitude: 0.0
+      attractor_phase: 0
+      attractor_amplitude: 0
+    single_osc_body: false
+    single_osc_legs: false
+    osc2osc:
+    - in: osc_body_0_R
+      out: osc_body_0_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_0_L
+      out: osc_body_0_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_1_R
+      out: osc_body_1_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_1_L
+      out: osc_body_1_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_2_R
+      out: osc_body_2_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_2_L
+      out: osc_body_2_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_3_R
+      out: osc_body_3_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_3_L
+      out: osc_body_3_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_4_R
+      out: osc_body_4_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_4_L
+      out: osc_body_4_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_5_R
+      out: osc_body_5_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_5_L
+      out: osc_body_5_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_6_R
+      out: osc_body_6_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_6_L
+      out: osc_body_6_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 3.141592653589793
+    - in: osc_body_1_L
+      out: osc_body_0_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_0_L
+      out: osc_body_1_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_1_R
+      out: osc_body_0_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_0_R
+      out: osc_body_1_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_2_L
+      out: osc_body_1_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_1_L
+      out: osc_body_2_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_2_R
+      out: osc_body_1_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_1_R
+      out: osc_body_2_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_3_L
+      out: osc_body_2_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_2_L
+      out: osc_body_3_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_3_R
+      out: osc_body_2_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_2_R
+      out: osc_body_3_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_4_L
+      out: osc_body_3_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_3_L
+      out: osc_body_4_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_4_R
+      out: osc_body_3_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_3_R
+      out: osc_body_4_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_5_L
+      out: osc_body_4_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_4_L
+      out: osc_body_5_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_5_R
+      out: osc_body_4_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_4_R
+      out: osc_body_5_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_6_L
+      out: osc_body_5_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_5_L
+      out: osc_body_6_L
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    - in: osc_body_6_R
+      out: osc_body_5_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 0.7180783208205241
+    - in: osc_body_5_R
+      out: osc_body_6_R
+      type: OSC2OSC
+      weight: 30.0
+      phase_bias: 5.565106986359062
+    joint2osc: []
+    contact2osc: []
+    xfrc2osc: []
+    drive2osc:
+    - drive: drive_body_0_L
+      oscillator: osc_body_0_L
+    - drive: drive_body_0_R
+      oscillator: osc_body_0_R
+    - drive: drive_body_1_L
+      oscillator: osc_body_1_L
+    - drive: drive_body_1_R
+      oscillator: osc_body_1_R
+    - drive: drive_body_2_L
+      oscillator: osc_body_2_L
+    - drive: drive_body_2_R
+      oscillator: osc_body_2_R
+    - drive: drive_body_3_L
+      oscillator: osc_body_3_L
+    - drive: drive_body_3_R
+      oscillator: osc_body_3_R
+    - drive: drive_body_4_L
+      oscillator: osc_body_4_L
+    - drive: drive_body_4_R
+      oscillator: osc_body_4_R
+    - drive: drive_body_5_L
+      oscillator: osc_body_5_L
+    - drive: drive_body_5_R
+      oscillator: osc_body_5_R
+    - drive: drive_body_6_L
+      oscillator: osc_body_6_L
+    - drive: drive_body_6_R
+      oscillator: osc_body_6_R
+    drive2joint:
+    - drive0: drive_body_0_L
+      drive1: drive_body_0_R
+      joint: joint1
+    - drive0: drive_body_1_L
+      drive1: drive_body_1_R
+      joint: joint2
+    - drive0: drive_body_2_L
+      drive1: drive_body_2_R
+      joint: joint3
+    - drive0: drive_body_3_L
+      drive1: drive_body_3_R
+      joint: joint4
+    - drive0: drive_body_4_L
+      drive1: drive_body_4_R
+      joint: joint5
+    - drive0: drive_body_5_L
+      drive1: drive_body_5_R
+      joint: joint6
+    - drive0: drive_body_6_L
+      drive1: drive_body_6_R
+      joint: joint7
+  muscles:
+  - joint_name: joint1
+    osc1: osc_body_0_L
+    osc2: osc_body_0_R
+    alpha: 0.5
+    beta: 1.0
+    gamma: 0.1
+    delta: 0.001
+    epsilon: 0
+  - joint_name: joint2
+    osc1: osc_body_1_L
+    osc2: osc_body_1_R
+    alpha: 0.5
+    beta: 1.0
+    gamma: 0.1
+    delta: 0.001
+    epsilon: 0
+  - joint_name: joint3
+    osc1: osc_body_2_L
+    osc2: osc_body_2_R
+    alpha: 0.5
+    beta: 1.0
+    gamma: 0.1
+    delta: 0.001
+    epsilon: 0
+  - joint_name: joint4
+    osc1: osc_body_3_L
+    osc2: osc_body_3_R
+    alpha: 0.5
+    beta: 1.0
+    gamma: 0.1
+    delta: 0.001
+    epsilon: 0
+  - joint_name: joint5
+    osc1: osc_body_4_L
+    osc2: osc_body_4_R
+    alpha: 0.5
+    beta: 1.0
+    gamma: 0.1
+    delta: 0.001
+    epsilon: 0
+  - joint_name: joint6
+    osc1: osc_body_5_L
+    osc2: osc_body_5_R
+    alpha: 0.5
+    beta: 1.0
+    gamma: 0.1
+    delta: 0.001
+    epsilon: 0
+  - joint_name: joint7
+    osc1: osc_body_6_L
+    osc2: osc_body_6_R
+    alpha: 0.5
+    beta: 1.0
+    gamma: 0.1
+    delta: 0.001
+    epsilon: 0
+  adhesions: []
+  visuals: []
+extensions:
+- loader: farms_amphibious.control.amphibious.AmphibiousController
+  config: {}
+- loader: farms_mujoco.swimming.extension.SwimmingExtension
+  config:
+    water_properties: null
+show_xfrc: false
+scale_xfrc: 1
+mujoco: {}

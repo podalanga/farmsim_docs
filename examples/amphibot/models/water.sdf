@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<!-- Water volume of the pool, visual only (MIT, see LICENSE). -->
+<sdf version="1.6">
+  <world name="world">
+    <model name="arena_pool">
+      <pose>0 0 0 0 0 0</pose>
+      <link name="pool_water">
+        <pose>6 0 -0.3 0 0 0</pose>
+        <visual name="pool_water_visual">
+          <geometry><box><size>12 6 0.6</size></box></geometry>
+          <material>
+            <ambient>0 0.3 0.6 0.4</ambient>
+            <diffuse>0 0.4 0.8 0.4</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

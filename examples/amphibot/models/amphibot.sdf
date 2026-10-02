@@ -1,0 +1,530 @@
+<?xml version="1.0"?>
+<!--
+  AmphiBot-style amphibious snake robot (primitive shapes only)
+  Inspired by AmphiBot I (Crespi, Ijspeert et al., EPFL BioRob, 2005).
+  Head + 7 body segments, 7 yaw joints, ~0.56 m long.
+  License: MIT (see LICENSE).
+
+  Ported to FARMS from the Gazebo Harmonic version: the gz plugins
+  (joint position controllers, hydrodynamics) are removed, FARMS provides
+  the motors (animat_config.yaml) and the water forces (arena_config.yaml).
+  The anisotropic friction below (mu2, fdir1) is Gazebo-specific and
+  ignored by FARMS.
+-->
+<sdf version="1.9">
+  <model name="amphibot">
+
+    <link name="head">
+      <pose>0.000 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>2.7083e-05</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>5.1042e-05</iyy><iyz>0</iyz>
+          <izz>5.7708e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="head_collision">
+        <geometry><box><size>0.068 0.045 0.035</size></box></geometry>
+        <surface>
+          <friction>
+            <!-- Anisotropic friction (like a snake's belly scales):
+                 low along the body axis (fdir1 = x), high sideways (mu2). -->
+            <ode><mu>0.15</mu><mu2>1.0</mu2><fdir1>1 0 0</fdir1></ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="head_visual">
+        <geometry><box><size>0.066 0.045 0.035</size></box></geometry>
+        <material><ambient>0.1 0.45 0.3 1</ambient><diffuse>0.1 0.45 0.3 1</diffuse></material>
+      </visual>
+      <visual name="head_nose">
+        <pose>0.033 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.0225</radius></sphere></geometry>
+        <material><ambient>0.95 0.75 0.1 1</ambient><diffuse>0.95 0.75 0.1 1</diffuse></material>
+      </visual>
+      <visual name="head_eye_left">
+        <pose>0.03 0.016 0.014 0 0 0</pose>
+        <geometry><sphere><radius>0.006</radius></sphere></geometry>
+        <material><ambient>0.05 0.05 0.05 1</ambient><diffuse>0.05 0.05 0.05 1</diffuse></material>
+      </visual>
+      <visual name="head_eye_right">
+        <pose>0.03 -0.016 0.014 0 0 0</pose>
+        <geometry><sphere><radius>0.006</radius></sphere></geometry>
+        <material><ambient>0.05 0.05 0.05 1</ambient><diffuse>0.05 0.05 0.05 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="seg1">
+      <pose>-0.070 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.09</mass>
+        <inertia>
+          <ixx>2.4375e-05</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>4.5938e-05</iyy><iyz>0</iyz>
+          <izz>5.1938e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg1_collision">
+        <geometry><box><size>0.068 0.045 0.035</size></box></geometry>
+        <surface>
+          <friction>
+            <!-- Anisotropic friction (like a snake's belly scales):
+                 low along the body axis (fdir1 = x), high sideways (mu2). -->
+            <ode><mu>0.15</mu><mu2>1.0</mu2><fdir1>1 0 0</fdir1></ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="seg1_visual">
+        <geometry><box><size>0.066 0.045 0.035</size></box></geometry>
+        <material><ambient>0.95 0.75 0.1 1</ambient><diffuse>0.95 0.75 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="joint1" type="revolute">
+      <parent>head</parent>
+      <child>seg1</child>
+      <pose>0.035 0 0 0 0 0</pose>  <!-- front face of the child segment -->
+      <axis>
+        <xyz>0 0 1</xyz>  <!-- yaw joint: horizontal undulation -->
+        <limit><lower>-1.0</lower><upper>1.0</upper><effort>2.0</effort><velocity>6.0</velocity></limit>
+        <dynamics><damping>0.01</damping></dynamics>
+      </axis>
+    </joint>
+    <link name="seg2">
+      <pose>-0.140 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.09</mass>
+        <inertia>
+          <ixx>2.4375e-05</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>4.5938e-05</iyy><iyz>0</iyz>
+          <izz>5.1938e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg2_collision">
+        <geometry><box><size>0.068 0.045 0.035</size></box></geometry>
+        <surface>
+          <friction>
+            <!-- Anisotropic friction (like a snake's belly scales):
+                 low along the body axis (fdir1 = x), high sideways (mu2). -->
+            <ode><mu>0.15</mu><mu2>1.0</mu2><fdir1>1 0 0</fdir1></ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="seg2_visual">
+        <geometry><box><size>0.066 0.045 0.035</size></box></geometry>
+        <material><ambient>0.1 0.45 0.3 1</ambient><diffuse>0.1 0.45 0.3 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="joint2" type="revolute">
+      <parent>seg1</parent>
+      <child>seg2</child>
+      <pose>0.035 0 0 0 0 0</pose>  <!-- front face of the child segment -->
+      <axis>
+        <xyz>0 0 1</xyz>  <!-- yaw joint: horizontal undulation -->
+        <limit><lower>-1.0</lower><upper>1.0</upper><effort>2.0</effort><velocity>6.0</velocity></limit>
+        <dynamics><damping>0.01</damping></dynamics>
+      </axis>
+    </joint>
+    <link name="seg3">
+      <pose>-0.210 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.09</mass>
+        <inertia>
+          <ixx>2.4375e-05</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>4.5938e-05</iyy><iyz>0</iyz>
+          <izz>5.1938e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg3_collision">
+        <geometry><box><size>0.068 0.045 0.035</size></box></geometry>
+        <surface>
+          <friction>
+            <!-- Anisotropic friction (like a snake's belly scales):
+                 low along the body axis (fdir1 = x), high sideways (mu2). -->
+            <ode><mu>0.15</mu><mu2>1.0</mu2><fdir1>1 0 0</fdir1></ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="seg3_visual">
+        <geometry><box><size>0.066 0.045 0.035</size></box></geometry>
+        <material><ambient>0.95 0.75 0.1 1</ambient><diffuse>0.95 0.75 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="joint3" type="revolute">
+      <parent>seg2</parent>
+      <child>seg3</child>
+      <pose>0.035 0 0 0 0 0</pose>  <!-- front face of the child segment -->
+      <axis>
+        <xyz>0 0 1</xyz>  <!-- yaw joint: horizontal undulation -->
+        <limit><lower>-1.0</lower><upper>1.0</upper><effort>2.0</effort><velocity>6.0</velocity></limit>
+        <dynamics><damping>0.01</damping></dynamics>
+      </axis>
+    </joint>
+    <link name="seg4">
+      <pose>-0.280 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.09</mass>
+        <inertia>
+          <ixx>2.4375e-05</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>4.5938e-05</iyy><iyz>0</iyz>
+          <izz>5.1938e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg4_collision">
+        <geometry><box><size>0.068 0.045 0.035</size></box></geometry>
+        <surface>
+          <friction>
+            <!-- Anisotropic friction (like a snake's belly scales):
+                 low along the body axis (fdir1 = x), high sideways (mu2). -->
+            <ode><mu>0.15</mu><mu2>1.0</mu2><fdir1>1 0 0</fdir1></ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="seg4_visual">
+        <geometry><box><size>0.066 0.045 0.035</size></box></geometry>
+        <material><ambient>0.1 0.45 0.3 1</ambient><diffuse>0.1 0.45 0.3 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="joint4" type="revolute">
+      <parent>seg3</parent>
+      <child>seg4</child>
+      <pose>0.035 0 0 0 0 0</pose>  <!-- front face of the child segment -->
+      <axis>
+        <xyz>0 0 1</xyz>  <!-- yaw joint: horizontal undulation -->
+        <limit><lower>-1.0</lower><upper>1.0</upper><effort>2.0</effort><velocity>6.0</velocity></limit>
+        <dynamics><damping>0.01</damping></dynamics>
+      </axis>
+    </joint>
+    <link name="seg5">
+      <pose>-0.350 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.09</mass>
+        <inertia>
+          <ixx>2.4375e-05</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>4.5938e-05</iyy><iyz>0</iyz>
+          <izz>5.1938e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg5_collision">
+        <geometry><box><size>0.068 0.045 0.035</size></box></geometry>
+        <surface>
+          <friction>
+            <!-- Anisotropic friction (like a snake's belly scales):
+                 low along the body axis (fdir1 = x), high sideways (mu2). -->
+            <ode><mu>0.15</mu><mu2>1.0</mu2><fdir1>1 0 0</fdir1></ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="seg5_visual">
+        <geometry><box><size>0.066 0.045 0.035</size></box></geometry>
+        <material><ambient>0.95 0.75 0.1 1</ambient><diffuse>0.95 0.75 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="joint5" type="revolute">
+      <parent>seg4</parent>
+      <child>seg5</child>
+      <pose>0.035 0 0 0 0 0</pose>  <!-- front face of the child segment -->
+      <axis>
+        <xyz>0 0 1</xyz>  <!-- yaw joint: horizontal undulation -->
+        <limit><lower>-1.0</lower><upper>1.0</upper><effort>2.0</effort><velocity>6.0</velocity></limit>
+        <dynamics><damping>0.01</damping></dynamics>
+      </axis>
+    </joint>
+    <link name="seg6">
+      <pose>-0.420 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.09</mass>
+        <inertia>
+          <ixx>2.4375e-05</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>4.5938e-05</iyy><iyz>0</iyz>
+          <izz>5.1938e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg6_collision">
+        <geometry><box><size>0.068 0.045 0.035</size></box></geometry>
+        <surface>
+          <friction>
+            <!-- Anisotropic friction (like a snake's belly scales):
+                 low along the body axis (fdir1 = x), high sideways (mu2). -->
+            <ode><mu>0.15</mu><mu2>1.0</mu2><fdir1>1 0 0</fdir1></ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="seg6_visual">
+        <geometry><box><size>0.066 0.045 0.035</size></box></geometry>
+        <material><ambient>0.1 0.45 0.3 1</ambient><diffuse>0.1 0.45 0.3 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="joint6" type="revolute">
+      <parent>seg5</parent>
+      <child>seg6</child>
+      <pose>0.035 0 0 0 0 0</pose>  <!-- front face of the child segment -->
+      <axis>
+        <xyz>0 0 1</xyz>  <!-- yaw joint: horizontal undulation -->
+        <limit><lower>-1.0</lower><upper>1.0</upper><effort>2.0</effort><velocity>6.0</velocity></limit>
+        <dynamics><damping>0.01</damping></dynamics>
+      </axis>
+    </joint>
+    <link name="seg7">
+      <pose>-0.490 0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.09</mass>
+        <inertia>
+          <ixx>2.4375e-05</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>4.5938e-05</iyy><iyz>0</iyz>
+          <izz>5.1938e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg7_collision">
+        <geometry><box><size>0.068 0.045 0.035</size></box></geometry>
+        <surface>
+          <friction>
+            <!-- Anisotropic friction (like a snake's belly scales):
+                 low along the body axis (fdir1 = x), high sideways (mu2). -->
+            <ode><mu>0.15</mu><mu2>1.0</mu2><fdir1>1 0 0</fdir1></ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="seg7_visual">
+        <geometry><box><size>0.066 0.045 0.035</size></box></geometry>
+        <material><ambient>0.95 0.75 0.1 1</ambient><diffuse>0.95 0.75 0.1 1</diffuse></material>
+      </visual>
+      <visual name="seg7_tail_fin">
+        <pose>-0.065 0 0 0 0 0</pose>
+        <geometry><box><size>0.06 0.004 0.05</size></box></geometry>
+        <material><ambient>0.95 0.75 0.1 1</ambient><diffuse>0.95 0.75 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="joint7" type="revolute">
+      <parent>seg6</parent>
+      <child>seg7</child>
+      <pose>0.035 0 0 0 0 0</pose>  <!-- front face of the child segment -->
+      <axis>
+        <xyz>0 0 1</xyz>  <!-- yaw joint: horizontal undulation -->
+        <limit><lower>-1.0</lower><upper>1.0</upper><effort>2.0</effort><velocity>6.0</velocity></limit>
+        <dynamics><damping>0.01</damping></dynamics>
+      </axis>
+    </joint>
+    <!-- Publishes the model pose so the gait script can tell land from water -->
+    <!--
+      Passive wheels: one free-rolling wheel under each link, as on the
+      real AmphiBot I. They roll along the body and grip sideways, which
+      gives the body the anisotropic friction it needs to crawl on land.
+    -->
+    <link name="head_wheel">
+      <pose>0.000 0 -0.012 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>5.0000e-07</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>2.5000e-07</iyy><iyz>0</iyz>
+          <izz>5.0000e-07</izz>
+        </inertia>
+      </inertial>
+      <collision name="head_wheel_collision">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+      </collision>
+      <visual name="head_wheel_visual">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="head_wheel_joint" type="revolute">
+      <parent>head</parent>
+      <child>head_wheel</child>
+      <axis>
+        <xyz>0 1 0</xyz>  <!-- rolls along the body -->
+      </axis>
+    </joint>
+    <link name="seg1_wheel">
+      <pose>-0.070 0 -0.012 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>5.0000e-07</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>2.5000e-07</iyy><iyz>0</iyz>
+          <izz>5.0000e-07</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg1_wheel_collision">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+      </collision>
+      <visual name="seg1_wheel_visual">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="seg1_wheel_joint" type="revolute">
+      <parent>seg1</parent>
+      <child>seg1_wheel</child>
+      <axis>
+        <xyz>0 1 0</xyz>  <!-- rolls along the body -->
+      </axis>
+    </joint>
+    <link name="seg2_wheel">
+      <pose>-0.140 0 -0.012 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>5.0000e-07</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>2.5000e-07</iyy><iyz>0</iyz>
+          <izz>5.0000e-07</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg2_wheel_collision">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+      </collision>
+      <visual name="seg2_wheel_visual">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="seg2_wheel_joint" type="revolute">
+      <parent>seg2</parent>
+      <child>seg2_wheel</child>
+      <axis>
+        <xyz>0 1 0</xyz>  <!-- rolls along the body -->
+      </axis>
+    </joint>
+    <link name="seg3_wheel">
+      <pose>-0.210 0 -0.012 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>5.0000e-07</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>2.5000e-07</iyy><iyz>0</iyz>
+          <izz>5.0000e-07</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg3_wheel_collision">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+      </collision>
+      <visual name="seg3_wheel_visual">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="seg3_wheel_joint" type="revolute">
+      <parent>seg3</parent>
+      <child>seg3_wheel</child>
+      <axis>
+        <xyz>0 1 0</xyz>  <!-- rolls along the body -->
+      </axis>
+    </joint>
+    <link name="seg4_wheel">
+      <pose>-0.280 0 -0.012 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>5.0000e-07</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>2.5000e-07</iyy><iyz>0</iyz>
+          <izz>5.0000e-07</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg4_wheel_collision">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+      </collision>
+      <visual name="seg4_wheel_visual">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="seg4_wheel_joint" type="revolute">
+      <parent>seg4</parent>
+      <child>seg4_wheel</child>
+      <axis>
+        <xyz>0 1 0</xyz>  <!-- rolls along the body -->
+      </axis>
+    </joint>
+    <link name="seg5_wheel">
+      <pose>-0.350 0 -0.012 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>5.0000e-07</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>2.5000e-07</iyy><iyz>0</iyz>
+          <izz>5.0000e-07</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg5_wheel_collision">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+      </collision>
+      <visual name="seg5_wheel_visual">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="seg5_wheel_joint" type="revolute">
+      <parent>seg5</parent>
+      <child>seg5_wheel</child>
+      <axis>
+        <xyz>0 1 0</xyz>  <!-- rolls along the body -->
+      </axis>
+    </joint>
+    <link name="seg6_wheel">
+      <pose>-0.420 0 -0.012 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>5.0000e-07</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>2.5000e-07</iyy><iyz>0</iyz>
+          <izz>5.0000e-07</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg6_wheel_collision">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+      </collision>
+      <visual name="seg6_wheel_visual">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="seg6_wheel_joint" type="revolute">
+      <parent>seg6</parent>
+      <child>seg6_wheel</child>
+      <axis>
+        <xyz>0 1 0</xyz>  <!-- rolls along the body -->
+      </axis>
+    </joint>
+    <link name="seg7_wheel">
+      <pose>-0.490 0 -0.012 0 0 0</pose>
+      <inertial>
+        <mass>0.005</mass>
+        <inertia>
+          <ixx>5.0000e-07</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>2.5000e-07</iyy><iyz>0</iyz>
+          <izz>5.0000e-07</izz>
+        </inertia>
+      </inertial>
+      <collision name="seg7_wheel_collision">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+      </collision>
+      <visual name="seg7_wheel_visual">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.03</length></cylinder></geometry>
+        <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="seg7_wheel_joint" type="revolute">
+      <parent>seg7</parent>
+      <child>seg7_wheel</child>
+      <axis>
+        <xyz>0 1 0</xyz>  <!-- rolls along the body -->
+      </axis>
+    </joint>
+  </model>
+</sdf>

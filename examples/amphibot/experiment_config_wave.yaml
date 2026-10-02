@@ -1,0 +1,16 @@
+# AmphiBot example with the custom travelling-wave controller
+# (controller/traveling_wave.py), see experiment_config.yaml.
+simulation: simulation_config.yaml
+animats:
+- animat_config_wave.yaml
+arenas:
+- arena_config.yaml
+loaders:
+  simulation_options: farms_core.simulation.options.SimulationOptions
+  animats_options:
+  - farms_amphibious.model.options.AmphibiousOptions
+  arenas_options:
+  - farms_amphibious.model.options.AmphibiousArenaOptions
+  experiment_data: farms_amphibious.data.data.AmphibiousExperimentData
+  animats_data:
+  - farms_amphibious.data.data.AmphibiousData

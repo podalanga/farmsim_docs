@@ -1,0 +1,21 @@
+# Land, ramp and pool (models/arena_ramp.sdf). The water surface is z = 0:
+# links below it get buoyancy and drag from farms_mujoco (water options).
+sdf: models/arena_ramp.sdf
+spawn:
+  loader: 0
+  mode: !!python/object/apply:farms_core.model.options.SpawnMode
+  - free
+  pose: [0, 0, 0, 0, 0, 0]
+  velocity: [0, 0, 0, 0, 0, 0]
+  extras: {}
+water:
+  sdf: models/water.sdf
+  drag: true
+  buoyancy: true
+  height: 0
+  velocity: [0, 0, 0]
+  viscosity: 1.0
+  density: 1000.0
+  maps: ['', '']
+  cob_method: exact
+ground_height: 0
