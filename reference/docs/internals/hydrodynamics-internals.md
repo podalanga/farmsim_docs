@@ -177,7 +177,9 @@ disk, keyed by the link geometry, in `cob_lut_cache/` next to the running
 script (e.g. `experiments/<name>/cob_lut_cache/`). The `cob_lut_cache`
 water option or the `FARMS_COB_LUT_CACHE` environment variable choose
 another directory, and unwritable locations fall back to
-`~/.cache/farms_mujoco/cob_lut`, then to the temporary directory.
+`~/.cache/farms_mujoco/cob_lut`, then to the temporary directory. Tables
+are read from the first of these directories that has them, and a table
+found in a fallback is also copied to the preferred directory.
 
 ## Drag
 

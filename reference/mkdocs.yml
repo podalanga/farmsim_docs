@@ -109,8 +109,8 @@ extra:
   generator: false
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/podalanga/farms_zbot
-      name: farms_zbot on GitHub
+      link: https://github.com/podalanga/farmsim_docs
+      name: farmsim_docs on GitHub
 markdown_extensions:
   - pymdownx.superfences:
       custom_fences:

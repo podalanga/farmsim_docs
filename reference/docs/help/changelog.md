@@ -19,7 +19,8 @@ commit history of each package has the details.
   `cob_lut_cache/` next to the running script instead of `~/.cache`, with
   the `cob_lut_cache` water option and the `FARMS_COB_LUT_CACHE`
   environment variable to choose another directory, and fallbacks for
-  read-only locations such as Docker volumes.
+  read-only locations such as Docker volumes. Tables already in
+  `~/.cache` are copied next to the script on first use.
 
 ### Docs
 
