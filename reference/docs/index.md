@@ -91,7 +91,7 @@ the host.
 
 ```bash
 git clone \
- https://github.com/podalanga/farmsim_docs.git
+ https://github.com/podalanga/farmsim_docs
 cd farmsim_docs/docker
 
 # Linux: allow X11 windows
@@ -120,7 +120,7 @@ the display setup.
 
 ```bash
 git clone \
- https://github.com/podalanga/farmsim_docs.git
+ https://github.com/podalanga/farmsim_docs
 cd farmsim_docs
 
 # Python >= 3.11

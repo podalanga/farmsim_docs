@@ -153,11 +153,23 @@ body,
   box-shadow: 0 10px 24px rgba(218, 37, 28, 0.35);
 }
 
+/* Secondary buttons: readable on both themes (the ink colour is invisible
+   on the dark background) */
+[data-md-color-scheme="slate"] .hero-buttons .md-button:not(.md-button--primary) {
+  color: var(--md-default-fg-color);
+  border-color: var(--md-default-fg-color--light);
+}
+
 .hero-buttons .md-button:not(.md-button--primary):hover {
   transform: translateY(-2px);
   border-color: var(--farms-red);
   color: var(--farms-red);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+[data-md-color-scheme="slate"] .hero-buttons .md-button:not(.md-button--primary):hover {
+  color: var(--farms-red-light);
+  border-color: var(--farms-red-light);
 }
 
 /* --- 4. Feature cards ----------------------------------------------------- */
@@ -366,7 +378,7 @@ body,
 
 /* Wrap long commands instead of scrolling inside the narrow columns */
 .md-typeset .grid.quickstart > .card pre > code {
-  font-size: 0.7rem !important;  /* overrides the 0.85rem code size */
+  font-size: 0.66rem !important;  /* overrides the 0.85rem code size */
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
