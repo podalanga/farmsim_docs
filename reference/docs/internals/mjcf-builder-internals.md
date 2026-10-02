@@ -175,7 +175,7 @@ Mass and inertia are clamped to `MIN_MASS` (1e-15) and `MIN_INERTIA` (1e-15) to 
     physically valid (positive-definite) tensor stays valid under rotation, but if you
     ever add a code path that sets `quat=` on the `inertial` element directly, you will
     double-rotate the tensor. This is the same root bug pattern documented for the
-    SDF/MuJoCo inertia export of the Zbot project (see the SDF fidelity notes in `reference/core/farms-core.md`):
+    SDF/MuJoCo inertia export (see the SDF fidelity notes in `reference/core/farms-core.md`):
     diagonalizing to principal axes and then discarding or duplicating the frame
     rotation silently corrupts mass distribution. Here it is done correctly. This note
     exists to stop a future edit from "fixing" it by uncommenting the `quat=` line.

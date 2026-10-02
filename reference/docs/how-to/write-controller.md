@@ -183,5 +183,5 @@ See [Configure CPG Network Parameters](configure-cpg-network.md) and
 ## See also
 
 - [Write a Custom Controller (Tutorial)](../tutorials/custom-controller.md)
-- [Zbot custom CPG controller](../projects/zbot/custom-controller.md): a project example
+- [Projects using FarmSim](../projects/index.md): controllers in real projects
 - [Extension and Controller Design](../explanation/extension-design.md)

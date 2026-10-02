@@ -74,8 +74,9 @@ extensions:
 | `ramp` | Approximate, no buoyancy torque | minimal | Legacy behaviour |
 
 `exact` counts overlapping geoms twice. `cob_overlap: scale` rescales them
-by the union fraction, and `lut` uses the true union. The [Zbot project](../../projects/zbot/model.md) is an example of a
-model where this matters.
+by the union fraction, and `lut` uses the true union. This matters for
+models whose collision geoms overlap, such as segmented bodies with
+overlapping capsules at the joints.
 
 `cob_geom_group: 1` uses the visual meshes instead of the collision
 geoms, for bodies whose shape is poorly described by primitives. Meshes
