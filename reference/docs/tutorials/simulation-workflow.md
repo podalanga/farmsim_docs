@@ -1,30 +1,38 @@
-# Trace a Simulation Step
+# Trace a simulation step
 
-This tutorial follows the execution path from the YAML configuration files to a
-single MuJoCo physics step. It shows where your own code (controllers and
-extensions) plugs in.
+!!! info "Tutorial overview"
+    - **Goal**: follow the code from `run_sim.py` and the YAML files to one
+      MuJoCo physics step, and learn where your own code plugs in.
+    - **Level**: intermediate
+    - **Time**: 30 minutes
+    - **Prerequisites**: [Understand the experiment files](experiment-files.md);
+      reading Python
+
+This tutorial follows the execution path of the AmphiBot example from the
+YAML configuration files to a single MuJoCo physics step. Keep the FARMS
+sources open (`farms-src/` after the [installation](../get-started/installation.md))
+to read along.
 
 ## The entry point
 
 Simulations start from the `run_sim.py` script of an experiment folder:
 
 ```python
-# experiments/zbot_bout_glide/run_sim.py (simplified)
+# examples/amphibot/run_sim.py
 import os
 import sys
 
-current_dir = os.path.abspath(os.path.dirname(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+# Make the example's controller package importable from any working directory
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from farms_sim._bootstrap import main
+from farms_sim._bootstrap import main  # noqa: E402
 
 if __name__ == '__main__':
     sys.exit(main())
 ```
 
 The script adds the experiment folder to `sys.path`, so that local modules such
-as `controller.zbot_controller` can be imported, and calls
+as `controller.traveling_wave` can be imported, and calls
 `farms_sim._bootstrap.main()`. The `farmsim` console command installed by
 `farms_sim` calls the same function.
 
@@ -115,7 +123,7 @@ MuJoCo, builds a `farms_mujoco.simulation.simulation.Simulation` with
 
 !!! note "Controllers are extensions"
     A controller only runs if it is listed in the animat's `extensions:`
-    (for example `loader: controller.zbot_controller.ZbotCPGController`).
+    (for example `loader: controller.traveling_wave.TravelingWaveController`).
     The `control.controller_loader` option is still parsed but is not used to
     create controllers.
 
@@ -190,10 +198,20 @@ episode ends.
 | Apply an external force | `before_step()`, writing `physics.data.xfrc_applied` |
 | Save data at the end | `end_episode()` |
 
+## Summary
+
+- `run_sim.py` and the `farmsim` command both call
+  `farms_sim._bootstrap.main()`, which parses the arguments and loads the
+  experiment options with the classes of `loaders:`.
+- The SDF files and options become a MuJoCo model, and an `ExperimentTask`
+  creates every extension, the controller included.
+- Each step runs the extensions' `before_step()`, applies the controller's
+  commands, steps MuJoCo, then runs `after_step()` and logs the sensors.
+
 ## Next steps
 
-- [Write a Custom Controller](custom-controller.md): implement your own
-  `AnimatController`
+- [Tutorial 4: Write a custom controller](custom-controller.md): implement
+  your own `AnimatController`
 - [Write an AnimatExtension](../how-to/write-extension.md): add custom
   per-step behaviour
 - [Extension and Controller Design](../explanation/extension-design.md): the

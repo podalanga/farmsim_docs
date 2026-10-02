@@ -13,7 +13,7 @@ YAML files
     ▼
 ExperimentOptions
     ├── simulation: SimulationOptions
-    ├── animats: list[AnimatOptions]     (AmphibiousOptions for the Zbot)
+    ├── animats: list[AnimatOptions]     (AmphibiousOptions for AmphiBot)
     └── arenas: list[ArenaOptions]
     │  ExperimentData.from_options()
     ▼

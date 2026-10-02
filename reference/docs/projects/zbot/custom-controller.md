@@ -1,5 +1,12 @@
 # Custom CPG Controller: step-by-step guide
 
+!!! abstract "Project page"
+    This page belongs to the [Zbot project](index.md), whose repository,
+    `farms_zbot`, holds the robot model, the experiments and a Docker
+    workspace. The repository is private: ask the maintainers for access.
+    Paths such as `experiments/` and `models/` are relative to it. For
+    FarmSim itself, start with [Get started](../../get-started/index.md).
+
 This guide builds a Central Pattern Generator (CPG) controller for the Zbot
 from scratch, by subclassing `AnimatController`: first an open-loop
 travelling sine wave, then a network of coupled phase oscillators.
@@ -23,7 +30,7 @@ robot.
 
 The built-in `AmphibiousController` (used by `experiments/zbot_swimming`)
 implements a full CPG network configured in YAML (see
-[Swimming Experiment](zbot-experiment.md#cpg-network)). Writing your own
+[Swimming Experiment](experiment.md#cpg-network)). Writing your own
 controller is useful for simpler models, custom dynamics, sensory feedback
 or reinforcement learning policies.
 
@@ -250,7 +257,7 @@ class ZbotFeedbackCPG(ZbotSineCPG):
 ```
 
 The sensor arrays have shape `(buffer_size, n_elements, n_columns)`; see
-[Add and Configure Sensors](../how-to/configure-sensors.md) for the
+[Add and Configure Sensors](../../how-to/configure-sensors.md) for the
 columns of each category. The order of the elements is the order of the
 names in `control.sensors` (`sensors.joints.names`).
 
@@ -394,7 +401,7 @@ extensions:
 
 In the built-in network, a descending drive $d$ sets the frequency and
 amplitude through linear functions (see
-[Swimming Experiment](zbot-experiment.md#oscillators)). The same can be
+[Swimming Experiment](experiment.md#oscillators)). The same can be
 added to `ZbotOdeCPG`:
 
 ```python
@@ -444,8 +451,8 @@ experiments/zbot_my_cpg/
 
 ## See Also
 
-- [Write a Custom Controller](custom-controller.md): the structure of `ZbotCPGController`
-- [`AnimatController` API](../reference/core/core-control.md)
-- [Mathematical Models](../explanation/mathematical-models.md): the CPG and Ekeberg equations
-- [`AmphibiousController` API](../reference/amphibious/amphibious-controller.md)
-- [Swimming Experiment](zbot-experiment.md): the YAML files
+- [Write a Custom Controller](../../tutorials/custom-controller.md): the structure of `ZbotCPGController`
+- [`AnimatController` API](../../reference/core/core-control.md)
+- [Mathematical Models](../../explanation/mathematical-models.md): the CPG and Ekeberg equations
+- [`AmphibiousController` API](../../reference/amphibious/amphibious-controller.md)
+- [Swimming Experiment](experiment.md): the YAML files

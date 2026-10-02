@@ -4,7 +4,7 @@ How to configure the CPG (Central Pattern Generator) network that
 `AmphibiousController` (`farms_amphibious`) uses to drive the joints. The
 equations are in [Mathematical Models](../explanation/mathematical-models.md),
 the design in [CPG Control Architecture](../explanation/cpg-architecture.md),
-and the Zbot values in [Swimming Experiment](../tutorials/zbot-experiment.md#cpg-network).
+and the AmphiBot values in [Understand the experiment files](../tutorials/experiment-files.md#step-4-the-animat-file).
 
 ## Where it is configured
 
@@ -38,8 +38,8 @@ extensions:
 
 The network is only created when `control.network` has an `oscillators`
 key, and it is only used when `AmphibiousController` is in the animat's
-`extensions:`. A custom controller (such as `ZbotCPGController`) ignores
-it.
+`extensions:`. A custom controller (such as the `TravelingWaveController` of the
+AmphiBot example) ignores it.
 
 ## Top-level keys
 
@@ -174,12 +174,12 @@ coefficients are only used by the `ekeberg_muscle` equations.
 the oscillators, drives and couplings from the morphology
 (`n_joints_body`, `n_legs`, `n_dof_legs`) with `AmphibiousConvention`.
 
-!!! warning "Known issue"
+!!! tip "Generate the network"
     When no oscillator is given, `AmphibiousNetworkOptions.defaults_from_convention()`
-    creates them with `frequency_saturation` and `amplitude_saturation`
-    keys, while the oscillator options use `*_saturation_low` and
-    `*_saturation_high`. Write the oscillators explicitly, as the Zbot
-    configuration does.
+    creates one pair per joint from the gait parameters of
+    `AmphibiousOptions.from_options()`, with the couplings and drives. The
+    AmphiBot example generates its network this way
+    (`examples/amphibot/generate_config.py`).
 
 ## Integration
 

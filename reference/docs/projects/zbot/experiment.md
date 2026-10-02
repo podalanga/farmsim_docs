@@ -1,5 +1,12 @@
 # Swimming Experiment: YAML config walkthrough
 
+!!! abstract "Project page"
+    This page belongs to the [Zbot project](index.md), whose repository,
+    `farms_zbot`, holds the robot model, the experiments and a Docker
+    workspace. The repository is private: ask the maintainers for access.
+    Paths such as `experiments/` and `models/` are relative to it. For
+    FarmSim itself, start with [Get started](../../get-started/index.md).
+
 This page is a complete walkthrough of the `experiments/zbot_swimming/` directory. Every key field in every config file is explained with its actual value and the effect it has on the simulation.
 
 !!! note "Source Files"
@@ -40,7 +47,7 @@ cd /app/experiments/zbot_swimming
 farmsim --experiment_config experiment_config.yaml
 ```
 
-The other command line options are listed in the [CLI reference](../reference/env/cli.md). There is no flag to disable the viewer: set `runtime.headless: true` in `simulation_config.yaml` for cluster or batch runs.
+The other command line options are listed in the [CLI reference](../../reference/env/cli.md). There is no flag to disable the viewer: set `runtime.headless: true` in `simulation_config.yaml` for cluster or batch runs.
 
 ---
 
@@ -274,7 +281,7 @@ extensions:
     Trails are never cleared, and MuJoCo scenes hold a limited number of
     geoms. The trail `width`, the spacing (10 iterations) and
     `show_on_camera` are not read from YAML (see
-    [Use Built-in Extensions](../how-to/use-extensions.md#viewer-markers)).
+    [Use Built-in Extensions](../../how-to/use-extensions.md#viewer-markers)).
 
 ##### Sensors You Can Add
 
@@ -311,10 +318,10 @@ Each category is stored as an array of shape
 | `visuals` | 8 | Colour and emission of the link visuals |
 | `rays` | 8 | Ray casting range sensors (distance, origin, direction) |
 
-See [Add and Configure Sensors](../how-to/configure-sensors.md) for the full
+See [Add and Configure Sensors](../../how-to/configure-sensors.md) for the full
 column-by-column layout of every category and how to read the resulting
 arrays out of `AnimatData.sensors` in a controller or `analysis.py`, and
-[Use Built-in Extensions](../how-to/use-extensions.md) for the complete
+[Use Built-in Extensions](../../how-to/use-extensions.md) for the complete
 extension reference (including `SwimmingExtension`, which lives in
 `animat_config.yaml` rather than `simulation_config.yaml`).
 
@@ -352,10 +359,10 @@ ground_height: -1       # Z coordinate of the ground [m]
 | `velocity: [0,0,0]` | Still water | Drag uses the velocity of the link relative to the water |
 | `viscosity: 1.0` | Drag scale `$\mu$` | Per-axis drag `$F_i = \mu\, c_i\, v_i |v_i|$` in the link frame, with the `drag_coefficients` `$c_i$` of the link |
 | `density: 1000.0` | Fresh water | Buoyancy `$F = -\rho V_{\text{sub}} g$`, applied at the centre of buoyancy |
-| `cob_method: analytical` | Exact method | `$V_{\text{sub}}$` and the centre of buoyancy are computed from the collision geoms at every step (see [Swimming reference](../reference/mujoco/mujoco-swimming.md)) |
+| `cob_method: analytical` | Exact method | `$V_{\text{sub}}$` and the centre of buoyancy are computed from the collision geoms at every step (see [Swimming reference](../../reference/mujoco/mujoco-swimming.md)) |
 
 The other fluid keys (`cob_method`, `fluid_model`, `added_mass`, ...) are
-listed in the [Configuration reference](../reference/env/configuration-reference.md#fluid-model-options).
+listed in the [Configuration reference](../../reference/env/configuration-reference.md#fluid-model-options).
 
 !!! tip "Adding a water current"
     Set `velocity: [0.2, 0, 0]` for a 0.2 m/s current along X. The drag is
@@ -378,7 +385,7 @@ spawn:
   #       x  y   z  roll  pitch    yaw
 ```
 
-The pose `[x, y, z, roll, pitch, yaw]` uses **radians**. See [Zbot Model → Spawn Pose](zbot-model.md#spawn-pose) for a full explanation of why these angles orient the robot correctly.
+The pose `[x, y, z, roll, pitch, yaw]` uses **radians**. See [Zbot Model → Spawn Pose](model.md#spawn-pose) for a full explanation of why these angles orient the robot correctly.
 
 ### Morphology
 
@@ -436,7 +443,7 @@ readability (`farms_core.model.options.LinkOptions`,
     estimate the link volume as `mass/density`. With the exact method, the
     volume comes from the collision geoms, so the robot floats if its mass
     is below `$\rho V$` of its geoms. See the buoyancy note of
-    [The Zbot Model](zbot-model.md).
+    [The Zbot Model](model.md).
 
 ### Control: Sensors, Motors, and CPG Network
 
@@ -660,7 +667,7 @@ muscles:
 The `alpha` to `epsilon` coefficients are those of the Ekeberg muscle
 model. They are only used by the `ekeberg_muscle` and
 `ekeberg_muscle_explicit` equations, not by `position_muscle`. See
-[Mathematical Models](../explanation/mathematical-models.md) for the
+[Mathematical Models](../../explanation/mathematical-models.md) for the
 Ekeberg model.
 
 ### Control Fields Not Shown Above
@@ -706,7 +713,7 @@ parameter does not behave as expected:
 | `arena.water.*` | `farms_mujoco.swimming.extension.SwimmingExtension` | With `water_properties: null`, the extension uses the arena's `water` block. `density`, `viscosity`, `velocity` and `height` become a `WaterProperties` object, and the fluid keys (`cob_method`, ...) a `FluidOptions` |
 | `morphology.links[*].fluid_interaction`, `drag_coefficients`, `density` | `farms_mujoco/swimming/hydrodynamics.pyx` (`SwimmingHandler`) | At the start of the episode, the handler builds the centre of buoyancy model of each link from its MuJoCo collision geoms. At every environment step it computes the buoyancy (at the centre of buoyancy) and the drag (from `drag_coefficients`), and writes the wrench to `xfrc_applied` and to the `xfrc` sensors. `density` is only used by `cob_method: ramp` |
 | `control.motors[*].equation: position_muscle` | `farms_amphibious/control/position_muscle_cy.pyx` (`PositionMuscleCy`) | Chosen by `AmphibiousController` when it is created. Computes the position command of each joint from the oscillator outputs (see [Motors](#motors)) |
-| `control.network.*` | `farms_amphibious/control/network.py` and `farms_amphibious/control/ode.pyx` | Assembled into one ODE system, integrated with SciPy's `dopri5` (adaptive Runge-Kutta) at every environment step. See [ODE internals](../internals/ode-internals.md) |
+| `control.network.*` | `farms_amphibious/control/network.py` and `farms_amphibious/control/ode.pyx` | Assembled into one ODE system, integrated with SciPy's `dopri5` (adaptive Runge-Kutta) at every environment step. See [ODE internals](../../internals/ode-internals.md) |
 | `control.muscles[*]` | `farms_amphibious/control/amphibious.py` | Pairs each joint with its two oscillators. The `alpha` to `epsilon` coefficients are only used with the Ekeberg equations (`farms_amphibious/control/ekeberg.pyx`) |
 | `morphology.joints[*].stiffness`, `damping`, `springref` | MJCF builder (`farms_mujoco/simulation/mjcf.py`) | Added to the MuJoCo `<joint>` attributes: passive joint dynamics on top of the actuators. The joint limits come from the SDF file |
 
@@ -771,7 +778,7 @@ joints_trq_frc = joints.array[:, :, sc.joint_torque_friction]  # N·m (friction)
 
 ## See Also
 
-- [Zbot Model](zbot-model.md): SDF geometry and physical properties
-- [Custom CPG Controller](zbot-custom-controller.md): replace the default controller
-- [Configuration Reference](../reference/env/configuration-reference.md): all YAML options (generated)
-- [Mathematical Models](../explanation/mathematical-models.md): CPG and Ekeberg equations
+- [Zbot Model](model.md): SDF geometry and physical properties
+- [Custom CPG Controller](custom-controller.md): replace the default controller
+- [Configuration Reference](../../reference/env/configuration-reference.md): all YAML options (generated)
+- [Mathematical Models](../../explanation/mathematical-models.md): CPG and Ekeberg equations

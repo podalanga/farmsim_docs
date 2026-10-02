@@ -97,9 +97,9 @@ In `animat_config.yaml`, after the swimming extension:
 
 ```yaml
 extensions:
-  - loader: controller.zbot_controller.ZbotCPGController
+  - loader: controller.traveling_wave.TravelingWaveController
     config:
-      # ... controller options ...
+      mode: auto
   - loader: farms_mujoco.swimming.extension.SwimmingExtension
     config: {}
   - loader: side_force.SideForce

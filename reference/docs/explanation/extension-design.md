@@ -34,7 +34,7 @@ TaskExtension (ABC)                   farms_core.simulation.extensions
     └── AnimatController              farms_core.model.control
         ├── JointMuscleController     farms_amphibious.control.amphibious
         │   └── AmphibiousController
-        └── ZbotCPGController         experiments/zbot_bout_glide/controller
+        └── TravelingWaveController   examples/amphibot/controller (your own)
 ```
 
 The viewer extensions (`AnimatViewerExtension`) follow one animat

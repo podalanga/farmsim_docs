@@ -11,6 +11,8 @@ Edit the parameters below and rerun this script instead of editing the
 generated animat_config.yaml by hand.
 """
 
+from copy import deepcopy
+
 import numpy as np
 
 from farms_amphibious.model.options import AmphibiousOptions
@@ -50,9 +52,11 @@ def build(controller):
         'spawn_position': [-1.0, 0, 0.075],  # On land, facing the water (+x)
         # Links: friction and water drag
         'default_lateral_friction': 0.5,
-        'drag_coefficients': (
-            [DRAG_BODY]*N_JOINTS + [DRAG_TAIL] + [DRAG_WHEEL]*len(WHEELS)
-        ),
+        # (copies, so that the YAML file has no anchors and aliases)
+        'drag_coefficients': [
+            deepcopy(drag)
+            for drag in [DRAG_BODY]*N_JOINTS + [DRAG_TAIL] + [DRAG_WHEEL]*len(WHEELS)
+        ],
         # Free-rolling wheels: [joint, stiffness, damping, friction]
         'joints_passive': [
             [f'{wheel}_joint', 0, 1e-5, 0] for wheel in WHEELS
@@ -67,7 +71,7 @@ def build(controller):
         'body_phase_bias': 2*np.pi*WAVES/N_JOINTS,
         # Motors: position control of each joint from the oscillators
         'default_max_torque': 2.0,  # [Nm], AmphiBot joint effort limit
-        'motor_gains': [[1.0, 0.01, 0]]*len(JOINTS),  # Unused by the wheels
+        'motor_gains': [[1.0, 0.01, 0] for _ in JOINTS],  # Unused by the wheels
         'muscle_alpha': 0.5,
         'muscle_beta': 1.0,
         'muscle_gamma': 0.1,

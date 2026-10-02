@@ -1,8 +1,17 @@
-# Install and Run a Simulation
+# Install the Zbot workspace
 
-This is the installation guide for FARMS, covering both the Docker and
-native paths side by side, followed by running your first simulation with
-the Zbot undulatory swimming robot. It follows
+!!! abstract "Project page"
+    This page belongs to the [Zbot project](index.md), whose repository,
+    `farms_zbot`, holds the robot model, the experiments and a Docker
+    workspace. The repository is private: ask the maintainers for access.
+    Paths such as `experiments/` and `models/` are relative to it. For
+    FarmSim itself, start with [Get started](../../get-started/index.md).
+
+This guide installs the Zbot workspace, `farms_zbot`, which bundles the
+FARMS packages as Git submodules with the Zbot models and experiments,
+with Docker or natively, then runs a Zbot experiment. To install FarmSim
+alone, see [Installation](../../get-started/installation.md). The steps
+follow
 `docker_config/{linux,windows}/{Dockerfile,docker-compose.yml}`,
 `.gitmodules`, `.gitattributes` and `farms/setup_farms.py`.
 
@@ -113,11 +122,11 @@ required.
 
 | Requirement | Linux | Windows |
 |---|---|---|
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine (with BuildKit) | ✓ | ✓ |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine (with BuildKit) | Required | Required |
 | [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) | for GPU | for GPU |
-| WSL 2 as the default Docker backend | n/a | ✓ |
+| WSL 2 as the default Docker backend | n/a | Required |
 | [VcXsrv](https://sourceforge.net/projects/vcxsrv/) X server | n/a | for the GUI viewer |
-| [SSH key registered on GitHub](#step-0-set-up-an-ssh-key-skip-if-you-already-have-one) | ✓ | ✓ |
+| [SSH key registered on GitHub](#step-0-set-up-an-ssh-key-skip-if-you-already-have-one) | Required | Required |
 
 ### Step 1: Clone the repository
 
@@ -147,10 +156,10 @@ MuJoCo's viewer needs an X display server on Windows. Install and launch
 1. **Display settings**: Multiple windows, Display number `0`
 2. **Client startup**: Start no client
 3. **Extra settings**:
-   - ☑ Clipboard
-   - ☑ Primary Selection
-   - ☐ **Native OpenGL** (**must be unchecked**)
-   - ☑ **Disable access control** (**must be checked**)
+   - Clipboard: checked
+   - Primary Selection: checked
+   - **Native OpenGL**: **unchecked** (required)
+   - **Disable access control**: **checked** (required)
 4. Click **Finish**. VcXsrv starts in the system tray
 
 !!! warning
@@ -454,7 +463,7 @@ farmsim --experiment_config experiment_config.yaml
 1. `run_sim.py` adds the experiment directory to `sys.path` (so the local
    `controller` package can be imported), then calls
    `farms_sim._bootstrap.main()`, which takes no arguments (see the
-   [farms_sim overview](../reference/sim/farms-sim.md)).
+   [farms_sim overview](../../reference/sim/farms-sim.md)).
 2. `_bootstrap.main()` re-executes under `mjpython` on macOS when
    available, then calls `farms_sim.farmsim.profile_simulation()`. That
    parses the command line (`sim_parse_args()`) and runs
@@ -462,18 +471,18 @@ farmsim --experiment_config experiment_config.yaml
 3. `main()` loads `ExperimentOptions` from `experiment_config.yaml`, which
    loads `simulation_config.yaml`, `animat_config.yaml` and
    `arena_config.yaml` with the classes named in its `loaders:` block (see
-   [Options and YAML Deserialization](../internals/options-yaml-internals.md)).
+   [Options and YAML Deserialization](../../internals/options-yaml-internals.md)).
 4. `ExperimentData` is allocated with the loader named in
    `loaders.experiment_data`.
 5. `farms_sim.simulation.run_simulation()` builds the MuJoCo model from the
    SDF files and options (`Simulation.from_experiment()`, see
-   [MJCF Builder Internals](../internals/mjcf-builder-internals.md)) and
+   [MJCF Builder Internals](../../internals/mjcf-builder-internals.md)) and
    calls `sim.run()`. The interactive viewer is used unless
    `runtime.headless: true` is set in `simulation_config.yaml`, in which
    case the simulation runs without a window (with a progress bar when
    `runtime.show_progress` is true).
 
-See [Trace a Simulation Step](simulation-workflow.md) for the full call
+See [Trace a Simulation Step](../../tutorials/simulation-workflow.md) for the full call
 graph beyond this point.
 
 ### Interactive controls
@@ -498,7 +507,7 @@ What is written, and where, is decided by the extensions listed in
 
 | File | Written by | Contents |
 |---|---|---|
-| `Output/simulation.hdf5` | `ExperimentLogger` (at the end of the episode) | All sensor data, network states and timing, see [Save, Load, and Inspect Data](../how-to/save-load-data.md) |
+| `Output/simulation.hdf5` | `ExperimentLogger` (at the end of the episode) | All sensor data, network states and timing, see [Save, Load, and Inspect Data](../../how-to/save-load-data.md) |
 | `Output/simulation_options.yaml`, `Output/animat_0_options.yaml`, `Output/arena_0_options.yaml` | `ExperimentOptionsLogger` (at the start) | The fully resolved options |
 | `Output/simulation_mjcf.xml` | `MjcfSaver` (at the start) | The generated MuJoCo model |
 
@@ -559,11 +568,11 @@ rebuilds.
 
 ## Next steps
 
-- [Trace a Simulation Step](simulation-workflow.md): understand the code
+- [Trace a Simulation Step](../../tutorials/simulation-workflow.md): understand the code
   flow from YAML config to physics stepping
-- [Write a Custom Controller](custom-controller.md): implement your own
+- [Write a Custom Controller](../../tutorials/custom-controller.md): implement your own
   locomotion controller
-- [Configure an Experiment YAML](../how-to/configure-yaml.md): customize
+- [Configure an Experiment YAML](../../how-to/configure-yaml.md): customize
   simulation parameters
-- [Contributing](../how-to/contributing.md): the recommended development
+- [Contributing](../../help/contributing.md): the recommended development
   workflow, which assumes the Docker container from this guide

@@ -18,6 +18,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import tomllib
 from pathlib import Path
 
@@ -44,16 +45,27 @@ def overrides():
     return refs
 
 
+def fetch(ref, path, attempts=3):
+    """Shallow fetch of ref, retried on network errors"""
+    for attempt in range(1, attempts+1):
+        try:
+            run('git', 'fetch', '--depth', '1', 'origin', ref, cwd=path)
+            return
+        except subprocess.CalledProcessError:
+            if attempt == attempts:
+                raise
+            print(f'Fetch failed, retrying ({attempt}/{attempts-1})', flush=True)
+            time.sleep(5*attempt)
+
+
 def checkout(repo, ref, path):
     """Shallow clone of repo at ref (branch, tag or commit)"""
     if not REF.fullmatch(ref) or '..' in ref:
         raise ValueError(f'Invalid ref "{ref}"')
-    if path.exists():
-        run('git', 'fetch', '--depth', '1', 'origin', ref, cwd=path)
-    else:
+    if not path.exists():
         run('git', 'init', '-q', path)
         run('git', 'remote', 'add', 'origin', repo, cwd=path)
-        run('git', 'fetch', '--depth', '1', 'origin', ref, cwd=path)
+    fetch(ref, path)
     run('git', 'checkout', '-q', 'FETCH_HEAD', cwd=path)
     run('git', 'log', '--oneline', '-1', cwd=path)
 

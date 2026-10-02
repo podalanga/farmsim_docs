@@ -88,28 +88,43 @@ class TravelingWaveController(AnimatController):
             turn=config.get('turn', 0.0),
         )
 
-    def update_medium(self, iteration: int):
-        """Switch gait when the head crosses the water surface"""
-        if self.mode != 'auto':
-            return
-        z = self.links.com_position(max(iteration-1, 0), self.head_index)[2]
-        if self.medium == 'land' and z < WATER_ENTER_Z:
-            self.medium = 'water'
-        elif self.medium == 'water' and z > WATER_EXIT_Z:
-            self.medium = 'land'
+    def initialize_episode(self, task, physics):
+        """Reset the gait at the start of an episode"""
+        self.medium = 'land' if self.mode == 'auto' else self.mode
+        self.blend = 0.0 if self.medium == 'land' else 1.0
+        self.phase = 0.0
+
+    def before_step(self, task, action, physics):
+        """Advance the gait by one step (switching, blending, phase)"""
+        timestep = physics.timestep()/task.units.seconds
+        if self.mode == 'auto':
+            # Head height at the last logged iteration
+            z = self.links.com_position(
+                max(task.iteration-1, 0), self.head_index,
+            )[2]
+            if self.medium == 'land' and z < WATER_ENTER_Z:
+                self.medium = 'water'
+            elif self.medium == 'water' and z > WATER_EXIT_Z:
+                self.medium = 'land'
+        target = 1.0 if self.medium == 'water' else 0.0
+        self.blend += (target - self.blend)*min(1.0, timestep/BLEND_TAU)
+        self.phase += 2*np.pi*self.gait()['freq']*timestep
+
+    def gait(self) -> dict[str, float]:
+        """Gait parameters, blended between land and water"""
+        return {
+            key: (
+                (1 - self.blend)*GAITS['land'][key]
+                + self.blend*GAITS['water'][key]
+            )
+            for key in GAITS['land']
+        }
 
     def positions(
             self, iteration: int, time: float, timestep: float,
     ) -> dict[str, float]:
-        """Joint position targets of this control step"""
-        self.update_medium(iteration)
-        target = 1.0 if self.medium == 'water' else 0.0
-        self.blend += (target - self.blend)*min(1.0, timestep/BLEND_TAU)
-        gait = {
-            key: (1 - self.blend)*GAITS['land'][key] + self.blend*GAITS['water'][key]
-            for key in GAITS['land']
-        }
-        self.phase += 2*np.pi*gait['freq']*timestep
+        """Joint position targets [rad], from the state of before_step()"""
+        gait = self.gait()
         joints = self.joints_names[ControlType.POSITION]
         n_joints = len(joints)
         dphi = 2*np.pi*gait['waves']/n_joints

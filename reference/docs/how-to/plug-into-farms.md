@@ -53,7 +53,7 @@ from farms_amphibious.model.options import AmphibiousOptions
 
 
 class MyRobotOptions(AmphibiousOptions):
-    """Zbot options with an extra parameter"""
+    """Animat options with an extra parameter"""
 
     def __init__(self, **kwargs):
         custom_param = kwargs.pop('custom_param', 42)
@@ -97,7 +97,7 @@ network.
 
 **How:** Use `AmphibiousOptions` as the animat options loader, configure
 `control.network` and `control.muscles`, and list `AmphibiousController`
-in the animat's `extensions:`, as `experiments/zbot_swimming` does:
+in the animat's `extensions:`, as the AmphiBot example does:
 
 ```yaml
 # experiment_config.yaml

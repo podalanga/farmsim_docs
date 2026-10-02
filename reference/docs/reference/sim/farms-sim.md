@@ -149,4 +149,4 @@ duration are set in `simulation_config.yaml` (`runtime.headless`,
 
 - [CLI Reference](../env/cli.md) (generated)
 - [Simulation Lifecycle](../../explanation/simulation-lifecycle.md)
-- [Install and Run](../../tutorials/install-and-run.md)
+- [Installation](../../get-started/installation.md)

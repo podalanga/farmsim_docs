@@ -226,14 +226,14 @@ The Kirchhoff and Munk terms are applied in both cases.
 
 ## Performance
 
-Measured on the Zbot (8 links, 2 environment steps per iteration):
+Measured on an 8-link swimming robot (the [Zbot](../projects/zbot/index.md) project), with 2 environment steps per iteration:
 
 | Configuration | Fluid cost per iteration |
 |---|---|
 | Previous engine | 238 µs |
 | `exact` | 7.3 µs |
 | `lut` | 3.1 µs |
-| 32 Zbots in one scene | about 6 µs (`exact`) or 2.5 µs (`lut`) per Zbot |
+| 32 robots in one scene | about 6 µs (`exact`) or 2.5 µs (`lut`) per robot |
 
 The fluid forces are 1 to 3 % of a simulation step: the rest is mostly
 `mj_step`, the sensor copies and the controller. Run

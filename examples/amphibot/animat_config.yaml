@@ -29,12 +29,10 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - &id001
-      - -0.25
+    - - -0.25
       - -1.5
       - -1.8
-    - &id002
-      - 0
+    - - 0
       - 0
       - 0
     buoyancy_center:
@@ -58,8 +56,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id001
-    - *id002
+    - - -0.25
+      - -1.5
+      - -1.8
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -81,8 +83,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id001
-    - *id002
+    - - -0.25
+      - -1.5
+      - -1.8
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -104,8 +110,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id001
-    - *id002
+    - - -0.25
+      - -1.5
+      - -1.8
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -127,8 +137,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id001
-    - *id002
+    - - -0.25
+      - -1.5
+      - -1.8
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -150,8 +164,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id001
-    - *id002
+    - - -0.25
+      - -1.5
+      - -1.8
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -173,8 +191,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id001
-    - *id002
+    - - -0.25
+      - -1.5
+      - -1.8
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -223,12 +245,10 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - &id003
+    - - 0
       - 0
       - 0
-      - 0
-    - &id004
-      - 0
+    - - 0
       - 0
       - 0
     buoyancy_center:
@@ -252,8 +272,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id003
-    - *id004
+    - - 0
+      - 0
+      - 0
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -275,8 +299,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id003
-    - *id004
+    - - 0
+      - 0
+      - 0
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -298,8 +326,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id003
-    - *id004
+    - - 0
+      - 0
+      - 0
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -321,8 +353,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id003
-    - *id004
+    - - 0
+      - 0
+      - 0
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -344,8 +380,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id003
-    - *id004
+    - - 0
+      - 0
+      - 0
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -367,8 +407,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id003
-    - *id004
+    - - 0
+      - 0
+      - 0
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -390,8 +434,12 @@ morphology:
     fluid_interaction: true
     density: null
     drag_coefficients:
-    - *id003
-    - *id004
+    - - 0
+      - 0
+      - 0
+    - - 0
+      - 0
+      - 0
     buoyancy_center:
     - 0.0
     - 0.0
@@ -635,14 +683,6 @@ control:
     - joint5
     - joint6
     - joint7
-    - head_wheel_joint
-    - seg1_wheel_joint
-    - seg2_wheel_joint
-    - seg3_wheel_joint
-    - seg4_wheel_joint
-    - seg5_wheel_joint
-    - seg6_wheel_joint
-    - seg7_wheel_joint
     - head_wheel_joint
     - seg1_wheel_joint
     - seg2_wheel_joint

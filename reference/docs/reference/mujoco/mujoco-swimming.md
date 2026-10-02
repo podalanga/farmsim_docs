@@ -35,6 +35,7 @@ water:
   cob_geom_group: 2            # 2: collision geoms, 1: visual meshes
   cob_overlap: ignore          # ignore | scale
   cob_lut_resolution: [32, 64] # LUT directions per side, depths
+  cob_lut_cache: null          # LUT disk cache (null: cob_lut_cache/ next to the script, false: off)
   drag_implicit: false         # Semi-implicit legacy drag
   fluid_model: legacy          # legacy | ellipsoid
   ellipsoid_fit: mvee          # mvee | inertia
@@ -73,9 +74,8 @@ extensions:
 | `ramp` | Approximate, no buoyancy torque | minimal | Legacy behaviour |
 
 `exact` counts overlapping geoms twice. `cob_overlap: scale` rescales them
-by the union fraction, and `lut` uses the true union. See the buoyancy
-note of [The Zbot Model](../../tutorials/zbot-model.md) for a model where
-this matters.
+by the union fraction, and `lut` uses the true union. The [Zbot project](../../projects/zbot/model.md) is an example of a
+model where this matters.
 
 `cob_geom_group: 1` uses the visual meshes instead of the collision
 geoms, for bodies whose shape is poorly described by primitives. Meshes

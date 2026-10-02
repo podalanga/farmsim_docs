@@ -1,0 +1,30 @@
+# FarmSim container. From this folder:
+#   docker compose up --build -d
+#   docker exec -it farmsim bash
+services:
+  farmsim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: farmsim:latest
+    container_name: farmsim
+    stdin_open: true
+    tty: true
+    environment:
+      # Linux X11 display. On Windows (VcXsrv), use host.docker.internal:0
+      - DISPLAY=${DISPLAY:-host.docker.internal:0}
+      # Headless rendering without a display: egl (GPU) or osmesa (CPU)
+      # - MUJOCO_GL=egl
+      # CoB lookup tables cache (default: cob_lut_cache/ next to run_sim.py)
+      # - FARMS_COB_LUT_CACHE=/home/farms/workspace/cob_lut_cache
+    volumes:
+      # Your experiments: edits and Output/ persist on the host
+      - ../examples:/home/farms/workspace/examples
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    devices:
+      - /dev/dri:/dev/dri  # Integrated GPU (remove on Windows and macOS)
+    # NVIDIA GPU: install the NVIDIA Container Toolkit, then uncomment
+    # runtime: nvidia
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=all
+    #   - NVIDIA_DRIVER_CAPABILITIES=graphics,utility,compute,display

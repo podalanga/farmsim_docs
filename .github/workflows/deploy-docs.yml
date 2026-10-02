@@ -40,6 +40,8 @@ jobs:
     steps:
       - name: Checkout documentation
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for the last-updated dates
 
       - uses: actions/setup-python@v5
         with:
@@ -55,6 +57,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip pyyaml
           python tools/install_farms.py --dest "$RUNNER_TEMP/farms-src"
+
+      - name: Run the AmphiBot example (1 s, headless)
+        working-directory: examples/amphibot
+        run: |
+          sed -i 's/n_iterations: .*/n_iterations: 1001/; s/buffer_size: .*/buffer_size: 1001/; s/headless: false/headless: true/' simulation_config.yaml
+          for experiment in experiment_config.yaml experiment_config_wave.yaml; do
+            rm -rf Output
+            python run_sim.py --experiment_config "$experiment"
+            test -s Output/simulation.hdf5
+          done
+          git checkout -- simulation_config.yaml
 
       - name: Install the documentation toolchain
         run: python -m pip install -r reference/requirements.txt

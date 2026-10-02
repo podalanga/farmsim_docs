@@ -195,20 +195,19 @@ def __init__(self, **kwargs):
 
 Options are normally loaded from YAML (`AmphibiousOptions.load()`, or
 through the experiment loaders), with every oscillator, coupling and motor
-written explicitly, as in `experiments/zbot_swimming/animat_config.yaml`.
+written explicitly, as in `examples/amphibot/animat_config.yaml`.
 
-!!! warning "`from_options()` does not work in the current code"
-    `AmphibiousOptions.from_options()` builds the options from a flat
-    dictionary (`sdf_path`, `n_joints_body`, `n_legs`, `n_dof_legs`,
-    weights, ...) and the morphology convention, but it raises a
-    `NameError` (`copy` is not imported in `farms_amphibious/model/options.py`),
-    and the generated oscillators use `frequency_saturation` keys that the
-    oscillator options do not accept. Load the options from YAML instead.
+`AmphibiousOptions.from_options()` builds the options from a flat
+dictionary (`sdf_path`, `n_joints_body`, `n_legs`, `n_dof_legs`, gait
+parameters and weights) and the morphology convention, then
+`options.save()` writes the YAML file. This is how the AmphiBot example
+generates its animat file, see `examples/amphibot/generate_config.py` and
+[Bring your own robot](../../how-to/own-robot.md).
 
 ```python
 from farms_amphibious.model.options import AmphibiousOptions
 
-options = AmphibiousOptions.load('experiments/zbot_swimming/animat_config.yaml')
+options = AmphibiousOptions.load('examples/amphibot/animat_config.yaml')
 print(len(options.control.network.oscillators), options.control.motors[0].equation)
 ```
 

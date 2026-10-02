@@ -100,7 +100,7 @@ from farms_core.io.hdf5 import hdf5_to_dict
 
 raw = hdf5_to_dict('Output/simulation.hdf5')
 state = np.asarray(raw['animats'][0]['state'])  # (n_iterations, 2*n_osc + n_joints)
-n_osc = 12                                      # The Zbot has 12 oscillators
+n_osc = 14                                      # AmphiBot: 2 per body joint
 phases = state[:, :n_osc]
 amplitudes = state[:, n_osc:2*n_osc]
 offsets = state[:, 2*n_osc:]
@@ -129,7 +129,7 @@ print(sim_options.duration(), sim_options.physics.timestep)
 ### Forward speed
 
 ```python
-head = links.names.index('Head')
+head = list(links.names).index('head')
 head_xy = com[:, head, :2]
 speed = np.linalg.norm(np.gradient(head_xy, data.times, axis=0), axis=1)
 print(f'Mean speed: {speed[len(speed)//2:].mean():.3f} m/s')
@@ -140,15 +140,16 @@ print(f'Mean speed: {speed[len(speed)//2:].mean():.3f} m/s')
 ```python
 from scipy.fft import rfft, rfftfreq
 
-tail = joints.names.index('joint_6')
+tail = list(joints.names).index('joint7')
 angle = positions[:, tail] - positions[:, tail].mean()
 spectrum = np.abs(rfft(angle))
 frequencies = rfftfreq(len(angle), data.timestep)
 print(f'Dominant frequency: {frequencies[np.argmax(spectrum[1:]) + 1]:.2f} Hz')
 ```
 
-`experiments/zbot_swimming/analysis.py` plots the joint positions,
-velocities and torques of a run.
+`examples/amphibot/plot_run.py` plots the trajectory, the joint angles
+and the water forces of a run, see
+[Record, load and plot data](../tutorials/record-and-plot.md).
 
 ## See also
 

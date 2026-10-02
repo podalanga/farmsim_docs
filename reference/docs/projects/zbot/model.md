@@ -1,5 +1,12 @@
 # Zbot Model: SDF geometry and physical properties
 
+!!! abstract "Project page"
+    This page belongs to the [Zbot project](index.md), whose repository,
+    `farms_zbot`, holds the robot model, the experiments and a Docker
+    workspace. The repository is private: ask the maintainers for access.
+    Paths such as `experiments/` and `models/` are relative to it. For
+    FarmSim itself, start with [Get started](../../get-started/index.md).
+
 The Zbot's physical description lives in the SDF file at:
 
 ```
@@ -84,7 +91,7 @@ Masses, inertias and geometry come from `models/zbot/sdf/zbot.sdf`; densities an
 | Drag coefficients (angular) | `[0, 0, 0]` (`zbot_swimming`), `[-0.0005, -0.0005, -0.0005]` (`zbot_bout_glide`) |
 
 !!! note "Buoyancy comes from the geometry, not from `density`"
-    With the default `cob_method: exact`, buoyancy is `rho_water * g * V`, where `V` is the submerged volume of the link's collision geoms: it depends on the geometry only, and whether the robot floats depends on its mass (from the SDF) compared with `rho_water * V`. The link `density` is only used by the legacy `cob_method: ramp`. The collision geoms of a link overlap (for example the segments' cylinder and boxes), and `exact` counts the overlapping volume twice, which makes the zbot float. With the true union volume (`cob_method: lut` or `cob_overlap: scale`) the zbot is slightly heavier than the water it displaces. Use `farms/farms_mujoco/benchmarks/inspect_buoyancy.py` to print the buoyancy budget of each link. See [MuJoCo Swimming](../reference/mujoco/mujoco-swimming.md).
+    With the default `cob_method: exact`, buoyancy is `rho_water * g * V`, where `V` is the submerged volume of the link's collision geoms: it depends on the geometry only, and whether the robot floats depends on its mass (from the SDF) compared with `rho_water * V`. The link `density` is only used by the legacy `cob_method: ramp`. The collision geoms of a link overlap (for example the segments' cylinder and boxes), and `exact` counts the overlapping volume twice, which makes the zbot float. With the true union volume (`cob_method: lut` or `cob_overlap: scale`) the zbot is slightly heavier than the water it displaces. Use `farms/farms_mujoco/benchmarks/inspect_buoyancy.py` to print the buoyancy budget of each link. See [MuJoCo Swimming](../../reference/mujoco/mujoco-swimming.md).
 
 ### Body Segments (Segment1 to Segment6)
 
@@ -228,13 +235,13 @@ models/
 └── arena_water_v0/sdf/arena_water.sdf  ← Visual water surface
 ```
 
-`arena_water.sdf` only draws the water. The fluid forces use the water surface height `water.height` (and density, viscosity and velocity) of `arena_config.yaml`; the submerged part of each link is computed from its geoms (see [MuJoCo Swimming](../reference/mujoco/mujoco-swimming.md)).
+`arena_water.sdf` only draws the water. The fluid forces use the water surface height `water.height` (and density, viscosity and velocity) of `arena_config.yaml`; the submerged part of each link is computed from its geoms (see [MuJoCo Swimming](../../reference/mujoco/mujoco-swimming.md)).
 
 ---
 
 ## See Also
 
-- [Swimming Experiment](zbot-experiment.md): YAML config walkthrough
-- [Custom CPG Controller](zbot-custom-controller.md): write your own controller
-- [Mathematical Models](../explanation/mathematical-models.md): drag and buoyancy equations
-- [`SwimmingExtension` API](../reference/mujoco/mujoco-swimming.md): hydrodynamics implementation
+- [Swimming Experiment](experiment.md): YAML config walkthrough
+- [Custom CPG Controller](custom-controller.md): write your own controller
+- [Mathematical Models](../../explanation/mathematical-models.md): drag and buoyancy equations
+- [`SwimmingExtension` API](../../reference/mujoco/mujoco-swimming.md): hydrodynamics implementation

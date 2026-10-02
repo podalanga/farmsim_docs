@@ -6,7 +6,7 @@ This glossary defines the terms used in FARMS and points to where each one is im
 
 **Added Mass**
 The inertia added to a system because an accelerating or decelerating body must move some volume of surrounding fluid as it moves through it.
-*Implementation*: with `fluid_model: ellipsoid`, Lamb's added mass of the ellipsoid fitted to each link (`added_mass: implicit` or `explicit`). See `farms_mujoco/swimming/ellipsoid_model.pyx` and [farms_mujoco.swimming](../mujoco/mujoco-swimming.md).
+*Implementation*: with `fluid_model: ellipsoid`, Lamb's added mass of the ellipsoid fitted to each link (`added_mass: implicit` or `explicit`). See `farms_mujoco/swimming/ellipsoid_model.pyx` and [farms_mujoco.swimming](../reference/mujoco/mujoco-swimming.md).
 
 **Centre of Buoyancy (CoB)**
 The centroid of the submerged volume of a body, where buoyancy is applied. Computed per link from its geoms (`cob_method`).
@@ -94,10 +94,6 @@ Abstract base class defining mathematical potential fields for goal-directed loc
 An XML format originally developed for the Gazebo simulator, used to describe objects and environments. FARMS uses SDF to define animat morphologies.
 *Implementation*: Parsed via `farms_core.io.sdf`.
 
-**SegmentalCPG**
-A self-contained, lightweight Central Pattern Generator implementation used in the Zbot bout-and-glide experiment. It consists of phase oscillators arranged in segments, replacing the full FARMS oscillator network for simpler undulatory control.
-*Implementation*: `experiments/zbot_bout_glide/controller/zbot_controller.py`
-
 **SwimmingExtension**
 An `AnimatExtension` that computes the fluid forces (buoyancy, drag, added mass) and applies them to MuJoCo via `physics.data.xfrc_applied`.
 *Implementation*: `farms_mujoco.swimming.extension.SwimmingExtension`
@@ -115,15 +111,3 @@ The core plugin architecture of the FARMS simulation loop. Any custom logic (con
 **Tegotae**
 A Japanese concept translating roughly to "response" or "reaction". In FARMS CPG models, it refers to a specific form of sensory feedback where the CPG phase is modulated by the interaction of joint stretch and the current oscillator phase (θ_joint · sin(θ_cpg)).
 *Implementation*: `farms_amphibious/control/ode.pyx`
-
-## V
-
-**vSPN**
-Vestibulospinal-like neuron drive. In the Zbot controller, it acts as an envelope signal (modeled as an exponential filter) that modulates the amplitude of the CPG outputs to create the "bout" phase of the bout-and-glide swimming pattern.
-*Implementation*: `experiments/zbot_bout_glide/controller/zbot_controller.py`
-
-## Z
-
-**ZbotCPGController**
-A custom CPG controller for the Zbot robot that implements a bout-and-glide swimming pattern. Extends `AnimatController` and uses a self-contained `SegmentalCPG`.
-*Implementation*: `experiments/zbot_bout_glide/controller/zbot_controller.py`

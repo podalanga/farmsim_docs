@@ -27,7 +27,7 @@ and `springrefs()`, `springcoefs()`, `dampingcoefs()` those of
 
 ## AmphibiousController
 
-The controller used by `experiments/zbot_swimming`, listed in the animat's
+The controller of the AmphiBot example (`examples/amphibot/experiment_config.yaml`), listed in the animat's
 `extensions:`. `from_options()`:
 
 - creates a `NetworkODE` (`dopri5`, `nsteps=1000`, maximum step
@@ -57,8 +57,8 @@ colormap) and the phases (`Greens`).
     `AmphibiousDriveController.step()` calls `self.drive.step()`, then
     `super().step()`, which calls it again. Drives such as
     `OrientationFollower` are stateful (filters and a PID controller), so
-    their response differs from a single step per control step. The Zbot
-    experiments use `AmphibiousController`, which is not affected.
+    their response differs from a single step per control step.
+    `AmphibiousController`, used by the AmphiBot example, is not affected.
 
 ## KinematicsController
 

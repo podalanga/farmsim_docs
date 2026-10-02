@@ -12,7 +12,7 @@ model.
 ```python
 from farms_core.io.sdf import ModelSDF
 
-model = ModelSDF.read('models/zbot/sdf/zbot.sdf')[0]
+model = ModelSDF.read('examples/amphibot/models/amphibot.sdf')[0]
 print(model.name, [link.name for link in model.links])
 print([joint.name for joint in model.joints], model.mass())
 ```

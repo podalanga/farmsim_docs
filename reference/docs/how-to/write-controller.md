@@ -172,7 +172,7 @@ motor (`equation:`):
 | Equation | Control types | Handler | Description |
 |----------|---------------|---------|-------------|
 | `position_phase` | position | `PositionPhaseCy` | Position from the oscillator phase |
-| `position_muscle` | position | `PositionMuscleCy` | Position from the difference of the two oscillator outputs (the Zbot) |
+| `position_muscle` | position | `PositionMuscleCy` | Position from the difference of the two oscillator outputs (AmphiBot) |
 | `ekeberg_muscle` | velocity, torque | `EkebergMuscleCy` | Ekeberg muscle, stiffness and damping through the MuJoCo joint |
 | `ekeberg_muscle_explicit` | torque | `EkebergMuscleCy` | Ekeberg muscle, all terms as a torque |
 | `passive` | velocity, torque | `PassiveJointCy` | Passive spring-damper |
@@ -183,5 +183,5 @@ See [Configure CPG Network Parameters](configure-cpg-network.md) and
 ## See also
 
 - [Write a Custom Controller (Tutorial)](../tutorials/custom-controller.md)
-- [Zbot Custom CPG Controller](../tutorials/zbot-custom-controller.md)
+- [Zbot custom CPG controller](../projects/zbot/custom-controller.md): a project example
 - [Extension and Controller Design](../explanation/extension-design.md)

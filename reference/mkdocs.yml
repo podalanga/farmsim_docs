@@ -1,12 +1,12 @@
-site_name: FARMS Documentation
-site_description: Documentation for the FARMS robotics simulation framework
+site_name: FarmSim Documentation
+site_description: Documentation of FarmSim, the simulation packages of FARMS (Framework for Animal and Robot Modeling and Simulation)
 site_url: https://podalanga.github.io/farmsim_docs/
 repo_url: https://github.com/podalanga/farmsim_docs
 repo_name: podalanga/farmsim_docs
 edit_uri: edit/main/reference/docs/
 copyright: >-
-  FARMS is released under the
-  <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>.
+  <a href="/farmsim_docs/help/license/">Licenses</a> ·
+  <a href="/farmsim_docs/help/cite/">How to cite</a> ·
   <a href="https://github.com/podalanga/farmsim_docs/issues">Report a docs issue</a>
 theme:
   name: material
@@ -56,6 +56,13 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 plugins:
   - search
+  - git-revision-date-localized:
+      type: date
+      fallback_to_build_date: true  # Generated pages have no git history
+      exclude:  # Generated pages
+        - reference/api/*
+        - reference/env/configuration-reference.md
+        - reference/env/cli.md
   - redirects:
       redirect_maps:
         reference/env/data-model.md: explanation/data-flow.md
@@ -63,6 +70,13 @@ plugins:
         reference/core/extension-api.md: explanation/extension-design.md
         explanation/architecture-diagrams.md: explanation/architecture.md
         explanation/codebase-walkthrough.md: explanation/architecture.md
+        tutorials/install-and-run.md: get-started/installation.md
+        tutorials/zbot-overview.md: projects/zbot/index.md
+        tutorials/zbot-model.md: projects/zbot/model.md
+        tutorials/zbot-experiment.md: projects/zbot/experiment.md
+        tutorials/zbot-custom-controller.md: projects/zbot/custom-controller.md
+        reference/env/glossary.md: help/glossary.md
+        how-to/contributing.md: help/contributing.md
   - gen-files:
       scripts:
         - tools/gen_pages.py
@@ -117,69 +131,88 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 nav:
   - Home: index.md
+  - Get started:
+    - Overview: get-started/index.md
+    - Installation: get-started/installation.md
+    - Supported platforms: get-started/platforms.md
   - Tutorials:
-    - Install and Run a Simulation: tutorials/install-and-run.md
-    - Trace a Simulation Step: tutorials/simulation-workflow.md
-    - Write a Custom Controller: tutorials/custom-controller.md
-    - Zbot Overview: tutorials/zbot-overview.md
-    - Zbot Model (SDF Geometry): tutorials/zbot-model.md
-    - Zbot Swimming Experiment (YAML Walkthrough): tutorials/zbot-experiment.md
-    - Zbot Custom CPG Controller (Step-by-Step): tutorials/zbot-custom-controller.md
-  - How-to Guides:
-    - Configure an Experiment YAML: how-to/configure-yaml.md
-    - Add and Configure Sensors: how-to/configure-sensors.md
+    - tutorials/index.md
+    - 1. Your first simulation: tutorials/first-simulation.md
+    - 2. Understand the experiment files: tutorials/experiment-files.md
+    - 3. Trace a simulation step: tutorials/simulation-workflow.md
+    - 4. Write a custom controller: tutorials/custom-controller.md
+    - 5. Swimming and buoyancy: tutorials/swimming.md
+    - 6. Record, load and plot data: tutorials/record-and-plot.md
+  - How-to guides:
+    - Configure an experiment YAML: how-to/configure-yaml.md
+    - Add and configure sensors: how-to/configure-sensors.md
     - Write an AnimatExtension: how-to/write-extension.md
-    - Write a Controller: how-to/write-controller.md
-    - Configure CPG Network Parameters: how-to/configure-cpg-network.md
-    - Use Built-in Extensions: how-to/use-extensions.md
-    - Save, Load, and Inspect Data: how-to/save-load-data.md
-    - Plug into FARMS Modules: how-to/plug-into-farms.md
-    - Contributing and Development Setup: how-to/contributing.md
+    - Write a controller: how-to/write-controller.md
+    - Configure the CPG network: how-to/configure-cpg-network.md
+    - Use the built-in extensions: how-to/use-extensions.md
+    - Save, load and inspect data: how-to/save-load-data.md
+    - Plug into FARMS modules: how-to/plug-into-farms.md
+    - Bring your own robot: how-to/own-robot.md
   - Reference:
-    - Environment & Config:
-      - CLI Reference: reference/env/cli.md
-      - YAML Configuration Schema: reference/env/yaml-schema.md
-      - Configuration Parameter Reference: reference/env/configuration-reference.md
-      - Glossary: reference/env/glossary.md
-    - farms_core (shared abstractions):
-      - Package Overview: reference/core/farms-core.md
-      - Core Control (TaskExtension, AnimatController, ControlType, loggers): reference/core/core-control.md
-      - Core Options (Options, ExperimentOptions, AnimatOptions): reference/core/core-options.md
-      - Core I/O (SDF, HDF5, YAML): reference/core/core-io.md
-      - Core Sensors (SensorData, SensorsData, JointSensorArray): reference/core/core-sensors.md
-    - farms_amphibious (CPG control stack):
-      - Package Overview: reference/amphibious/farms-amphibious.md
-      - CPG Oscillators (ODE, Phase/Amplitude Dynamics): reference/amphibious/cpg-oscillators.md
-      - NetworkODE (CPG Integration): reference/amphibious/network-ode.md
-      - Ekeberg Muscle Model: reference/amphibious/ekeberg-muscle.md
-      - Joint Controllers (Passive, PositionMuscle, PositionPhase): reference/amphibious/joint-controllers.md
-      - Amphibious Controller (AmphibiousController): reference/amphibious/amphibious-controller.md
-      - Amphibious Data (OscillatorNetworkState, DriveArray): reference/amphibious/amphibious-data.md
-      - Amphibious Options (AmphibiousOptions, NetworkOptions): reference/amphibious/amphibious-options.md
-      - Descending Drive (OrientationFollower, PotentialMap): reference/amphibious/descending-drive.md
-    - farms_mujoco (physics & swimming):
-      - Package Overview: reference/mujoco/farms-mujoco.md
-      - MuJoCo Simulation (ExperimentTask, Visual Extensions): reference/mujoco/mujoco-simulation.md
-      - MuJoCo Swimming (Buoyancy, Drag, Added Mass): reference/mujoco/mujoco-swimming.md
+    - Environment and config:
+      - CLI reference: reference/env/cli.md
+      - YAML configuration schema: reference/env/yaml-schema.md
+      - Configuration parameters: reference/env/configuration-reference.md
+    - farms_core:
+      - Package overview: reference/core/farms-core.md
+      - Control: reference/core/core-control.md
+      - Options: reference/core/core-options.md
+      - I/O (SDF, HDF5, YAML): reference/core/core-io.md
+      - Sensors: reference/core/core-sensors.md
+    - farms_amphibious:
+      - Package overview: reference/amphibious/farms-amphibious.md
+      - CPG oscillators: reference/amphibious/cpg-oscillators.md
+      - NetworkODE: reference/amphibious/network-ode.md
+      - Ekeberg muscle model: reference/amphibious/ekeberg-muscle.md
+      - Joint controllers: reference/amphibious/joint-controllers.md
+      - AmphibiousController: reference/amphibious/amphibious-controller.md
+      - Data: reference/amphibious/amphibious-data.md
+      - Options: reference/amphibious/amphibious-options.md
+      - Descending drive: reference/amphibious/descending-drive.md
+    - farms_mujoco:
+      - Package overview: reference/mujoco/farms-mujoco.md
+      - Simulation: reference/mujoco/mujoco-simulation.md
+      - Swimming: reference/mujoco/mujoco-swimming.md
     - farms_sim:
-      - Package Overview: reference/sim/farms-sim.md
+      - Package overview: reference/sim/farms-sim.md
     - API (generated): reference/api/
   - Explanation:
-    - System Architecture: explanation/architecture.md
-    - Simulation Lifecycle: explanation/simulation-lifecycle.md
-    - Mathematical Models (CPG ODEs, Hydrodynamics, Ekeberg): explanation/mathematical-models.md
-    - Options and YAML Design: explanation/options-yaml-design.md
-    - Extension and Controller Design: explanation/extension-design.md
-    - Data Flow, Data Model and Persistence: explanation/data-flow.md
-    - CPG Control Architecture: explanation/cpg-architecture.md
-  - Internals (Maintainer Guide):
-    - "AmphibiousConvention: Naming and Indexing": internals/amphibious-convention.md
-    - "ODE Internals: CPG Integration": internals/ode-internals.md
-    - "Cython Equation Handlers": internals/cython-equation-handlers.md
-    - "ExperimentTask Internals": internals/experiment-task-internals.md
-    - "MJCF Builder Internals": internals/mjcf-builder-internals.md
-    - "Hydrodynamics and Swimming": internals/hydrodynamics-internals.md
-    - "Data Pre-allocation and Serialization": internals/data-allocation-internals.md
-    - "Options and YAML Deserialization": internals/options-yaml-internals.md
-    - "Descending Drive and Sensory Feedback": internals/descending-drive-internals.md
-    - "Physics Sensor Mapping": internals/physics-sensor-mapping.md
+    - System architecture: explanation/architecture.md
+    - Simulation lifecycle: explanation/simulation-lifecycle.md
+    - Mathematical models: explanation/mathematical-models.md
+    - Options and YAML design: explanation/options-yaml-design.md
+    - Extension and controller design: explanation/extension-design.md
+    - Data flow and persistence: explanation/data-flow.md
+    - CPG control architecture: explanation/cpg-architecture.md
+  - Internals:
+    - Naming and indexing convention: internals/amphibious-convention.md
+    - CPG integration: internals/ode-internals.md
+    - Cython equation handlers: internals/cython-equation-handlers.md
+    - ExperimentTask: internals/experiment-task-internals.md
+    - MJCF builder: internals/mjcf-builder-internals.md
+    - Hydrodynamics and swimming: internals/hydrodynamics-internals.md
+    - Data allocation and serialization: internals/data-allocation-internals.md
+    - Options and YAML deserialization: internals/options-yaml-internals.md
+    - Descending drive and feedback: internals/descending-drive-internals.md
+    - Physics sensor mapping: internals/physics-sensor-mapping.md
+  - Projects:
+    - projects/index.md
+    - Zbot:
+      - Overview: projects/zbot/index.md
+      - Install the Zbot workspace: projects/zbot/install.md
+      - Model: projects/zbot/model.md
+      - Swimming experiment: projects/zbot/experiment.md
+      - Custom CPG controller: projects/zbot/custom-controller.md
+  - Help:
+    - Troubleshooting: help/troubleshooting.md
+    - FAQ: help/faq.md
+    - Glossary: help/glossary.md
+    - What's new: help/changelog.md
+    - How to cite: help/cite.md
+    - License: help/license.md
+    - Contributing: help/contributing.md

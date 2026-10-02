@@ -97,5 +97,5 @@ The fluid model is described in [farms_mujoco.swimming](../mujoco/mujoco-swimmin
 
 - [Configuration Parameter Reference](configuration-reference.md)
 - [Configure an Experiment YAML](../../how-to/configure-yaml.md)
-- [Swimming Experiment](../../tutorials/zbot-experiment.md): the Zbot files, block by block
+- [Understand the experiment files](../../tutorials/experiment-files.md): the AmphiBot files, block by block
 - [Options and YAML Design](../../explanation/options-yaml-design.md)

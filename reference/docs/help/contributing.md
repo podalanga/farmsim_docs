@@ -8,8 +8,8 @@ kept up to date.
 
 ## The repositories
 
-FARMS is made of four Python packages, each in its own repository, checked
-out as submodules in the `farms/` folder of `farms_zbot`:
+FarmSim is made of four Python packages, each in its own repository (the
+installer clones them into `farms-src/`):
 
 | Package | Purpose |
 |---------|---------|
@@ -18,7 +18,8 @@ out as submodules in the `farms/` folder of `farms_zbot`:
 | `farms_sim` | Entry point: command line and simulation setup |
 | `farms_amphibious` | CPG networks, controllers, amphibious options and data |
 
-The documentation is a separate repository, `farmsim_docs`.
+The documentation, the AmphiBot example and the installer are in the
+`farmsim_docs` repository.
 
 ---
 
@@ -26,25 +27,23 @@ The documentation is a separate repository, `farmsim_docs`.
 
 ### Installing
 
-The packages need Python 3.11 or newer, a C compiler and Cython. From the
-root of `farms_zbot`:
+The packages need Python 3.11 or newer, a C compiler and Cython. Follow
+the [virtual environment installation](../get-started/installation.md#virtual-environment):
+`reference/tools/install_farms.py` installs the dependencies of each
+package, then the four packages in editable mode, in dependency order
+(`farms_core` first: the other packages `cimport` its `.pxd` files). To
+develop a package, fetch its history and work on a branch:
 
 ```bash
-git submodule update --init --recursive
-cd farms
-python setup_farms.py
+git -C farms-src/farms_mujoco fetch --unshallow
+git -C farms-src/farms_mujoco switch -c my-feature
 ```
-
-`setup_farms.py` installs the dependencies of each package, then installs
-the four packages in editable mode, in dependency order (`farms_core`
-first: the other packages `cimport` its `.pxd` files). The Docker setup of
-[Install and Run](../tutorials/install-and-run.md) does this for you.
 
 Changes to `.py` files take effect immediately. Changes to `.pyx` or
 `.pxd` files need a rebuild of the package:
 
 ```bash
-cd farms/farms_mujoco
+cd farms-src/farms_mujoco
 python setup.py build_ext --inplace
 ```
 
@@ -59,7 +58,7 @@ committing.
 ### Checking the installation
 
 ```bash
-cd experiments/zbot_bout_glide
+cd examples/amphibot
 python run_sim.py --experiment_config experiment_config.yaml
 ```
 
@@ -134,12 +133,12 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 
 | To add | See |
 |--------|-----|
-| A robot model | [The Zbot Model](../tutorials/zbot-model.md) and [Configure an Experiment YAML](configure-yaml.md) |
-| A controller | [Write a Custom Controller](../tutorials/custom-controller.md) and [Write a Controller](write-controller.md) |
-| A force or other per-step behaviour | [Write an AnimatExtension](write-extension.md) |
+| A robot model | [Bring your own robot](../how-to/own-robot.md) and [Configure an experiment YAML](../how-to/configure-yaml.md) |
+| A controller | [Write a Custom Controller](../tutorials/custom-controller.md) and [Write a Controller](../how-to/write-controller.md) |
+| A force or other per-step behaviour | [Write an AnimatExtension](../how-to/write-extension.md) |
 | A fluid model feature | [Hydrodynamics Internals](../internals/hydrodynamics-internals.md#how-to-extend) |
-| A CPG topology | [Configure CPG Network Parameters](configure-cpg-network.md) |
-| A logged quantity | [Save, Load, and Inspect Data](save-load-data.md) |
+| A CPG topology | [Configure CPG Network Parameters](../how-to/configure-cpg-network.md) |
+| A logged quantity | [Save, Load, and Inspect Data](../how-to/save-load-data.md) |
 
 When several extensions apply forces, accumulate into
 `physics.data.xfrc_applied` (`+=`) rather than overwrite it, unless the
@@ -152,12 +151,13 @@ writes the fluid wrench of its links).
 
 ### Unit tests
 
-`farms_core/tests` and `farms_mujoco/tests` contain pytest tests (for
-example the centre of buoyancy kernels, lookup tables and ellipsoid model
-in `farms_mujoco/tests`):
+`farms_core/tests`, `farms_mujoco/tests` and `farms_amphibious/tests`
+contain pytest tests (for example the centre of buoyancy kernels, lookup
+tables and ellipsoid model in `farms_mujoco/tests`, and the generated
+animat options in `farms_amphibious/tests`):
 
 ```bash
-cd farms/farms_mujoco
+cd farms-src/farms_mujoco
 python -m pytest tests
 ```
 
@@ -238,9 +238,8 @@ files or private repository.
 
 ### Building locally
 
-In an environment where the FARMS packages are installed (for example
-the `farms_zbot` environment), or after installing them with
-`make install`:
+In an environment where the FARMS packages are installed, or after
+installing them with `make install`:
 
 ```bash
 cd farmsim_docs/reference
@@ -277,10 +276,34 @@ change its ref in `farms-packages.yaml`.
 
 ### Writing pages
 
+- Keep FarmSim pages independent of projects: use the AmphiBot example
+  (`examples/amphibot/`) for examples, and keep project-specific content
+  in `projects/`.
 - Specify the language of code blocks (`python`, `yaml`, `bash`).
 - Use admonitions (`!!! note`, `!!! warning`) for callouts, and a
-  `## See also` section at the end.
-- Do not use em dashes.
+  `## See also` or `## Next steps` section at the end.
+- Use sentence case for headings.
+- Do not use em dashes, emojis or emoji-like symbols (check marks, icon
+  shortcodes): the drift guard rejects them.
+- Check every claim against the code or a run. The figures come from
+  `tools/make_figures.py`; rerun it when the example changes.
+
+Tutorials follow a fixed structure, so readers know what to expect:
+
+```markdown
+# Tutorial title
+
+!!! info "Tutorial overview"
+    - **Goal**: what the reader will be able to do.
+    - **Level**: beginner, intermediate or advanced
+    - **Time**: 30 minutes
+    - **Prerequisites**: links to the pages to read first
+
+## Background
+## Step 1: ...
+## Summary
+## Next steps
+```
 - Add new pages to the `nav` of `mkdocs.yml`. When a page is moved or
   removed, add a redirect in the `redirects` plugin.
 

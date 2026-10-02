@@ -246,7 +246,7 @@ the end of the MuJoCo step, and the state is stored in the network state
 array at the current iteration.
 
 MuJoCo integrates the mechanics with the integrator of the simulation
-file (`mujoco.integrator`, `implicitfast` for the Zbot). The fluid
+file (`mujoco.integrator`, `implicitfast` in the AmphiBot example). The fluid
 forces are explicit forces for MuJoCo, except the implicit added mass,
 which modifies the body masses and inertias.
 

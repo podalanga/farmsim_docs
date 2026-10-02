@@ -13,7 +13,8 @@ Checks, for every Markdown page under docs/:
 4. Keys of YAML examples are known configuration options (see
    docgen.known_option_keys). A block whose first line is
    `# check-docs: skip` is not checked.
-5. No em dashes.
+5. No em dashes, emojis, emoji-like symbols (check marks) or icon
+   shortcodes (:material-...:).
 
 Usage: python tools/check_docs.py [--docs docs] [--experiments DIR]
 """
@@ -42,7 +43,12 @@ OTHER_TOOLS_FLAGS = {
 }
 CLI_LINE = re.compile(r'run_sim\.py|farms_sim|farmsim\b')
 FENCE = re.compile(r'^(\s*)```(\w*)')
-EM_DASH = '—'
+EM_DASH = '\u2014'
+# Emojis, dingbats and symbols (check marks, stars), and icon shortcodes
+EMOJI = re.compile(
+    '[\u2600-\u27bf\u2b50\u2b55\U0001f000-\U0001faff\ufe0f]'
+    '|:(?:material|fontawesome|octicons|simple)-[a-z0-9-]+:'
+)
 
 
 def iter_blocks(lines):
@@ -80,6 +86,8 @@ def check_page(path, docs_dir, context):
     for number, line in enumerate(lines, 1):
         if EM_DASH in line:
             problems.append((number, 'em dash (use a comma, colon or parentheses)'))
+        if EMOJI.search(line):
+            problems.append((number, f'emoji or icon {EMOJI.search(line)[0]!r} (use words)'))
         for reference in set(REFERENCE.findall(line)):
             reference = reference.rstrip('.')
             if reference not in context['resolved']:
@@ -122,13 +130,13 @@ def main():
     parser.add_argument(
         '--experiments', default=None,
         help='Folder of working experiment configurations whose keys are'
-        ' accepted (default: ../../experiments of the farms_zbot checkout)',
+        ' accepted (default: the examples/ folder of farmsim_docs)',
     )
     args = parser.parse_args()
     docs_dir = Path(args.docs)
     experiments = (
         Path(args.experiments) if args.experiments
-        else here.parents[2] / 'experiments'
+        else here.parents[1] / 'examples'
     )
     yaml_files = sorted(experiments.rglob('*config.yaml')) if experiments.is_dir() else []
     context = {

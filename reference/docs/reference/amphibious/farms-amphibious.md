@@ -44,7 +44,7 @@ farms_amphibious/
 
 ## Using the CPG controller
 
-The requirements, all met by `experiments/zbot_swimming`:
+The requirements, all met by the AmphiBot example (`examples/amphibot`):
 
 1. `loaders.animats_options`: `farms_amphibious.model.options.AmphibiousOptions`;
 2. `loaders.animats_data`: `farms_amphibious.data.data.AmphibiousData`,
@@ -66,7 +66,7 @@ commands of each equation.
 | `equation` | Handler | Control types | Command |
 |------------|---------|---------------|---------|
 | `position_phase` | `PositionPhaseCy` | position | Position from the oscillator phase |
-| `position_muscle` | `PositionMuscleCy` | position | $k(\tfrac{1}{2}(M_2 - M_1) + \phi_{off}) + b$ (the Zbot) |
+| `position_muscle` | `PositionMuscleCy` | position | $k(\tfrac{1}{2}(M_2 - M_1) + \phi_{off}) + b$ (AmphiBot) |
 | `ekeberg_muscle` | `EkebergMuscleCy` | velocity, torque | Ekeberg active torque, stiffness and damping set on the MuJoCo joint |
 | `ekeberg_muscle_explicit` | `EkebergMuscleCy` | torque | Ekeberg torque, all terms explicit |
 | `passive` | `PassiveJointCy` | velocity, torque | Passive spring-damper |

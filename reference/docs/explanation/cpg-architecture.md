@@ -101,7 +101,7 @@ to joint commands:
 | Equation | Description | Control types |
 |----------|-------------|---------------|
 | `position_phase` | Position from the oscillator phase | position |
-| `position_muscle` | Position from the difference of the two outputs (used by the Zbot) | position |
+| `position_muscle` | Position from the difference of the two outputs (used by the AmphiBot example) | position |
 | `ekeberg_muscle` | Ekeberg muscle model, stiffness and damping through the MuJoCo joint | velocity, torque |
 | `ekeberg_muscle_explicit` | Ekeberg muscle model, all terms as a torque | torque |
 | `passive` | Passive spring-damper, no active control | velocity, torque |
@@ -151,11 +151,11 @@ connection weights and \(\varphi_{ij}\) the phase biases (`in` is \(i\),
 
 ## Custom controllers
 
-When using a custom controller (like `ZbotCPGController`), the built-in CPG
-network is typically bypassed. The custom controller implements its own
-oscillator model (e.g., `SegmentalCPG`) and is registered as an animat
-extension, in place of `AmphibiousController`. In `zbot_bout_glide`, the
-`control.network` section is commented out.
+When using a custom controller (like the `TravelingWaveController` of
+the AmphiBot example), the built-in CPG network is bypassed. The custom
+controller computes its own commands and is registered as an animat
+extension, in place of `AmphibiousController`. The `control.network`
+section can stay in the animat file: it is then unused.
 
 This design allows the framework's CPG infrastructure to be used when
 appropriate, while also supporting fully custom locomotion controllers that

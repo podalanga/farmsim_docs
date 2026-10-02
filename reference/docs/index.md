@@ -1,174 +1,164 @@
 <div class="hero-title" markdown>
-FARMS
+FarmSim
 </div>
 
-FARMS (Framework for Animal and Robot Modeling and Simulation) is a Python
-framework for simulating and controlling animal models and robots. This site
-documents it as used in the zbot project: undulatory swimming robots simulated
-with the [MuJoCo](https://mujoco.org/) physics engine, driven by a CPG (Central
-Pattern Generator) locomotion controller and a fast hydrodynamics module.
+FarmSim, the simulation side of FARMS (Framework for Animal and Robot
+Modeling and Simulation), simulates and controls animal models and
+bio-inspired robots with the [MuJoCo](https://mujoco.org/) physics engine.
+You describe a robot in SDF and an experiment in YAML. FarmSim builds the
+MuJoCo model, runs controllers such as central pattern generators (CPGs),
+adds water forces for swimming, and records everything to HDF5.
 
 <div class="hero-buttons" markdown>
-[Get started](tutorials/install-and-run.md){ .md-button .md-button--primary }
-[Browse the reference](reference/env/yaml-schema.md){ .md-button }
+[Get started](get-started/index.md){ .md-button .md-button--primary }
+[Tutorials](tutorials/index.md){ .md-button }
+[Reference](reference/env/yaml-schema.md){ .md-button }
 </div>
 
-## What FARMS provides
+![AmphiBot, the example robot of these docs, crawls down a ramp into a pool and swims away](assets/figures/amphibot-land-to-water.gif){ .hero-figure }
+
+## What FarmSim provides
 
 <div class="grid cards" markdown>
 
--   :material-file-cog-outline: **YAML-driven configuration**
+-   **YAML-driven experiments**
 
     ---
 
-    Define robots, arenas, and simulations through hierarchical YAML files
-    loaded via dotted Python paths.
+    Robots, arenas and simulations are described in YAML files and loaded
+    into typed option classes.
 
--   :material-puzzle-outline: **Extensible architecture**
-
-    ---
-
-    Plug in custom controllers, sensors, and simulation extensions through a
-    lifecycle-based extension system.
-
--   :material-wave: **CPG locomotion control**
+-   **Extensible lifecycle**
 
     ---
 
-    Built-in oscillator network model with drives, sensory feedback, and
-    multiple muscle equations (phase, Ekeberg, passive).
+    Controllers, sensors and loggers plug in as extensions with a fixed
+    lifecycle: initialize, before step, after step.
 
--   :material-cube-outline: **MuJoCo integration**
-
-    ---
-
-    Automatic SDF-to-MJCF conversion and interactive or headless simulation
-    modes.
-
--   :material-waves: **Hydrodynamics**
+-   **CPG locomotion control**
 
     ---
 
-    Exact centre of buoyancy (closed forms and meshes) or O(1) lookup
-    tables, per-link drag, and an ellipsoid drag and added mass model, all
-    computed in C on a single core.
+    A network of coupled oscillators with descending drives, sensory
+    feedback and several muscle models.
 
--   :material-database-outline: **Data persistence**
+-   **MuJoCo integration**
 
     ---
 
-    HDF5-based recording of all sensor data, network states, and simulation
-    parameters.
+    SDF to MJCF conversion, interactive viewer or headless runs, and
+    offscreen rendering.
+
+-   **Hydrodynamics**
+
+    ---
+
+    Exact centre of buoyancy or O(1) lookup tables, per-link drag, and an
+    ellipsoid drag and added mass model, computed in C on a single core.
+
+-   **Data recording**
+
+    ---
+
+    Every sensor, network state and option is saved to HDF5 and YAML, ready
+    for analysis.
 
 </div>
 
-## Documentation structure
+## The packages
 
-This documentation follows the [Diátaxis](https://diataxis.fr/) framework:
-
-<div class="grid cards" markdown>
-
--   :material-school-outline: **[Tutorials](tutorials/install-and-run.md)**
-
-    ---
-
-    Learn FARMS step by step, from installation through writing your first
-    controller.
-
--   :material-hammer-wrench: **[How-to Guides](how-to/configure-yaml.md)**
-
-    ---
-
-    Task-oriented recipes for common configuration, extension, and
-    integration work.
-
--   :material-book-open-variant: **[Reference](reference/env/yaml-schema.md)**
-
-    ---
-
-    Technical descriptions of modules, classes, YAML schemas, and CLI
-    options. The API, configuration and CLI references are generated from
-    the code at every build.
-
--   :material-lightbulb-on-outline: **[Explanation](explanation/architecture.md)**
-
-    ---
-
-    Architecture rationale and design decisions.
-
-</div>
+| Package | Role |
+|---|---|
+| `farms_core` | Options, data arrays, sensors, SDF/HDF5/YAML I/O, extension and controller base classes |
+| `farms_mujoco` | MuJoCo simulation: MJCF builder, experiment task, viewer, swimming and buoyancy |
+| `farms_amphibious` | CPG network, muscle models, descending drives, amphibious options |
+| `farms_sim` | Command line entry point that ties the packages together |
 
 ## Quick start
 
-Both paths start from the same clone. Pick Docker for a ready-made
-environment, or a virtual environment to work on the FARMS sources
-directly on the host.
+Both paths install the four packages and run the
+[AmphiBot example](tutorials/first-simulation.md). Docker gives a
+ready-made environment; a virtual environment installs FarmSim directly on
+the host.
 
 <div class="grid quickstart" markdown>
 
 <div class="card" markdown>
 
-:material-docker: **Docker** (recommended)
+**Docker** (recommended)
 
 ---
 
 ```bash
-# Clone (the build fetches the rest)
 git clone \
- git@github.com:podalanga/farms_zbot.git
-cd farms_zbot
+ https://github.com/podalanga/farmsim_docs.git
+cd farmsim_docs/docker
 
 # Linux: allow X11 windows
 xhost +local:docker
 
 # Build, start and enter
-cd docker_config/linux
 docker compose up --build -d
-docker exec -it zbot_farms_linux bash
+docker exec -it farmsim bash
 
 # Inside the container
-cd experiments/zbot_bout_glide
+cd examples/amphibot
 python run_sim.py --experiment_config \
   experiment_config.yaml
 ```
 
-On Windows, run compose from `docker_config/windows` and enter the
-`zbot_farms_windows` container.
+On Windows, see [Installation](get-started/installation.md#docker) for
+the display setup.
 
 </div>
 
 <div class="card" markdown>
 
-:material-language-python: **Virtual environment**
+**Virtual environment**
 
 ---
 
 ```bash
-# Clone with submodules and meshes
 git clone \
- git@github.com:podalanga/farms_zbot.git
-cd farms_zbot
-git lfs pull
-git submodule update \
-  --init --recursive
+ https://github.com/podalanga/farmsim_docs.git
+cd farmsim_docs
 
-# Install FARMS (Python >= 3.11)
+# Python >= 3.11
 python3 -m venv .venv
 source .venv/bin/activate
-cd farms
-python setup_farms.py
+pip install pyyaml
+python reference/tools/install_farms.py
 
-# Run the bout-and-glide experiment
-cd ../experiments/zbot_bout_glide
+# Run the AmphiBot example
+cd examples/amphibot
 python run_sim.py --experiment_config \
   experiment_config.yaml
 ```
 
-Needs a C compiler, Git LFS and OpenGL on the host.
+Needs a C compiler and OpenGL on the host.
 
 </div>
 
 </div>
 
-See the [installation guide](tutorials/install-and-run.md) for full
-details (Docker and native, side by side).
+See [Installation](get-started/installation.md) for the details and
+[Supported platforms](get-started/platforms.md) for what is tested.
+
+## Where to go next
+
+| You want to | Read |
+|---|---|
+| Run something in five minutes | [Your first simulation](tutorials/first-simulation.md) |
+| Learn FarmSim step by step | [Tutorials](tutorials/index.md) |
+| Do a specific task | [How-to guides](how-to/configure-yaml.md) |
+| Look up an option, class or command | [Reference](reference/env/yaml-schema.md) |
+| Understand the design | [Explanation](explanation/architecture.md) |
+| See FarmSim in a real project | [Projects](projects/index.md) |
+| Fix a problem | [Troubleshooting](help/troubleshooting.md) and [FAQ](help/faq.md) |
+
+## About these docs
+
+The documentation follows the [Diataxis](https://diataxis.fr/) framework:
+tutorials teach, how-to guides solve tasks, the reference describes, and
+explanations give the reasons. The API, configuration and CLI references
+are generated from the code at every build.

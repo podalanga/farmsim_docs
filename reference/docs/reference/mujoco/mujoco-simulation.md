@@ -172,7 +172,7 @@ extension is created from YAML. A frame is captured every
     `self.camera` into a full `mujoco.MjvCamera` inside its `if self.camera
     is None:` branch, so supplying a `camera` id skips that branch entirely,
     leaving `self.renderer` as `None`. Then, for `viewer != 'dm_control'`
-    (the default `viewer: MuJoCo` used throughout the Zbot experiments),
+    (the default `viewer: MuJoCo`),
     `before_step()` unconditionally runs `self.camera.azimuth +=
     self.angular_velocity*timediff` *before* it checks `self.renderer is
     not None`, and an id has no `.azimuth` attribute, so this raises

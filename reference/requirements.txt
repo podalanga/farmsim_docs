@@ -8,3 +8,4 @@ mkdocs-redirects>=1.2
 mkdocstrings>=1.0
 mkdocstrings-python>=2.0
 pyyaml
+mkdocs-git-revision-date-localized-plugin>=1.2

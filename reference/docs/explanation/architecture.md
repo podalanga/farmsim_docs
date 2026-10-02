@@ -49,11 +49,11 @@ The classes of a given experiment are chosen by the dotted paths of its
 YAML files, and imported at runtime by
 `farms_core.extensions.extensions.import_item()`:
 
-| YAML file | Key | Zbot value | Chooses |
+| YAML file | Key | AmphiBot value | Chooses |
 |-----------|-----|-----------|---------|
 | `experiment_config.yaml` | `loaders.animats_options` | `farms_amphibious.model.options.AmphibiousOptions` | The class that reads the animat file |
 | `experiment_config.yaml` | `loaders.arenas_options` | `farms_amphibious.model.options.AmphibiousArenaOptions` | The class that reads the arena file |
-| `experiment_config.yaml` | `loaders.experiment_data`, `loaders.animats_data` | `farms_core.experiment.data.ExperimentData`, `farms_core.model.data.AnimatData` (or the `farms_amphibious.data.data` classes) | The data arrays |
+| `experiment_config.yaml` | `loaders.experiment_data`, `loaders.animats_data` | `farms_amphibious.data.data.AmphibiousExperimentData`, `farms_amphibious.data.data.AmphibiousData` (the `farms_core` classes `ExperimentData` and `AnimatData` without the CPG) | The data arrays |
 | `animat_config.yaml` | `extensions[*].loader` | A controller and `farms_mujoco.swimming.extension.SwimmingExtension` | The controller and the fluid forces |
 | `simulation_config.yaml` | `extensions[*].loader` | Loggers, viewer extensions | Simulation extensions |
 
